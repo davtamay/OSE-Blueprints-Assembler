@@ -1,0 +1,71 @@
+# Sub-slice C apply input — c2 (Y-Right) clone-from-c1.
+# Goal: replace c2's current 6-step rhythm with a 7-step clone of c1.
+# All c1→c2 substitutions are declarative; engine handles token rewrite +
+# origin translation (+0.30 X) and global seqIndex shift (+1 for seq >= 66).
+prefab: BatchCarriageUnit
+clone_from:
+  prefix:        batch_c1
+  target_prefix: c1
+  partgroup_id:  partGroup_carriage_y_left
+  origin:        { x: 0.3728, y: 0.55, z: 0.0 }
+  rail:          y_left
+  # Extra string rewrites (token-level — applied after partId remap, longest-first).
+  # These cover human-readable labels and tag strings the standard
+  # prefix/target_prefix/partgroup substitutions don't reach.
+  extra_subs:
+    "Carriage 1": "Carriage 2"
+    "Y-Left":     "Y-Right"
+    "y_left":     "y_right"     # no-underscore form, e.g. tag "carriage_y_left"
+    "for step 58": "for step 65" # hand_tighten seq drift in target descriptions
+    "for step 59": "for step 66"
+
+start_seq: 60
+options:
+  prefix:         batch_c2
+  target_prefix:  c2
+  rail:           y_right
+  rail_label:     "Y-Right"
+  partgroup_id:   partGroup_carriage_y_right
+  partgroup_name: "Carriage 2 (Y-Right)"
+  origin_x:       0.6728
+  origin_y:       0.55
+  origin_z:       0.0
+  start_seq:      60
+  parts_assembly_file: "assembly_d3d_y_right_bench.json"
+
+parts:
+  half_a: y_right_carriage_half_a
+  half_b: y_right_carriage_half_b
+  bearings:
+    - y_right_lm8uu_a
+    - y_right_lm8uu_b
+    - y_right_lm8uu_c
+    - y_right_lm8uu_d
+  bolt_top_a: y_right_m6x18_a
+  bolt_top_b: y_right_m6x18_b
+  bolt_bot_a: y_right_m6x30_a
+  bolt_bot_b: y_right_m6x30_b
+  nuts:
+    - y_right_m6_nut_a
+    - y_right_m6_nut_b
+    - y_right_m6_nut_c
+    - y_right_m6_nut_d
+
+# Map source partIds → target partIds. The engine uses this to rewrite
+# requiredPartIds / visualPartIds / taskOrder.id / target.associatedPartId
+# inside cloned canonical blocks.
+parts_remap:
+  y_left_carriage_half_a:   y_right_carriage_half_a
+  y_left_carriage_half_b:   y_right_carriage_half_b
+  y_left_lm8uu_a:           y_right_lm8uu_a
+  y_left_lm8uu_b:           y_right_lm8uu_b
+  y_left_lm8uu_c:           y_right_lm8uu_c
+  y_left_lm8uu_d:           y_right_lm8uu_d
+  y_left_m6x18_a:           y_right_m6x18_a
+  y_left_carriage_m6x18_b:  y_right_m6x18_b   # c1 quirk: carriage_ prefix on second top bolt; c2 doesn't have it
+  y_left_m6x30_a:           y_right_m6x30_a
+  y_left_m6x30_b:           y_right_m6x30_b
+  y_left_m6_nut_a:          y_right_m6_nut_a
+  y_left_m6_nut_b:          y_right_m6_nut_b
+  y_left_m6_nut_c:          y_right_m6_nut_c
+  y_left_m6_nut_d:          y_right_m6_nut_d

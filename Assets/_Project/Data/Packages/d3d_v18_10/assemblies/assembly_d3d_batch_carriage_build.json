@@ -3,7 +3,7 @@
     {
       "id": "z_back_carriage_half_a",
       "name": "Z-Back Carriage Half A (bearing side)",
-      "function": "Open carriage half with bearing pockets \u00e2\u20ac\u201d receives 4 LM8UU bearings. Z-Back axis.",
+      "function": "Open carriage half with bearing pockets â€” receives 4 LM8UU bearings. Z-Back axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
@@ -39,7 +39,7 @@
     {
       "id": "z_back_carriage_half_b",
       "name": "Z-Back Carriage Half B (clamping side)",
-      "function": "Clamping carriage half \u00e2\u20ac\u201d bolts onto half A to capture bearings. Z-Back axis.",
+      "function": "Clamping carriage half â€” bolts onto half A to capture bearings. Z-Back axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
@@ -75,7 +75,7 @@
     {
       "id": "z_front_carriage_half_a",
       "name": "Z-Front Carriage Half A (bearing side)",
-      "function": "Open carriage half with bearing pockets \u00e2\u20ac\u201d receives 4 LM8UU bearings. Z-Front axis.",
+      "function": "Open carriage half with bearing pockets â€” receives 4 LM8UU bearings. Z-Front axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
@@ -111,7 +111,7 @@
     {
       "id": "z_front_carriage_half_b",
       "name": "Z-Front Carriage Half B (clamping side)",
-      "function": "Clamping carriage half \u00e2\u20ac\u201d bolts onto half A to capture bearings. Z-Front axis.",
+      "function": "Clamping carriage half â€” bolts onto half A to capture bearings. Z-Front axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
@@ -147,13 +147,331 @@
     {
       "id": "batch_test_rod",
       "name": "8mm Smooth Test Rod",
-      "function": "Smooth 8mm steel rod used to test bearing alignment \u00e2\u20ac\u201d slide vertically through seated bearings to check for even resistance.",
+      "function": "Smooth 8mm steel rod used to test bearing alignment â€” slide vertically through seated bearings to check for even resistance.",
       "category": "shaft",
       "material": "Steel rod",
       "quantity": 1,
       "assetRef": "rod_005_approved.glb",
-      "animationCues": [{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":2.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},
-      {
+      "animationCues": [
+        {
+          "type": "poseTransition",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetPartGroupId": "",
+          "stepIds": [
+            "step_batch_c1_rod_slide_test"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onActivate",
+          "delaySeconds": 0.0,
+          "durationSeconds": 2.0,
+          "loop": false,
+          "easing": "smoothStep",
+          "target": "part",
+          "fromPose": {
+            "position": {
+              "x": 0.988,
+              "y": 0.566,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": 1.1921e-07,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.5222,
+              "y": 0.757,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "partGroupRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeMode": "",
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": true,
+          "startProgress": 0.0,
+          "endProgress": 0.0,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": ""
+        },
+        {
+          "type": "poseTransition",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetPartGroupId": "",
+          "stepIds": [
+            "step_batch_c1_place_bolts"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onActivate",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "smoothStep",
+          "target": "part",
+          "fromPose": {
+            "position": {
+              "x": 0.5222,
+              "y": 0.757,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.988,
+              "y": 0.566,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": 1.1921e-07,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "partGroupRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeMode": "",
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": true,
+          "startProgress": 0.0,
+          "endProgress": 0.0,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": ""
+        },
+        {
           "type": "poseTransition",
           "stepIds": [
             "step_batch_c2_rod_slide_test"
@@ -205,7 +523,7 @@
           },
           "holdAtEnd": true
         },
-      {
+        {
           "type": "poseTransition",
           "stepIds": [
             "step_batch_c2_place_bolts"
@@ -255,15 +573,39 @@
             "z": 0.0
           },
           "holdAtEnd": true
-        }],
-      "stagingPose": {"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.75,"g":0.75,"b":0.8,"a":1.0}}
-  }
+        }
+      ],
+      "stagingPose": {
+        "position": {
+          "x": 0.988,
+          "y": 0.566,
+          "z": 0.027
+        },
+        "rotation": {
+          "x": 1.1921e-07,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.8,
+          "a": 1.0
+        }
+      }
+    }
   ],
   "assemblies": [
     {
       "id": "assembly_d3d_batch_carriage_build",
-      "name": "Batch Carriage Build \u00e2\u20ac\u201d All 4 Axes",
-      "description": "Builds all four axis carriages in one production-line session before individual axis bench work begins. Lays out all eight carriage halves at once, then assembles each carriage sequentially: seat bearings, run shake and rod-slide tests, close halves, bolt and tighten. Produces four completed carriages \u00e2\u20ac\u201d Y-Left, Y-Right, Z-Back, and Z-Front \u00e2\u20ac\u201d ready to be threaded onto guide rods during per-axis bench builds.",
+      "name": "Batch Carriage Build â€” All 4 Axes",
+      "description": "Builds all four axis carriages in one production-line session before individual axis bench work begins. Lays out all eight carriage halves at once, then assembles each carriage sequentially: seat bearings, run shake and rod-slide tests, close halves, bolt and tighten. Produces four completed carriages â€” Y-Left, Y-Right, Z-Back, and Z-Front â€” ready to be threaded onto guide rods during per-axis bench builds.",
       "machineId": "d3d_v18_10",
       "partGroupIds": [
         "partGroup_carriage_batch_all"
@@ -280,10 +622,11 @@
         "step_batch_c1_hand_tighten",
         "step_batch_c1_tighten",
         "step_batch_c2_place_bearings",
+        "step_batch_c2_close_halves",
         "step_batch_c2_shake_test",
         "step_batch_c2_rod_slide_test",
-        "step_batch_c2_close_halves",
         "step_batch_c2_place_bolts",
+        "step_batch_c2_hand_tighten",
         "step_batch_c2_tighten",
         "step_batch_c3_place_bearings",
         "step_batch_c3_shake_test",
@@ -303,7 +646,7 @@
   "partGroups": [
     {
       "id": "partGroup_carriage_batch_all",
-      "name": "All Axis Carriages \u00e2\u20ac\u201d Batch Build",
+      "name": "All Axis Carriages â€” Batch Build",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "description": "Batch assembly of all four axis carriages: Y-Left, Y-Right, Z-Back, and Z-Front. All eight carriage halves are laid out together. Each carriage is built sequentially using the same procedure: seat four LM8UU bearings with flanges facing out, shake test, rod-slide test, close halves, insert M6x18 (top) and M6x30 (bottom) bolts, tighten with power drill. Z-Back and Z-Front use a combined-half carriage model.",
       "partIds": [
@@ -353,10 +696,11 @@
         "step_batch_c1_hand_tighten",
         "step_batch_c1_tighten",
         "step_batch_c2_place_bearings",
+        "step_batch_c2_close_halves",
         "step_batch_c2_shake_test",
         "step_batch_c2_rod_slide_test",
-        "step_batch_c2_close_halves",
         "step_batch_c2_place_bolts",
+        "step_batch_c2_hand_tighten",
         "step_batch_c2_tighten",
         "step_batch_c3_place_bearings",
         "step_batch_c3_shake_test",
@@ -386,654 +730,9 @@
     {
       "id": "partGroup_carriage_y_right",
       "name": "Carriage 2 (Y-Right)",
-      "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c2_place_bearings", "step_batch_c2_shake_test", "step_batch_c2_rod_slide_test", "step_batch_c2_close_halves", "step_batch_c2_place_bolts", "step_batch_c2_tighten" ],
+      "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c2_place_bearings", "step_batch_c2_close_halves", "step_batch_c2_shake_test", "step_batch_c2_rod_slide_test", "step_batch_c2_place_bolts", "step_batch_c2_hand_tighten", "step_batch_c2_tighten" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [
-          {
-            "type": "shake",
-            "targetPartIds": [],
-            "targetToolIds": [],
-            "targetPartGroupId": "partGroup_carriage_y_right",
-            "stepIds": [
-              "step_batch_c2_shake_test"
-            ],
-            "always": false,
-            "particlePrefabRef": "",
-            "particleSourceMode": "",
-            "particlePresetId": "",
-            "particleScale": 0.0,
-            "particleColorTint": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "trigger": "onActivate",
-            "delaySeconds": 0.0,
-            "durationSeconds": 0.0,
-            "loop": false,
-            "easing": "smoothStep",
-            "target": "part",
-            "fromPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
-              },
-              "scale": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              }
-            },
-            "toPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
-              },
-              "scale": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              }
-            },
-            "partGroupRotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "pulseColorA": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseColorB": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseSpeed": 0.0,
-            "spinRevolutions": 0.0,
-            "spinAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "shakeAmplitude": 0.01,
-            "shakeFrequency": 8.0,
-            "shakeAxis": {
-              "x": 1.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "shakeMode": "",
-            "animationClipName": "",
-            "panelOrder": 2,
-            "sequenceAfterPrevious": true,
-            "animationClipAssetPath": "",
-            "pivotOffsetOverride": false,
-            "pivotOffset": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "holdAtEnd": false,
-            "startProgress": 0.0,
-            "endProgress": 0.0,
-            "travelStartProgress": 0.0,
-            "travelEndProgress": 0.0,
-            "fromColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromIntensity": 0.0,
-            "toIntensity": 0.0,
-            "pulseScale": 0.0,
-            "wobbleAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "wobbleAmplitude": 0.0,
-            "wobbleFrequency": 0.0,
-            "vibrationAxes": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "vibrationFrequency": 0.0,
-            "vibrationRampIn": 0.0,
-            "vibrationRampOut": 0.0,
-            "anchorARef": "",
-            "anchorBRef": "",
-            "lineWidth": 0.0,
-            "lineEmissionIntensity": 0.0,
-            "splineRadius": 0.0,
-            "splineMetallic": 0.0,
-            "splineSmoothness": 0.0,
-            "splineAnchorRefs": [],
-            "spinAngleDegrees": 0.0,
-            "measureUnit": ""
-          },
-          {
-            "type": "poseTransition",
-            "targetPartIds": [],
-            "targetToolIds": [],
-            "targetPartGroupId": "",
-            "stepIds": [
-              "step_batch_c2_shake_test"
-            ],
-            "always": false,
-            "particlePrefabRef": "",
-            "particleSourceMode": "",
-            "particlePresetId": "",
-            "particleScale": 0.0,
-            "particleColorTint": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "trigger": "onActivate",
-            "delaySeconds": 0.0,
-            "durationSeconds": 0.0,
-            "loop": false,
-            "easing": "smoothStep",
-            "target": "part",
-            "fromPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              }
-            },
-            "toPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.7071,
-                "w": 0.7071
-              },
-              "scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              }
-            },
-            "partGroupRotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "pulseColorA": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseColorB": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseSpeed": 0.0,
-            "spinRevolutions": 0.0,
-            "spinAxis": {
-              "x": 0.0,
-              "y": 1.0,
-              "z": 0.0
-            },
-            "shakeAmplitude": 0.0,
-            "shakeFrequency": 0.0,
-            "shakeAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "shakeMode": "",
-            "animationClipName": "",
-            "panelOrder": 0,
-            "sequenceAfterPrevious": true,
-            "animationClipAssetPath": "",
-            "pivotOffsetOverride": false,
-            "pivotOffset": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "holdAtEnd": true,
-            "startProgress": 0.0,
-            "endProgress": 0.0,
-            "travelStartProgress": 0.0,
-            "travelEndProgress": 0.0,
-            "fromColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromIntensity": 0.0,
-            "toIntensity": 0.0,
-            "pulseScale": 0.0,
-            "wobbleAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "wobbleAmplitude": 0.0,
-            "wobbleFrequency": 0.0,
-            "vibrationAxes": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "vibrationFrequency": 0.0,
-            "vibrationRampIn": 0.0,
-            "vibrationRampOut": 0.0,
-            "anchorARef": "",
-            "anchorBRef": "",
-            "lineWidth": 0.0,
-            "lineEmissionIntensity": 0.0,
-            "splineRadius": 0.0,
-            "splineMetallic": 0.0,
-            "splineSmoothness": 0.0,
-            "splineAnchorRefs": [],
-            "spinAngleDegrees": 0.0,
-            "measureUnit": ""
-          },
-          {
-            "type": "shake",
-            "targetPartIds": [],
-            "targetToolIds": [],
-            "targetPartGroupId": "",
-            "stepIds": [
-              "step_batch_c2_rod_slide_test"
-            ],
-            "always": false,
-            "particlePrefabRef": "",
-            "particleSourceMode": "",
-            "particlePresetId": "",
-            "particleScale": 0.0,
-            "particleColorTint": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "trigger": "onActivate",
-            "delaySeconds": 0.0,
-            "durationSeconds": 0.0,
-            "loop": false,
-            "easing": "smoothStep",
-            "target": "part",
-            "fromPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
-              },
-              "scale": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              }
-            },
-            "toPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
-              },
-              "scale": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              }
-            },
-            "partGroupRotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "pulseColorA": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseColorB": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseSpeed": 0.0,
-            "spinRevolutions": 0.0,
-            "spinAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "shakeAmplitude": 0.05,
-            "shakeFrequency": 1.0,
-            "shakeAxis": {
-              "x": 0.0,
-              "y": 1.0,
-              "z": 0.0
-            },
-            "shakeMode": "slide",
-            "animationClipName": "",
-            "panelOrder": 0,
-            "sequenceAfterPrevious": false,
-            "animationClipAssetPath": "",
-            "pivotOffsetOverride": false,
-            "pivotOffset": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "holdAtEnd": false,
-            "startProgress": 0.0,
-            "endProgress": 0.0,
-            "travelStartProgress": 0.0,
-            "travelEndProgress": 0.0,
-            "fromColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromIntensity": 0.0,
-            "toIntensity": 0.0,
-            "pulseScale": 0.0,
-            "wobbleAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "wobbleAmplitude": 0.0,
-            "wobbleFrequency": 0.0,
-            "vibrationAxes": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "vibrationFrequency": 0.0,
-            "vibrationRampIn": 0.0,
-            "vibrationRampOut": 0.0,
-            "anchorARef": "",
-            "anchorBRef": "",
-            "lineWidth": 0.0,
-            "lineEmissionIntensity": 0.0,
-            "splineRadius": 0.0,
-            "splineMetallic": 0.0,
-            "splineSmoothness": 0.0,
-            "splineAnchorRefs": [],
-            "spinAngleDegrees": 0.0,
-            "measureUnit": ""
-          },
-          {
-            "type": "poseTransition",
-            "targetPartIds": [],
-            "targetToolIds": [],
-            "targetPartGroupId": "",
-            "stepIds": [
-              "step_batch_c2_place_bolts"
-            ],
-            "always": false,
-            "particlePrefabRef": "",
-            "particleSourceMode": "",
-            "particlePresetId": "",
-            "particleScale": 0.0,
-            "particleColorTint": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "trigger": "onActivate",
-            "delaySeconds": 0.0,
-            "durationSeconds": 0.0,
-            "loop": false,
-            "easing": "smoothStep",
-            "target": "part",
-            "fromPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              }
-            },
-            "toPose": {
-              "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.7071,
-                "w": -0.7071
-              },
-              "scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              }
-            },
-            "partGroupRotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "pulseColorA": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseColorB": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "pulseSpeed": 0.0,
-            "spinRevolutions": 0.0,
-            "spinAxis": {
-              "x": 0.0,
-              "y": 1.0,
-              "z": 0.0
-            },
-            "shakeAmplitude": 0.0,
-            "shakeFrequency": 0.0,
-            "shakeAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "shakeMode": "",
-            "animationClipName": "",
-            "panelOrder": 0,
-            "sequenceAfterPrevious": false,
-            "animationClipAssetPath": "",
-            "pivotOffsetOverride": false,
-            "pivotOffset": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "holdAtEnd": true,
-            "startProgress": 0.0,
-            "endProgress": 0.0,
-            "travelStartProgress": 0.0,
-            "travelEndProgress": 0.0,
-            "fromColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toColor": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "toEmission": {
-              "r": 0.0,
-              "g": 0.0,
-              "b": 0.0,
-              "a": 0.0
-            },
-            "fromIntensity": 0.0,
-            "toIntensity": 0.0,
-            "pulseScale": 0.0,
-            "wobbleAxis": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "wobbleAmplitude": 0.0,
-            "wobbleFrequency": 0.0,
-            "vibrationAxes": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "vibrationFrequency": 0.0,
-            "vibrationRampIn": 0.0,
-            "vibrationRampOut": 0.0,
-            "anchorARef": "",
-            "anchorBRef": "",
-            "lineWidth": 0.0,
-            "lineEmissionIntensity": 0.0,
-            "splineRadius": 0.0,
-            "splineMetallic": 0.0,
-            "splineSmoothness": 0.0,
-            "splineAnchorRefs": [],
-            "spinAngleDegrees": 0.0,
-            "measureUnit": ""
-          }
-        ]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"partGroup_carriage_y_right","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.01,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":2,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c2_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.05,"shakeFrequency":1.0,"shakeAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeMode":"slide","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c2_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.6,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   },
     {
       "id": "partGroup_carriage_z_back",
@@ -1120,7 +819,7 @@
       "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 53,
       "family": "Place",
-      "instructionText": "Place four LM8UU linear bearings into one Y-Left carriage half-piece. Flanges must face outward \u00e2\u20ac\u201d away from each other \u00e2\u20ac\u201d so they sit flush in the lip of each pocket.",
+      "instructionText": "Place four LM8UU linear bearings into one Y-Left carriage half-piece. Flanges must face outward â€” away from each other â€” so they sit flush in the lip of each pocket.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
@@ -1134,23 +833,115 @@
         {
           "kind": "part",
           "id": "y_left_lm8uu_a",
-          "stagingPose": {"position":{"x":0.588,"y":0.56,"z":0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
-      },
+          "stagingPose": {
+            "position": {
+              "x": 0.588,
+              "y": 0.56,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
+        },
         {
           "kind": "part",
           "id": "y_left_lm8uu_b",
-          "stagingPose": {"position":{"x":0.614,"y":0.56,"z":0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
-      },
+          "stagingPose": {
+            "position": {
+              "x": 0.614,
+              "y": 0.56,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
+        },
         {
           "kind": "part",
           "id": "y_left_lm8uu_c",
-          "stagingPose": {"position":{"x":0.588,"y":0.56,"z":-0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
-      },
+          "stagingPose": {
+            "position": {
+              "x": 0.588,
+              "y": 0.56,
+              "z": -0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
+        },
         {
           "kind": "part",
           "id": "y_left_lm8uu_d",
-          "stagingPose": {"position":{"x":0.614,"y":0.56,"z":-0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
-      }
+          "stagingPose": {
+            "position": {
+              "x": 0.614,
+              "y": 0.56,
+              "z": -0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
+        }
       ],
       "workingOrientation": {
         "partGroupRotation": {
@@ -1240,7 +1031,7 @@
       "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 57,
       "family": "Place",
-      "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
+      "instructionText": "Insert 2Ã— M6x18 bolts into the two top holes and 2Ã— M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [ "y_left_m6x18_a", "y_left_carriage_m6x18_b", "y_left_m6x30_a", "y_left_m6x30_b", "y_left_m6_nut_a", "y_left_m6_nut_b", "y_left_m6_nut_c", "y_left_m6_nut_d" ],
@@ -1259,42 +1050,1114 @@
   },
     {
       "id": "step_batch_c1_hand_tighten",
-      "name": "Carriage 1: hand-tighten \u00e2\u20ac\u201d prep for drill",
+      "name": "Carriage 1: hand-tighten â€” prep for drill",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 58,
       "family": "Use",
-      "instructionText": "Thread and finger-tighten all 4 bolts on the Y-Left carriage. Seat each bolt snug by hand before moving to the power drill \u00e2\u20ac\u201d this prevents cross-threading and lets the drill finish the final torque cleanly.",
+      "instructionText": "Thread and finger-tighten all 4 bolts on the Y-Left carriage. Seat each bolt snug by hand before moving to the power drill â€” this prevents cross-threading and lets the drill finish the final torque cleanly.",
       "relevantToolIds": [
         "tool_hand"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_c1_bolt_tighten_a", "target_c1_bolt_tighten_b", "target_c1_bolt_tighten_c", "target_c1_bolt_tighten_d" ],
-      "requiredToolActions": [ {"id":"action_target_c1_bolt_hand_tighten_a","toolId":"tool_hand","actionType":"tighten","targetId":"target_c1_bolt_tighten_a","requiredCount":1,"successMessage":"M6x18 bolt A finger-tight.","failureMessage":"Thread the bolt by hand until it seats snug â€” no drill yet.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_target_c1_bolt_hand_tighten_b","toolId":"tool_hand","actionType":"tighten","targetId":"target_c1_bolt_tighten_b","requiredCount":1,"successMessage":"M6 bolt B finger-tight.","failureMessage":"Thread the bolt by hand until it seats snug â€” no drill yet.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_target_c1_bolt_hand_tighten_c","toolId":"tool_hand","actionType":"tighten","targetId":"target_c1_bolt_tighten_c","requiredCount":1,"successMessage":"M6 bolt C finger-tight.","failureMessage":"Thread the bolt by hand until it seats snug â€” no drill yet.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_target_c1_bolt_hand_tighten_d","toolId":"tool_hand","actionType":"tighten","targetId":"target_c1_bolt_tighten_d","requiredCount":1,"successMessage":"M6 bolt D finger-tight.","failureMessage":"Thread the bolt by hand until it seats snug â€” no drill yet.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}} ],
-      "taskOrder": [{"kind":"toolAction","id":"action_target_c1_bolt_hand_tighten_a","endTransform":{"position":{"x":0.538,"y":0.5696,"z":0.0158},"rotation":{"x":0.7071,"y":0.0,"z":0.0,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}},
-        {"kind":"toolAction","id":"action_target_c1_bolt_hand_tighten_b","endTransform":{"position":{"x":0.538,"y":0.5696,"z":-0.0145},"rotation":{"x":0.7071,"y":0.0,"z":0.0,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}},
-        {"kind":"toolAction","id":"action_target_c1_bolt_hand_tighten_c","endTransform":{"position":{"x":0.5077,"y":0.5696,"z":0.015},"rotation":{"x":0.7071,"y":0.0,"z":0.0,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}},
-        {"kind":"toolAction","id":"action_target_c1_bolt_hand_tighten_d","endTransform":{"position":{"x":0.5077,"y":0.5696,"z":-0.0149},"rotation":{"x":0.7071,"y":0.0,"z":0.0,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}}]
-  },
+      "targetIds": [
+        "target_c1_bolt_tighten_a",
+        "target_c1_bolt_tighten_b",
+        "target_c1_bolt_tighten_c",
+        "target_c1_bolt_tighten_d"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_target_c1_bolt_hand_tighten_a",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_a",
+          "requiredCount": 1,
+          "successMessage": "M6x18 bolt A finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_hand_tighten_b",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_b",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt B finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_hand_tighten_c",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_c",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt C finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_hand_tighten_d",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_d",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt D finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        }
+      ],
+      "taskOrder": [
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_a",
+          "endTransform": {
+            "position": {
+              "x": 0.538,
+              "y": 0.5696,
+              "z": 0.0158
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_b",
+          "endTransform": {
+            "position": {
+              "x": 0.538,
+              "y": 0.5696,
+              "z": -0.0145
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_c",
+          "endTransform": {
+            "position": {
+              "x": 0.5077,
+              "y": 0.5696,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_d",
+          "endTransform": {
+            "position": {
+              "x": 0.5077,
+              "y": 0.5696,
+              "z": -0.0149
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_batch_c1_tighten",
-      "name": "Carriage 1: drill-tighten \u00e2\u20ac\u201d 1 of 4 complete",
+      "name": "Carriage 1: drill-tighten â€” 1 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 59,
       "family": "Use",
-      "instructionText": "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque. Set the carriage aside \u00e2\u20ac\u201d carriage 1 of 4 is complete.",
+      "instructionText": "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque. Set the carriage aside â€” carriage 1 of 4 is complete.",
       "relevantToolIds": [
         "tool_power_drill"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_c1_bolt_tighten_a", "target_c1_bolt_tighten_b", "target_c1_bolt_tighten_c", "target_c1_bolt_tighten_d" ],
-      "requiredToolActions": [ {"id":"action_target_c1_bolt_tighten_a","toolId":"tool_power_drill","actionType":"tighten","targetId":"target_c1_bolt_tighten_a","requiredCount":1,"successMessage":"M6x18 bolt A tightened.","failureMessage":"Equip the power drill (lowest torque) and drive the bolt into the carriage.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_target_c1_bolt_tighten_b","toolId":"tool_power_drill","actionType":"tighten","targetId":"target_c1_bolt_tighten_b","requiredCount":1,"successMessage":"M6 bolt B tightened.","failureMessage":"Equip the power drill and drive the bolt into the carriage.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_target_c1_bolt_tighten_c","toolId":"tool_power_drill","actionType":"tighten","targetId":"target_c1_bolt_tighten_c","requiredCount":1,"successMessage":"M6 bolt C tightened.","failureMessage":"Equip the power drill and drive the bolt into the carriage.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_target_c1_bolt_tighten_d","toolId":"tool_power_drill","actionType":"tighten","targetId":"target_c1_bolt_tighten_d","requiredCount":1,"successMessage":"M6 bolt D tightened.","failureMessage":"Equip the power drill and drive the bolt into the carriage.","interaction":{"archetype":"lerp","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"easeInOut","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}} ],
-      "taskOrder": [{"kind":"toolAction","id":"action_target_c1_bolt_tighten_a","endTransform":{"position":{"x":0.538,"y":0.5624,"z":0.0158},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}},
-        {"kind":"toolAction","id":"action_target_c1_bolt_tighten_b","endTransform":{"position":{"x":0.538,"y":0.5624,"z":-0.0145},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}},
-        {"kind":"toolAction","id":"action_target_c1_bolt_tighten_c","endTransform":{"position":{"x":0.5077,"y":0.5624,"z":0.015},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}},
-        {"kind":"toolAction","id":"action_target_c1_bolt_tighten_d","endTransform":{"position":{"x":0.5077,"y":0.5624,"z":-0.0149},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}}}]
-  },
+      "targetIds": [
+        "target_c1_bolt_tighten_a",
+        "target_c1_bolt_tighten_b",
+        "target_c1_bolt_tighten_c",
+        "target_c1_bolt_tighten_d"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_target_c1_bolt_tighten_a",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_a",
+          "requiredCount": 1,
+          "successMessage": "M6x18 bolt A tightened.",
+          "failureMessage": "Equip the power drill (lowest torque) and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_tighten_b",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_b",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt B tightened.",
+          "failureMessage": "Equip the power drill and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_tighten_c",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_c",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt C tightened.",
+          "failureMessage": "Equip the power drill and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_tighten_d",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_d",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt D tightened.",
+          "failureMessage": "Equip the power drill and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        }
+      ],
+      "taskOrder": [
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_tighten_a",
+          "endTransform": {
+            "position": {
+              "x": 0.538,
+              "y": 0.5624,
+              "z": 0.0158
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_tighten_b",
+          "endTransform": {
+            "position": {
+              "x": 0.538,
+              "y": 0.5624,
+              "z": -0.0145
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_tighten_c",
+          "endTransform": {
+            "position": {
+              "x": 0.5077,
+              "y": 0.5624,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_tighten_d",
+          "endTransform": {
+            "position": {
+              "x": 0.5077,
+              "y": 0.5624,
+              "z": -0.0149
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_batch_c2_place_bearings",
       "name": "Carriage 2 (Y-Right): place 4 LM8UU bearings",
@@ -1302,7 +2165,7 @@
       "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 60,
       "family": "Place",
-      "instructionText": "Pick up the Y-Right carriage halves. Place four LM8UU bearings into half A with flanges facing outward \u00e2\u20ac\u201d same technique as carriage 1.",
+      "instructionText": "Place four LM8UU linear bearings into one Y-Right carriage half-piece. Flanges must face outward â€” away from each other â€” so they sit flush in the lip of each pocket.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
@@ -1315,19 +2178,115 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "y_right_lm8uu_a"
+          "id": "y_right_lm8uu_a",
+          "stagingPose": {
+            "position": {
+              "x": 0.888,
+              "y": 0.56,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
         },
         {
           "kind": "part",
-          "id": "y_right_lm8uu_b"
+          "id": "y_right_lm8uu_b",
+          "stagingPose": {
+            "position": {
+              "x": 0.914,
+              "y": 0.56,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
         },
         {
           "kind": "part",
-          "id": "y_right_lm8uu_c"
+          "id": "y_right_lm8uu_c",
+          "stagingPose": {
+            "position": {
+              "x": 0.888,
+              "y": 0.56,
+              "z": -0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
         },
         {
           "kind": "part",
-          "id": "y_right_lm8uu_d"
+          "id": "y_right_lm8uu_d",
+          "stagingPose": {
+            "position": {
+              "x": 0.914,
+              "y": 0.56,
+              "z": -0.015
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.6,
+              "g": 0.6,
+              "b": 0.65,
+              "a": 1.0
+            }
+          }
         }
       ],
       "workingOrientation": {
@@ -1350,7 +2309,7 @@
       "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 61,
       "family": "Place",
-      "instructionText": "Place the second Y-Right carriage half onto the first, trapping the 4 bearings. The small ribbed belt hole must sit directly beside the large smooth belt hole.",
+      "instructionText": "Place the second Y-Right carriage half onto the first, trapping the 4 bearings in their pockets. The small ribbed belt hole should sit directly beside the large smooth belt hole.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
@@ -1383,56 +2342,16 @@
       "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 62,
       "family": "Confirm",
-      "guidance": {
-        "instructionText": "Hold both Y-Right carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds."
-      },
-      "validation": {
-        "successCriteria": "No audible rattle or tactile movement from the bearings.",
-        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
-      },
-      "feedback": {
-        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
-        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings."
-      },
       "difficulty": "beginner",
+      "guidance": {"instructionText":"Hold both Y-Right carriage halves firmly together and shake the assembly.","whyItMattersText":"Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2â€“3 seconds. No tools needed â€” this is a hand-compression test only."},
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
+      "visualPartIds": [ "partGroup_carriage_y_right" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "partGroup_carriage_y_right",
-          "endTransform": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
-            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
-          }
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm",
-          "endTransform": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
-            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
-          }
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"partGroup_carriage_y_right","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_batch_c2_rod_slide_test",
       "name": "Carriage 2: rod slide test",
@@ -1440,67 +2359,17 @@
       "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 63,
       "family": "Confirm",
-      "guidance": {
-        "instructionText": "Insert a smooth guide rod through the Y-Right carriage and hold it vertical.",
-        "whyItMattersText": "Slight resistance is correct \u00e2\u20ac\u201d the rod should slide or drop through with a little drag. Too free means the carriage will slip under belt tension."
-      },
-      "validation": {
-        "successCriteria": "Rod slides or drops through with slight resistance.",
-        "failureCriteria": "Rod slides with zero resistance (too free), OR jams and requires force (too tight)."
-      },
-      "feedback": {
-        "successMessage": "Resistance feels correct. Proceed to close the carriage halves.",
-        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape and retest. Too tight: check bearings are fully seated."
-      },
       "difficulty": "beginner",
+      "guidance": {"instructionText":"Insert a smooth guide rod through the Y-Right carriage and hold it so the rod is vertical.","whyItMattersText":"The rod should slide or drop through with slight resistance â€” if you have to shake the carriage for the rod to move through, that's correct. Motors pull 20 lbs of belt force; the carriage must not slip too freely."},
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
+      "visualPartIds": [ "batch_test_rod", "partGroup_carriage_y_right" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "batch_test_rod",
-          "awaitCues": true,
-          "endTransform": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
-            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
-          }
-        },
-        {
-          "kind": "part",
-          "id": "partGroup_carriage_y_right",
-          "awaitCues": true,
-          "endTransform": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
-            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
-          }
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm",
-          "endTransform": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
-            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
-          }
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"batch_test_rod","awaitCues":true,"endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"partGroup_carriage_y_right","awaitCues":true,"endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_batch_c2_place_bolts",
       "name": "Carriage 2: place bolts and thread nuts",
@@ -1508,140 +2377,1139 @@
       "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 64,
       "family": "Place",
-      "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
+      "instructionText": "Insert 2Ã— M6x18 bolts into the two top holes and 2Ã— M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "y_right_m6x18_a",
-        "y_right_m6x18_b",
-        "y_right_m6x30_a",
-        "y_right_m6x30_b",
-        "y_right_m6_nut_a",
-        "y_right_m6_nut_b",
-        "y_right_m6_nut_c",
-        "y_right_m6_nut_d"
-      ],
+      "requiredPartIds": [ "y_right_m6x18_a", "y_right_m6x18_b", "y_right_m6x30_a", "y_right_m6x30_b", "y_right_m6_nut_a", "y_right_m6_nut_b", "y_right_m6_nut_c", "y_right_m6_nut_d" ],
+      "visualPartIds": [ "partGroup_carriage_y_right", "batch_test_rod" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_right_m6x18_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6x18_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6x30_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6x30_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_c"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_d"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"batch_test_rod","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"partGroup_carriage_y_right","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6x18_a","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6x18_b","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6x30_a","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6x30_b","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6_nut_a","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6_nut_b","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6_nut_c","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_m6_nut_d","endTransform":{"position":{"x":0.3,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
-      "id": "step_batch_c2_tighten",
-      "name": "Carriage 2: tighten \u00e2\u20ac\u201d 2 of 4 complete",
+      "id": "step_batch_c2_hand_tighten",
+      "name": "Carriage 2: hand-tighten â€” prep for drill",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 65,
       "family": "Use",
-      "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 \u00e2\u20ac\u201d carriage 2 of 4 is complete.",
+      "instructionText": "Thread and finger-tighten all 4 bolts on the Y-Right carriage. Seat each bolt snug by hand before moving to the power drill â€” this prevents cross-threading and lets the drill finish the final torque cleanly.",
+      "relevantToolIds": [
+        "tool_hand"
+      ],
       "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [],
-      "requiredToolActions": [],
-      "taskOrder": [
+      "targetIds": [
+        "target_c2_bolt_tighten_a",
+        "target_c2_bolt_tighten_b",
+        "target_c2_bolt_tighten_c",
+        "target_c2_bolt_tighten_d"
+      ],
+      "requiredToolActions": [
         {
-          "kind": "part",
-          "id": "y_right_carriage_half_a"
+          "id": "action_target_c2_bolt_hand_tighten_a",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_a",
+          "requiredCount": 1,
+          "successMessage": "M6x18 bolt A finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
         },
         {
-          "kind": "part",
-          "id": "y_right_carriage_half_b"
+          "id": "action_target_c2_bolt_hand_tighten_b",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_b",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt B finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
         },
         {
-          "kind": "part",
-          "id": "y_right_m6x18_a"
+          "id": "action_target_c2_bolt_hand_tighten_c",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_c",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt C finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
         },
         {
-          "kind": "part",
-          "id": "y_right_m6x18_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6x30_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6x30_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_c"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_m6_nut_d"
+          "id": "action_target_c2_bolt_hand_tighten_d",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_d",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt D finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug â€” no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
         }
       ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
+      "taskOrder": [
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_hand_tighten_a",
+          "endTransform": {
+            "position": {
+              "x": 1.138,
+              "y": 0.5696,
+              "z": 0.0158
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
         },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_hand_tighten_b",
+          "endTransform": {
+            "position": {
+              "x": 1.138,
+              "y": 0.5696,
+              "z": -0.0145
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_hand_tighten_c",
+          "endTransform": {
+            "position": {
+              "x": 1.1077,
+              "y": 0.5696,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_hand_tighten_d",
+          "endTransform": {
+            "position": {
+              "x": 1.1077,
+              "y": 0.5696,
+              "z": -0.0149
+            },
+            "rotation": {
+              "x": 0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": -0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
         }
-      }
+      ]
+    },
+    {
+      "id": "step_batch_c2_tighten",
+      "name": "Carriage 2: drill-tighten â€” 1 of 4 complete",
+      "assemblyId": "assembly_d3d_batch_carriage_build",
+      "partGroupId": "partGroup_carriage_y_right",
+      "sequenceIndex": 66,
+      "family": "Use",
+      "instructionText": "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque. Set the carriage aside â€” carriage 1 of 4 is complete.",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ],
+      "removePersistentToolIds": [],
+      "targetIds": [
+        "target_c2_bolt_tighten_a",
+        "target_c2_bolt_tighten_b",
+        "target_c2_bolt_tighten_c",
+        "target_c2_bolt_tighten_d"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_target_c2_bolt_tighten_a",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_a",
+          "requiredCount": 1,
+          "successMessage": "M6x18 bolt A tightened.",
+          "failureMessage": "Equip the power drill (lowest torque) and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c2_bolt_tighten_b",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_b",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt B tightened.",
+          "failureMessage": "Equip the power drill and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c2_bolt_tighten_c",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_c",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt C tightened.",
+          "failureMessage": "Equip the power drill and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        },
+        {
+          "id": "action_target_c2_bolt_tighten_d",
+          "toolId": "tool_power_drill",
+          "actionType": "tighten",
+          "targetId": "target_c2_bolt_tighten_d",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt D tightened.",
+          "failureMessage": "Equip the power drill and drive the bolt into the carriage.",
+          "interaction": {
+            "archetype": "lerp",
+            "axis": {
+              "space": "",
+              "vec": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "distance": 0.0,
+            "totalRotationsDeg": 0.0,
+            "rotationDegPerUnit": 0.0,
+            "followPart": true,
+            "easing": "easeInOut",
+            "toPose": ""
+          },
+          "previewConfig": {
+            "duration": 0.0,
+            "approachDuration": 0.0,
+            "returnDuration": 0.0,
+            "guidedDragScale": 0.0,
+            "autoAssistDelay": 0.0,
+            "autoAssistRate": 0.0,
+            "framingDistance": 0.0,
+            "workingDistance": 0.0,
+            "approachTiltDegrees": 0.0,
+            "weldArcSpawnThreshold": 0.0,
+            "weldBeadSpawnThreshold": 0.0,
+            "weldBeadWidth": 0.0,
+            "weldBeadWindowStart": 0.0,
+            "weldBeadWindowEnd": 0.0,
+            "weldWobbleAmplitude": 0.0,
+            "weldWobbleFrequency": 0.0,
+            "weldBeadHotColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldBeadCoolColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "weldCoolerDuration": 0.0,
+            "drillShakeFrequency": 0.0,
+            "drillShakeAmplitude": 0.0,
+            "drillRampUpEnd": 0.0,
+            "drillRampDownStart": 0.0,
+            "drillSpark1Threshold": 0.0,
+            "drillSpark1Scale": 0.0,
+            "drillSpark2Threshold": 0.0,
+            "drillSpark2Scale": 0.0,
+            "drillGlowIntensity": 0.0,
+            "drillGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "torqueTargetAngle": 0.0,
+            "torqueGestureArc": 0.0,
+            "torqueMinRadius": 0.0,
+            "torqueDragFallbackScale": 0.0,
+            "torqueSparkThreshold": 0.0,
+            "torqueSparkScale": 0.0,
+            "cutEmissionThreshold": 0.0,
+            "cutGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "cutSpark1Threshold": 0.0,
+            "cutSpark1Scale": 0.0,
+            "cutSpark2Threshold": 0.0,
+            "cutSpark2Scale": 0.0,
+            "cutLineSpawn": 0.0,
+            "cutLineWindowEnd": 0.0,
+            "cutVibrationWindowStart": 0.0,
+            "cutVibrationWindowEnd": 0.0,
+            "cutVibrationFrequency": 0.0,
+            "cutVibrationAmplitude": 0.0,
+            "cutLineColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squareSettleDistance": 0.0,
+            "squareSettleEnd": 0.0,
+            "squareHoldEnd": 0.0,
+            "squareGlowColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "squarePulseFrequency": 0.0
+          }
+        }
+      ],
+      "taskOrder": [
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_tighten_a",
+          "endTransform": {
+            "position": {
+              "x": 1.138,
+              "y": 0.5624,
+              "z": 0.0158
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_tighten_b",
+          "endTransform": {
+            "position": {
+              "x": 1.138,
+              "y": 0.5624,
+              "z": -0.0145
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_tighten_c",
+          "endTransform": {
+            "position": {
+              "x": 1.1077,
+              "y": 0.5624,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c2_bolt_tighten_d",
+          "endTransform": {
+            "position": {
+              "x": 1.1077,
+              "y": 0.5624,
+              "z": -0.0149
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        }
+      ]
     },
     {
       "id": "step_batch_c3_place_bearings",
       "name": "Carriage 3 (Z-Back): place 4 LM8UU bearings in half A",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_back",
-      "sequenceIndex": 66,
+      "sequenceIndex": 67,
       "family": "Place",
       "instructionText": "Pick up the Z-Back carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward. Same technique as the Y-axis carriages.",
       "removePersistentToolIds": [],
@@ -1674,11 +3542,11 @@
       "name": "Carriage 3: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_back",
-      "sequenceIndex": 67,
+      "sequenceIndex": 68,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Z-Back carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds. Tip: use one of the completed Y-axis carriages as a tactile reference for correct feel."
+        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2â€“3 seconds. Tip: use one of the completed Y-axis carriages as a tactile reference for correct feel."
       },
       "validation": {
         "successCriteria": "No audible rattle or tactile movement from the bearings.",
@@ -1724,7 +3592,7 @@
       "name": "Carriage 3: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_back",
-      "sequenceIndex": 68,
+      "sequenceIndex": 69,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Z-Back carriage and hold it vertical.",
@@ -1776,12 +3644,12 @@
     },
     {
       "id": "step_batch_c3_bolt",
-      "name": "Carriage 3: close halves, bolt and tighten \u00e2\u20ac\u201d 3 of 4 complete",
+      "name": "Carriage 3: close halves, bolt and tighten â€” 3 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_back",
-      "sequenceIndex": 69,
+      "sequenceIndex": 70,
       "family": "Place",
-      "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside \u00e2\u20ac\u201d carriage 3 of 4 is complete.",
+      "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside â€” carriage 3 of 4 is complete.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
@@ -1812,7 +3680,7 @@
       "name": "Carriage 4 (Z-Front): place 4 LM8UU bearings in half A",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_front",
-      "sequenceIndex": 70,
+      "sequenceIndex": 71,
       "family": "Place",
       "instructionText": "Pick up the Z-Front carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward.",
       "removePersistentToolIds": [],
@@ -1845,11 +3713,11 @@
       "name": "Carriage 4: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_front",
-      "sequenceIndex": 71,
+      "sequenceIndex": 72,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Z-Front carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds."
+        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2â€“3 seconds."
       },
       "validation": {
         "successCriteria": "No audible rattle or tactile movement from the bearings.",
@@ -1895,7 +3763,7 @@
       "name": "Carriage 4: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_front",
-      "sequenceIndex": 72,
+      "sequenceIndex": 73,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Z-Front carriage and hold it vertical.",
@@ -1947,12 +3815,12 @@
     },
     {
       "id": "step_batch_c4_bolt",
-      "name": "Carriage 4: close halves, bolt and tighten \u00e2\u20ac\u201d 4 of 4 complete",
+      "name": "Carriage 4: close halves, bolt and tighten â€” 4 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "partGroupId": "partGroup_carriage_z_front",
-      "sequenceIndex": 73,
+      "sequenceIndex": 74,
       "family": "Place",
-      "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete \u00e2\u20ac\u201d set the Z-Front carriage with the others.",
+      "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete â€” set the Z-Front carriage with the others.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
@@ -1982,7 +3850,7 @@
   "targets": [
     {
       "id": "target_c1_bolt_tighten_a",
-      "name": "Carriage 1 \u2014 M6x18 bolt A tighten point",
+      "name": "Carriage 1 — M6x18 bolt A tighten point",
       "description": "Drill engagement point on the head of y_left_m6x18_a for step 58.",
       "associatedPartId": "y_left_m6x18_a",
       "anchorRef": "y_left_m6x18_a",
@@ -1991,13 +3859,21 @@
         "carriage_y_left",
         "tighten"
       ],
-      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
     {
       "id": "target_c1_bolt_tighten_b",
-      "name": "Carriage 1 \u2014 M6 bolt B tighten point",
+      "name": "Carriage 1 — M6 bolt B tighten point",
       "description": "Drill engagement point on the head of y_left_carriage_m6x18_b for step 58.",
       "associatedPartId": "y_left_carriage_m6x18_b",
       "anchorRef": "y_left_carriage_m6x18_b",
@@ -2006,13 +3882,21 @@
         "carriage_y_left",
         "tighten"
       ],
-      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
     {
       "id": "target_c1_bolt_tighten_c",
-      "name": "Carriage 1 \u2014 M6 bolt C tighten point",
+      "name": "Carriage 1 — M6 bolt C tighten point",
       "description": "Drill engagement point on the head of y_left_m6x30_a for step 58.",
       "associatedPartId": "y_left_m6x30_a",
       "anchorRef": "y_left_m6x30_a",
@@ -2021,13 +3905,21 @@
         "carriage_y_left",
         "tighten"
       ],
-      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
     {
       "id": "target_c1_bolt_tighten_d",
-      "name": "Carriage 1 \u2014 M6 bolt D tighten point",
+      "name": "Carriage 1 — M6 bolt D tighten point",
       "description": "Drill engagement point on the head of y_left_m6x30_b for step 58.",
       "associatedPartId": "y_left_m6x30_b",
       "anchorRef": "y_left_m6x30_b",
@@ -2036,9 +3928,109 @@
         "carriage_y_left",
         "tighten"
       ],
-      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
-  }
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
+    {
+      "id": "target_c2_bolt_tighten_a",
+      "name": "Carriage 2 — M6x18 bolt A tighten point",
+      "description": "Drill engagement point on the head of y_right_m6x18_a for step 65.",
+      "associatedPartId": "y_right_m6x18_a",
+      "anchorRef": "y_right_m6x18_a",
+      "tags": [
+        "d3d",
+        "carriage_y_right",
+        "tighten"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
+    {
+      "id": "target_c2_bolt_tighten_b",
+      "name": "Carriage 2 — M6 bolt B tighten point",
+      "description": "Drill engagement point on the head of y_right_carriage_m6x18_b for step 65.",
+      "associatedPartId": "y_right_m6x18_b",
+      "anchorRef": "y_right_m6x18_b",
+      "tags": [
+        "d3d",
+        "carriage_y_right",
+        "tighten"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
+    {
+      "id": "target_c2_bolt_tighten_c",
+      "name": "Carriage 2 — M6 bolt C tighten point",
+      "description": "Drill engagement point on the head of y_right_m6x30_a for step 65.",
+      "associatedPartId": "y_right_m6x30_a",
+      "anchorRef": "y_right_m6x30_a",
+      "tags": [
+        "d3d",
+        "carriage_y_right",
+        "tighten"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    },
+    {
+      "id": "target_c2_bolt_tighten_d",
+      "name": "Carriage 2 — M6 bolt D tighten point",
+      "description": "Drill engagement point on the head of y_right_m6x30_b for step 65.",
+      "associatedPartId": "y_right_m6x30_b",
+      "anchorRef": "y_right_m6x30_b",
+      "tags": [
+        "d3d",
+        "carriage_y_right",
+        "tighten"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 270
+      }
+    }
   ]
 }

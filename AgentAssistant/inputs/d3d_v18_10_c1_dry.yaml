@@ -1,0 +1,37 @@
+# Sub-slice A dry-run input — c1 round-trip.
+# Inputs taken from the canonical hand-authored c1 carriage in d3d_v18_10.
+# When the patch-plan generator runs against this, the diff against the
+# package's current c1 state IS the missing-layer report.
+prefab: BatchCarriageUnit
+prefix:        batch_c1
+target_prefix: c1
+parts:
+  half_a: y_left_carriage_half_a
+  half_b: y_left_carriage_half_b
+  bearings:
+    - y_left_lm8uu_a
+    - y_left_lm8uu_b
+    - y_left_lm8uu_c
+    - y_left_lm8uu_d
+  bolt_top_a: y_left_m6x18_a
+  bolt_top_b: y_left_carriage_m6x18_b
+  bolt_bot_a: y_left_m6x30_a
+  bolt_bot_b: y_left_m6x30_b
+  nuts:
+    - y_left_m6_nut_a
+    - y_left_m6_nut_b
+    - y_left_m6_nut_c
+    - y_left_m6_nut_d
+start_seq: 53
+options:
+  prefix:         batch_c1
+  target_prefix:  c1
+  rail:           y_left
+  rail_label:     "Y-Left"
+  partgroup_id:   partGroup_carriage_y_left
+  partgroup_name: "Carriage 1 (Y-Left)"
+  origin_x:       0.3728
+  origin_y:       0.55
+  origin_z:       0.0
+  start_seq:      53
+  parts_assembly_file: "assembly_d3d_y_left_bench.json"

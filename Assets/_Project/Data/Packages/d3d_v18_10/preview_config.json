@@ -7399,7 +7399,7 @@
         {
             "partId": "y_right_lm8uu_a",
             "startPosition": {
-                "x": -0.913,
+                "x": 0.8818,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -7426,9 +7426,9 @@
                 "z": 0.028
             },
             "assembledRotation": {
-                "x": 0,
+                "x": 0.0,
                 "y": 0.7071,
-                "z": 0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
@@ -7454,7 +7454,7 @@
         {
             "partId": "y_right_lm8uu_b",
             "startPosition": {
-                "x": -0.887,
+                "x": 0.9078,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -7481,9 +7481,9 @@
                 "z": 0.028
             },
             "assembledRotation": {
-                "x": 0,
+                "x": 0.0,
                 "y": 0.7071,
-                "z": 0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
@@ -7509,7 +7509,7 @@
         {
             "partId": "y_right_lm8uu_c",
             "startPosition": {
-                "x": -0.913,
+                "x": 0.8818,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -7536,9 +7536,9 @@
                 "z": -0.0279
             },
             "assembledRotation": {
-                "x": 0,
+                "x": 0.0,
                 "y": 0.7071,
-                "z": 0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
@@ -7564,7 +7564,7 @@
         {
             "partId": "y_right_lm8uu_d",
             "startPosition": {
-                "x": -0.887,
+                "x": 0.9078,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -7591,9 +7591,9 @@
                 "z": -0.0279
             },
             "assembledRotation": {
-                "x": 0,
+                "x": 0.0,
                 "y": 0.7071,
-                "z": 0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
@@ -7784,9 +7784,9 @@
         {
             "partId": "y_right_m6x18_a",
             "startPosition": {
-                "x": -0.92,
-                "y": 0.6,
-                "z": 0.018
+                "x": 0.8856,
+                "y": 0.5479,
+                "z": -0.0464
             },
             "startRotation": {
                 "x": 0.0,
@@ -7812,14 +7812,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -7839,7 +7839,7 @@
         {
             "partId": "y_right_m6_nut_a",
             "startPosition": {
-                "x": -0.96,
+                "x": 0.8873,
                 "y": 0.55,
                 "z": 0.018
             },
@@ -7867,14 +7867,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -7894,9 +7894,9 @@
         {
             "partId": "y_right_m6x18_b",
             "startPosition": {
-                "x": -0.92,
-                "y": 0.6,
-                "z": -0.018
+                "x": 0.8856,
+                "y": 0.5479,
+                "z": -0.0824
             },
             "startRotation": {
                 "x": 0.0,
@@ -7922,14 +7922,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -7949,7 +7949,7 @@
         {
             "partId": "y_right_m6_nut_b",
             "startPosition": {
-                "x": -0.96,
+                "x": 0.8873,
                 "y": 0.55,
                 "z": -0.018
             },
@@ -7977,14 +7977,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -8004,9 +8004,9 @@
         {
             "partId": "y_right_m6x30_a",
             "startPosition": {
-                "x": -0.94,
-                "y": 0.6,
-                "z": 0.018
+                "x": 0.9056,
+                "y": 0.5479,
+                "z": -0.0464
             },
             "startRotation": {
                 "x": 0.0,
@@ -8032,14 +8032,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -8059,7 +8059,7 @@
         {
             "partId": "y_right_m6_nut_c",
             "startPosition": {
-                "x": -0.98,
+                "x": 0.9073,
                 "y": 0.55,
                 "z": 0.018
             },
@@ -8087,14 +8087,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -8114,9 +8114,9 @@
         {
             "partId": "y_right_m6x30_b",
             "startPosition": {
-                "x": -0.94,
-                "y": 0.6,
-                "z": -0.018
+                "x": 0.9056,
+                "y": 0.5479,
+                "z": -0.0824
             },
             "startRotation": {
                 "x": 0.0,
@@ -8142,14 +8142,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -8169,7 +8169,7 @@
         {
             "partId": "y_right_m6_nut_d",
             "startPosition": {
-                "x": -0.98,
+                "x": 0.9073,
                 "y": 0.55,
                 "z": -0.018
             },
@@ -8197,14 +8197,14 @@
             },
             "assembledRotation": {
                 "x": -0.7071,
-                "y": 0,
-                "z": 0,
+                "y": 0.0,
+                "z": 0.0,
                 "w": 0.7071
             },
             "assembledScale": {
-                "x": 1,
-                "y": 1,
-                "z": 1
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": [],
             "splinePath": {
@@ -8656,6 +8656,50 @@
                     "label": "synthesized:holdAtEnd (part=batch_test_rod cue=poseTransition[1])",
                     "position": {
                         "x": 0.988,
+                        "y": 0.566,
+                        "z": 0.027
+                    },
+                    "rotation": {
+                        "x": 1.1921e-7,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c2_place_bolts",
+                    "label": "synthesized:holdAtEnd (part=batch_test_rod cue=poseTransition[2])",
+                    "position": {
+                        "x": 0.8222,
+                        "y": 0.757,
+                        "z": 0.027
+                    },
+                    "rotation": {
+                        "x": -0.7071,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c2_hand_tighten",
+                    "label": "synthesized:holdAtEnd (part=batch_test_rod cue=poseTransition[3])",
+                    "position": {
+                        "x": 1.288,
                         "y": 0.566,
                         "z": 0.027
                     },
@@ -18421,7 +18465,52 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": []
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c2_rod_slide_test",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_y_right cue=poseTransition[1])",
+                    "position": {
+                        "x": 1.3733,
+                        "y": -0.2719,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.7071,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c2_hand_tighten",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_y_right cue=poseTransition[3])",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": -1
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ]
         },
         {
             "partGroupId": "partGroup_carriage_z_back",

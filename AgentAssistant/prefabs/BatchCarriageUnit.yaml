@@ -1,0 +1,299 @@
+# Step Configuration Prefab — BatchCarriageUnit (Sub-slice A)
+# ===========================================================
+# One batch-carriage instance spans 7 distinct authoring layers in d3d_v18_10.
+# This prefab declares ALL 7 so a single instantiation can patch every layer
+# atomically. Sub-slice A only emits a PATCH PLAN (--patch-plan) — no writes.
+#
+# Layers covered:
+#   1. parts[]                      → assembly_d3d_<rail>_bench.json
+#   2. preview_config.partPlacements → preview_config.json
+#   3. partGroup.animationCues       → assembly_d3d_batch_carriage_build.json
+#   4. steps[]                      → assembly_d3d_batch_carriage_build.json
+#   5. targets[]                    → assembly_d3d_batch_carriage_build.json
+#   6. roll-ups (assembly.stepIds + partGroup_carriage_batch_all.{stepIds,partIds})
+#   7. global seqIndex shift policy (across all 14 assembly files)
+#
+# Constraints honored:
+#   - Float precision: 4 decimals max (Python round())
+#   - Place-uniqueness: only ONE half in any Place step's requiredPartIds
+#   - Merge-by-ID: never overwrite parts/targets, preserve sibling fields
+#   - Full-field cue cloning: animationCues lifted verbatim from c1 canonical
+#
+# Canonical reference: c1 (Y-Left) at origin (0.3728, 0.55, 0) — see
+# c1_canonical_excerpts.json for the literal blocks the patch plan
+# compares against.
+
+prefab: BatchCarriageUnit
+description: "Full 7-layer batch-carriage instance — parts + preview_config + partGroup cues + 7 steps + 4 targets + roll-ups + seqIndex shift."
+
+# ── Substitution roles ────────────────────────────────────────────────────────
+roles:
+  half_a:    { kind: part,      description: "Bearing-side carriage half (the staged anchor — never in a Place step's requiredPartIds)." }
+  half_b:    { kind: part,      description: "Clamping-side carriage half (placed in close_halves)." }
+  bearings:  { kind: part_list, count: 4, description: "LM8UU bearings (flanges outward)." }
+  bolt_top_a: { kind: part,     description: "M6×18 bolt — top hole A." }
+  bolt_top_b: { kind: part,     description: "M6×18 bolt — top hole B." }
+  bolt_bot_a: { kind: part,     description: "M6×30 bolt — bottom hole A." }
+  bolt_bot_b: { kind: part,     description: "M6×30 bolt — bottom hole B." }
+  nuts:      { kind: part_list, count: 4, description: "M6 nuts (finger-tight before drill)." }
+
+# ── Per-instance options ──────────────────────────────────────────────────────
+options:
+  prefix:           { type: string,  description: "Step ID prefix, e.g. 'batch_c1' → step_batch_c1_*" }
+  target_prefix:    { type: string,  description: "Target/partGroup short prefix, e.g. 'c1' → target_c1_*, partGroup_carriage_<rail>" }
+  rail:             { type: string,  description: "Rail token used in part IDs (y_left/y_right/z_back/z_front)" }
+  rail_label:       { type: string,  description: "Human label, e.g. 'Y-Left'" }
+  partgroup_id:     { type: string,  description: "partGroup_carriage_<rail> grouping id" }
+  partgroup_name:   { type: string,  description: "Human-readable partGroup name, e.g. 'Carriage 1 (Y-Left)'" }
+  origin_x:         { type: number,  description: "World-X anchor for this instance (matches half_a stagingPose.x)" }
+  origin_y:         { type: number,  default: 0.55 }
+  origin_z:         { type: number,  default: 0.0 }
+  start_seq:        { type: integer, description: "First sequenceIndex this instance occupies (7 consecutive)" }
+  parts_assembly_file: { type: string, description: "Assembly file holding the 14 part definitions, e.g. assembly_d3d_y_left_bench.json" }
+  build_assembly_file: { type: string, default: "assembly_d3d_batch_carriage_build.json" }
+
+# ── Derived role lists for {*{...}} expansion ─────────────────────────────────
+derived:
+  all_bolts:  { kind: part_list, combine: [bolt_top_a, bolt_top_b, bolt_bot_a, bolt_bot_b] }
+
+# ── LAYER 1: Part definitions (merged into parts_assembly_file) ───────────────
+# Position offsets are relative to (origin_x, origin_y, origin_z). Mined from
+# c1 canonical; same offsets re-used for c2/c3/c4 by changing origin only.
+partDefinitions:
+  half_a:
+    name_template:   "{rail_label} Carriage Half A (bearing side)"
+    function_template: "Open carriage half with bearing pockets — receives 4 LM8UU bearings."
+    category: custom
+    material: "Printed carriage half"
+    quantity: 1
+    assetRef: "y_left_carriage_half_a.glb"
+    partGroupIds: ["{partgroup_id}"]
+    stagingPose:
+      position_offset: { x: 0.0,    y: 0.0, z: 0.0 }
+      rotation:        { x: -0.5,   y: 0.5, z: -0.5, w: 0.5 }
+      scale:           { x: 1.0,    y: 1.0, z: 1.0 }
+      color:           { r: 0.7,    g: 0.7, b: 0.7, a: 1.0 }
+  half_b:
+    name_template:   "{rail_label} Carriage Half B (clamping side)"
+    function_template: "Clamping carriage half — bolts onto half A to capture bearings."
+    category: custom
+    material: "Printed carriage half"
+    quantity: 1
+    assetRef: "y_left_carriage_half_b.glb"
+    partGroupIds: ["{partgroup_id}"]
+    stagingPose:
+      position_offset: { x: 0.15,   y: 0.0, z: 0.0 }
+      rotation:        { x: 0.5,    y: 0.5, z: -0.5, w: -0.5 }
+      scale:           { x: 1.0,    y: 1.0, z: 1.0 }
+      color:           { r: 0.7,    g: 0.7, b: 0.7, a: 1.0 }
+  # bearings/bolts/nuts: positions intentionally LEFT TODO for sub-slice A.
+  # The diff against c1 will surface exact required offsets for each.
+  bearings:
+    kind: part_list
+    count: 4
+    name_template: "{rail_label} LM8UU Bearing"
+    category: linear_bearing
+    material: stainless
+    assetRef: "lm8uu.glb"
+    partGroupIds: ["{partgroup_id}"]
+    placements_offset:
+      - { x: 0.21, y: 0.01, z:  0.015 }   # placeholder — will diff
+      - { x: 0.24, y: 0.01, z:  0.015 }
+      - { x: 0.21, y: 0.01, z: -0.015 }
+      - { x: 0.24, y: 0.01, z: -0.015 }
+  bolt_top_a:  { name_template: "{rail_label} M6x18 Bolt A", category: fastener, material: Steel, quantity: 1, assetRef: "d3d_axis_m6x18_bolt.glb", partGroupIds: ["{partgroup_id}"], stagingPose: { position_offset: { x: 0.165, y: -0.0021, z:  0.046 }, rotation: { x: 0, y: 0, z: 0, w: 1 }, scale: { x: 1, y: 1, z: 1 }, color: { r: 0.8, g: 0.8, b: 0.8, a: 1.0 } } }
+  bolt_top_b:  { name_template: "{rail_label} M6x18 Bolt B", category: fastener, material: Steel, quantity: 1, assetRef: "d3d_axis_m6x18_bolt.glb", partGroupIds: ["{partgroup_id}"], stagingPose: { position_offset: { x: 0.195, y: -0.0021, z:  0.046 }, rotation: { x: 0, y: 0, z: 0, w: 1 }, scale: { x: 1, y: 1, z: 1 }, color: { r: 0.8, g: 0.8, b: 0.8, a: 1.0 } } }
+  bolt_bot_a:  { name_template: "{rail_label} M6x30 Bolt A", category: fastener, material: Steel, quantity: 1, assetRef: "d3d_axis_m6x18_bolt.glb", partGroupIds: ["{partgroup_id}"], stagingPose: { position_offset: { x: 0.2328, y: -0.0021, z: -0.046 }, rotation: { x: 0, y: 0, z: 0, w: 1 }, scale: { x: 1, y: 1, z: 1 }, color: { r: 0.8, g: 0.8, b: 0.8, a: 1.0 } } }
+  bolt_bot_b:  { name_template: "{rail_label} M6x30 Bolt B", category: fastener, material: Steel, quantity: 1, assetRef: "d3d_axis_m6x18_bolt.glb", partGroupIds: ["{partgroup_id}"], stagingPose: { position_offset: { x: 0.2628, y: -0.0021, z: -0.046 }, rotation: { x: 0, y: 0, z: 0, w: 1 }, scale: { x: 1, y: 1, z: 1 }, color: { r: 0.8, g: 0.8, b: 0.8, a: 1.0 } } }
+  nuts:
+    kind: part_list
+    count: 4
+    name_template: "{rail_label} M6 Nut"
+    category: fastener
+    material: Steel
+    quantity: 1
+    assetRef: "d3d_axis_m6_nut.glb"
+    partGroupIds: ["{partgroup_id}"]
+    placements_offset:
+      - { x: 0.165, y: -0.04, z:  0.046 }
+      - { x: 0.195, y: -0.04, z:  0.046 }
+      - { x: 0.2328, y: -0.04, z: -0.046 }
+      - { x: 0.2628, y: -0.04, z: -0.046 }
+
+# ── LAYER 2: preview_config partPlacements (one per part) ─────────────────────
+# Per-part: startPosition (= stagingPose.position) + assembledPosition/Rotation
+# baked at load by MachinePackageNormalizer.BakeStagingPoses(), but
+# preview_config.json is the static cache. Sub-slice A emits placeholders;
+# the diff identifies the exact assembled poses TTAW captured for c1.
+previewConfigPolicy:
+  partPlacementShape:
+    fields_required: [partId, startPosition, startRotation, startScale, color, assembledPosition, assembledRotation, assembledScale, stepPoses, splinePath]
+    splinePath_default: { radius: 0.0, segments: 8, metallic: 0.0, smoothness: 0.0, color: { r: 0, g: 0, b: 0, a: 0 }, knots: [] }
+    stepPoses_default: []
+  note: "assembledPosition/Rotation are TTAW-authored; the patch plan flags any drift between stagingPose-derived startPosition and the on-disk preview_config entry."
+
+# ── LAYER 3: partGroup with full-field animationCues (verbatim from c1) ──────
+# CRITICAL: these cues are byte-cloned from c1 canonical in
+# AgentAssistant/prefabs/c1_canonical_excerpts.json. No trimming. Unity
+# [Serializable] defaults can be load-bearing — the c2 rotation-cue mystery
+# (data byte-identical, runtime treated differently) is the canary for
+# under-trimming. The patch plan injects the literal block; trimming is
+# rejected even if it would shrink the JSON.
+partGroupDefinition:
+  id: "{partgroup_id}"
+  name: "{partgroup_name}"
+  assemblyId: "assembly_d3d_batch_carriage_build"
+  animationCues_source: "c1_canonical_excerpts.json::partGroup_y_left.animationCues"
+  animationCues_substitutions:
+    # When emitting for non-c1 instances, every occurrence of these tokens
+    # in the cloned cues is rewritten:
+    "step_batch_c1_": "step_{prefix}_"
+    "partGroup_carriage_y_left": "{partgroup_id}"
+
+# ── LAYER 4: 7 step definitions ───────────────────────────────────────────────
+# c1 reality: place_bearings(53), close_halves(54), shake_test(55),
+# rod_slide_test(56), place_bolts(57), hand_tighten(58), tighten(59).
+# Sub-slice A emits the SHAPE; the patch plan reuses c1 step bodies via
+# token substitution and surfaces any field present in c1 but missing here.
+steps:
+  - id_suffix: place_bearings
+    family: Place
+    name: "Carriage ({rail_label}): place 4 LM8UU bearings"
+    partGroupId: "{partgroup_id}"
+    instructionText: "Place four LM8UU linear bearings into one {rail_label} carriage half-piece. Flanges must face outward — away from each other — so they sit flush in the lip of each pocket."
+    requiredPartIds: ["*{bearings}"]
+    taskOrder_kind: part_list_with_staging
+    workingOrientation_zero: true
+
+  - id_suffix: close_halves
+    family: Place
+    name: "Carriage ({rail_label}): close the second carriage half"
+    partGroupId: "{partgroup_id}"
+    instructionText: "Place the second {rail_label} carriage half onto the first, trapping the 4 bearings in their pockets. The small ribbed belt hole should sit directly beside the large smooth belt hole."
+    requiredPartIds: ["{half_a}"]    # ← place-uniqueness: ONE half only
+    taskOrder_kind: part_single_half_a
+
+  - id_suffix: shake_test
+    family: Confirm
+    name: "Carriage ({rail_label}): shake test"
+    partGroupId: "{partgroup_id}"
+    guidance:
+      instructionText: "Hold both {rail_label} carriage halves firmly together and shake the assembly."
+      whyItMattersText: "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2-3 seconds."
+    validation:
+      successCriteria: "No audible rattle or tactile movement from the bearings."
+      failureCriteria: "Bearings click, rattle, or shift inside the halves when shaken."
+    feedback:
+      successMessage: "Bearings are snug. Proceed to the rod slide test."
+      failureMessage: "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings."
+    visualPartIds: ["{partgroup_id}"]
+    taskOrder_kind: partgroup_then_confirm_action
+
+  - id_suffix: rod_slide_test
+    family: Confirm
+    name: "Carriage ({rail_label}): rod slide test"
+    partGroupId: "{partgroup_id}"
+    guidance:
+      instructionText: "Insert a smooth guide rod through the {rail_label} carriage and hold it vertical."
+      whyItMattersText: "Slight resistance is correct — the rod should slide or drop through with a little drag."
+    visualPartIds: ["batch_test_rod", "{partgroup_id}"]
+    taskOrder_kind: rod_then_partgroup_then_confirm_action_awaitCues
+
+  - id_suffix: place_bolts
+    family: Place
+    name: "Carriage ({rail_label}): place bolts and thread nuts"
+    partGroupId: "{partgroup_id}"
+    instructionText: "Insert 2× M6x18 bolts into the two top holes and 2× M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight."
+    requiredPartIds: ["*{all_bolts}", "*{nuts}"]
+    visualPartIds: ["{partgroup_id}", "batch_test_rod"]
+    taskOrder_kind: visual_then_bolts_then_nuts
+
+  - id_suffix: hand_tighten
+    family: Use
+    name: "Carriage ({rail_label}): hand-tighten — prep for drill"
+    partGroupId: "{partgroup_id}"
+    instructionText: "Thread and finger-tighten all 4 bolts on the {rail_label} carriage. Seat each bolt snug by hand before moving to the power drill."
+    relevantToolIds: ["tool_hand"]
+    targetIds: ["target_{target_prefix}_bolt_tighten_a", "target_{target_prefix}_bolt_tighten_b", "target_{target_prefix}_bolt_tighten_c", "target_{target_prefix}_bolt_tighten_d"]
+    requiredToolActions_template: "hand_tighten_4x"   # tool_hand × 4 actions, profile: Torque (full-field via interaction+previewConfig defaults)
+    taskOrder_kind: 4_toolActions_with_endTransform
+
+  - id_suffix: tighten
+    family: Use
+    name: "Carriage ({rail_label}): drill-tighten"
+    partGroupId: "{partgroup_id}"
+    instructionText: "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque."
+    relevantToolIds: ["tool_power_drill"]
+    targetIds: ["target_{target_prefix}_bolt_tighten_a", "target_{target_prefix}_bolt_tighten_b", "target_{target_prefix}_bolt_tighten_c", "target_{target_prefix}_bolt_tighten_d"]
+    requiredToolActions_template: "drill_tighten_4x"
+    taskOrder_kind: 4_toolActions_with_endTransform
+
+# ── LAYER 5: 4 anchor-resolved tighten targets ────────────────────────────────
+targets:
+  - id_suffix: bolt_tighten_a
+    name: "Carriage ({rail_label}) — M6x18 bolt A tighten point"
+    associatedPart: bolt_top_a
+    anchorRef:      bolt_top_a
+    tags: [d3d, "carriage_{rail}", tighten]
+    weldAxis: { x: 0, y: 0, z: 0 }
+    useToolActionRotation: true
+    toolActionRotation: { x: 0, y: 90, z: 270 }
+  - id_suffix: bolt_tighten_b
+    name: "Carriage ({rail_label}) — M6 bolt B tighten point"
+    associatedPart: bolt_top_b
+    anchorRef:      bolt_top_b
+    tags: [d3d, "carriage_{rail}", tighten]
+    weldAxis: { x: 0, y: 0, z: 0 }
+    useToolActionRotation: true
+    toolActionRotation: { x: 0, y: 90, z: 270 }
+  - id_suffix: bolt_tighten_c
+    name: "Carriage ({rail_label}) — M6 bolt C tighten point"
+    associatedPart: bolt_bot_a
+    anchorRef:      bolt_bot_a
+    tags: [d3d, "carriage_{rail}", tighten]
+    weldAxis: { x: 0, y: 0, z: 0 }
+    useToolActionRotation: true
+    toolActionRotation: { x: 0, y: 90, z: 270 }
+  - id_suffix: bolt_tighten_d
+    name: "Carriage ({rail_label}) — M6 bolt D tighten point"
+    associatedPart: bolt_bot_b
+    anchorRef:      bolt_bot_b
+    tags: [d3d, "carriage_{rail}", tighten]
+    weldAxis: { x: 0, y: 0, z: 0 }
+    useToolActionRotation: true
+    toolActionRotation: { x: 0, y: 90, z: 270 }
+
+# ── LAYER 6: roll-up references ───────────────────────────────────────────────
+rollups:
+  assembly_stepIds_append:        # assemblies[id=assembly_d3d_batch_carriage_build].stepIds
+    - "step_{prefix}_place_bearings"
+    - "step_{prefix}_shake_test"
+    - "step_{prefix}_rod_slide_test"
+    - "step_{prefix}_close_halves"
+    - "step_{prefix}_place_bolts"
+    - "step_{prefix}_hand_tighten"
+    - "step_{prefix}_tighten"
+  partGroup_batch_all_partIds_append:   # partGroups[id=partGroup_carriage_batch_all].partIds
+    - "{half_a}"
+    - "{half_b}"
+    - "*{bearings}"
+    - "{bolt_top_a}"
+    - "{bolt_top_b}"
+    - "{bolt_bot_a}"
+    - "{bolt_bot_b}"
+    - "*{nuts}"
+  partGroup_batch_all_stepIds_append: ${assembly_stepIds_append}
+  partGroup_batch_all_memberPartGroupIds_append:
+    - "{partgroup_id}"
+
+# ── LAYER 7: global seqIndex shift policy ────────────────────────────────────
+# Inserting these 7 steps at start_seq requires shifting seqIndex >= start_seq
+# by +7 across ALL 14 assembly files (or more, depending on insertion point).
+# The patch plan computes the exact shift map and emits one
+# replace-region per file. package_health.py --fix-seqindex is the safety net
+# but the plan must agree byte-for-byte before runtime asks for confirmation.
+seqIndexPolicy:
+  step_count: 7
+  shift_rule: "All steps with sequenceIndex >= start_seq in ANY assembly file get +7 (or +<step_count>)."
+  package_files_scanned: "Assets/_Project/Data/Packages/<packageId>/assemblies/*.json"
+  validator: "tools/package_health.py <pkgId> --fix-seqindex"
