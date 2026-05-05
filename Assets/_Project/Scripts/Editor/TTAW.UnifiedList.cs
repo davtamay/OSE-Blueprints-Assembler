@@ -140,7 +140,7 @@ namespace OSE.Editor
             try
             {
                 OSE.Content.Loading.MachinePackageNormalizer.Normalize(_pkg);
-                Debug.Log($"[TTAW.Prefabs] Reloaded prefab instances against current YAML mtimes.");
+                OseLog.Info($"[TTAW.Prefabs] Reloaded prefab instances against current YAML mtimes.");
                 BuildStepOptions();
                 BuildTargetList();
                 BuildPartList();
@@ -150,7 +150,7 @@ namespace OSE.Editor
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[TTAW.Prefabs] Reload failed: {ex.Message}");
+                OseLog.Error($"[TTAW.Prefabs] Reload failed: {ex.Message}");
             }
         }
 
@@ -216,7 +216,7 @@ namespace OSE.Editor
 
             if (virtualSteps.Count + virtualParts.Count + virtualGroups.Count == 0)
             {
-                Debug.LogWarning($"[TTAW.Prefabs] Bake: no virtual entities found for instance '{instanceId}'.");
+                OseLog.Warn($"[TTAW.Prefabs] Bake: no virtual entities found for instance '{instanceId}'.");
                 return;
             }
 
@@ -234,7 +234,7 @@ namespace OSE.Editor
             foreach (var s in virtualSteps)
             {
                 string fp = FileFor(s.assemblyId) ?? instanceFile;
-                if (string.IsNullOrEmpty(fp)) { Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for step '{s.id}'; skipping."); continue; }
+                if (string.IsNullOrEmpty(fp)) { OseLog.Warn($"[TTAW.Prefabs] Bake: no file resolved for step '{s.id}'; skipping."); continue; }
                 if (!stepsByFile.TryGetValue(fp, out var b)) stepsByFile[fp] = b = new List<StepDefinition>();
                 b.Add(s);
             }
@@ -242,7 +242,7 @@ namespace OSE.Editor
             foreach (var p in virtualParts)
             {
                 string fp = instanceFile;
-                if (string.IsNullOrEmpty(fp)) { Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for part '{p.id}'; skipping."); continue; }
+                if (string.IsNullOrEmpty(fp)) { OseLog.Warn($"[TTAW.Prefabs] Bake: no file resolved for part '{p.id}'; skipping."); continue; }
                 if (!partsByFile.TryGetValue(fp, out var b)) partsByFile[fp] = b = new List<PartDefinition>();
                 b.Add(p);
             }
@@ -250,7 +250,7 @@ namespace OSE.Editor
             foreach (var g in virtualGroups)
             {
                 string fp = FileFor(g.assemblyId) ?? instanceFile;
-                if (string.IsNullOrEmpty(fp)) { Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for partGroup '{g.id}'; skipping."); continue; }
+                if (string.IsNullOrEmpty(fp)) { OseLog.Warn($"[TTAW.Prefabs] Bake: no file resolved for partGroup '{g.id}'; skipping."); continue; }
                 if (!groupsByFile.TryGetValue(fp, out var b)) groupsByFile[fp] = b = new List<PartGroupDefinition>();
                 b.Add(g);
             }
@@ -263,7 +263,7 @@ namespace OSE.Editor
                 foreach (var p in kv.Value)
                 {
                     try { PackageJsonUtils.InsertPart(kv.Key, p); insertedParts++; }
-                    catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Bake: InsertPart failed for '{p.id}' in '{kv.Key}': {ex.Message}"); }
+                    catch (System.Exception ex) { OseLog.Error($"[TTAW.Prefabs] Bake: InsertPart failed for '{p.id}' in '{kv.Key}': {ex.Message}"); }
                 }
             }
             foreach (var kv in groupsByFile)
@@ -271,7 +271,7 @@ namespace OSE.Editor
                 foreach (var g in kv.Value)
                 {
                     try { PackageJsonUtils.InsertPartGroup(kv.Key, g); insertedGroups++; }
-                    catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Bake: InsertPartGroup failed for '{g.id}' in '{kv.Key}': {ex.Message}"); }
+                    catch (System.Exception ex) { OseLog.Error($"[TTAW.Prefabs] Bake: InsertPartGroup failed for '{g.id}' in '{kv.Key}': {ex.Message}"); }
                 }
             }
             foreach (var kv in stepsByFile)
@@ -279,7 +279,7 @@ namespace OSE.Editor
                 foreach (var s in kv.Value)
                 {
                     try { PackageJsonUtils.InsertStep(kv.Key, s); insertedSteps++; }
-                    catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Bake: InsertStep failed for '{s.id}' in '{kv.Key}': {ex.Message}"); }
+                    catch (System.Exception ex) { OseLog.Error($"[TTAW.Prefabs] Bake: InsertStep failed for '{s.id}' in '{kv.Key}': {ex.Message}"); }
                 }
             }
 
@@ -315,7 +315,7 @@ namespace OSE.Editor
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[TTAW.Prefabs] Bake: trim prefabInstances in '{fp}' threw: {ex.Message}");
+                    OseLog.Error($"[TTAW.Prefabs] Bake: trim prefabInstances in '{fp}' threw: {ex.Message}");
                 }
             }
 
@@ -333,11 +333,11 @@ namespace OSE.Editor
                 {
                     try { PackageJsonUtils.WritePreviewConfig(previewPath, _pkg.previewConfig); }
                     catch (System.Exception ex)
-                    { Debug.LogError($"[TTAW.Prefabs] Bake: WritePreviewConfig failed: {ex.Message}"); }
+                    { OseLog.Error($"[TTAW.Prefabs] Bake: WritePreviewConfig failed: {ex.Message}"); }
                 }
             }
 
-            Debug.Log($"[TTAW.Prefabs] Baked instance '{instanceId}': " +
+            OseLog.Info($"[TTAW.Prefabs] Baked instance '{instanceId}': " +
                       $"{insertedParts} part(s), {insertedGroups} group(s), {insertedSteps} step(s) across {touchedFiles.Count} file(s).");
 
             AssetDatabase.Refresh();
@@ -354,9 +354,9 @@ namespace OSE.Editor
         {
             if (string.IsNullOrEmpty(instanceId)) return;
             if (DiscardPrefabInstancePublic(instanceId))
-                Debug.Log($"[TTAW.Prefabs] Discarded prefab instance '{instanceId}' from in-memory state. Save to persist.");
+                OseLog.Info($"[TTAW.Prefabs] Discarded prefab instance '{instanceId}' from in-memory state. Save to persist.");
             else
-                Debug.LogWarning($"[TTAW.Prefabs] Discard: instance '{instanceId}' not found.");
+                OseLog.Warn($"[TTAW.Prefabs] Discard: instance '{instanceId}' not found.");
         }
 
         /// <summary>
@@ -572,13 +572,7 @@ namespace OSE.Editor
             // hint pointing right; when hidden the canvas renders the rich
             // body inline so authors who collapsed the inspector still get
             // the full detail surface. Both paths share DrawTaskInspectorBody.
-            if (_inspectorVisible)
-            {
-                EditorGUILayout.Space(4);
-                EditorGUILayout.LabelField("  Selection details are in the Inspector pane →",
-                    EditorStyles.centeredGreyMiniLabel);
-            }
-            else
+            if (!_inspectorVisible)
             {
                 DrawTaskInspectorBody(step, order);
             }
@@ -4176,6 +4170,16 @@ namespace OSE.Editor
                         {
                             if (gIdx >= 0 && _groups != null && gIdx < _groups.Length)
                                 DrawGroupPoseFields(ref _groups[gIdx], step);
+                        });
+
+                        // PREVIEW — multi-part 3D widget showing every member at the
+                        // active pose mode (Start or Assembled). Same toolbar / orbit /
+                        // grid as the per-part preview so authors get parity.
+                        DrawCard("PREVIEW", "group/preview", CardAccentNeutral,
+                            defaultExpanded: true, count: null, body: () =>
+                        {
+                            if (gIdx >= 0 && _groups != null && gIdx < _groups.Length)
+                                DrawGroupModelPreview(ref _groups[gIdx]);
                         });
 
                         // ANIMATION & EFFECT CUES — own rich header, not card-

@@ -788,7 +788,11 @@ namespace OSE.UI.Root
 
             _pickerController ??= new AssemblyPickerController(() => _rootElement);
 
-            int completedSteps = session.SessionState?.CompletedStepCount ?? 0;
+            // Use derived count keyed by the current viewing step. The persisted
+            // SessionState.CompletedStepCount has been observed inflated past total
+            // step count (see CompletedStepResolver) and would mis-color picker rows.
+            int completedSteps = CompletedStepResolver.CountCompletedStepsBefore(
+                session.Package, session.SessionState?.CurrentStepId);
             _pickerController.Show(session.Package, completedSteps);
         }
 

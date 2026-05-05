@@ -239,7 +239,7 @@ namespace OSE.Editor
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning($"[TTAW.Prefabs] Failed to list '{dir}': {ex.Message}");
+                OseLog.Warn($"[TTAW.Prefabs] Failed to list '{dir}': {ex.Message}");
                 return System.Array.Empty<string>();
             }
         }
@@ -298,7 +298,7 @@ namespace OSE.Editor
             if (instance == null || _pkg == null || string.IsNullOrEmpty(_pkgId)) return 0;
             if (string.IsNullOrEmpty(instance.prefabId) || string.IsNullOrEmpty(instance.instanceId))
             {
-                Debug.LogError("[TTAW.Prefabs] PrefabInstance missing prefabId or instanceId.");
+                OseLog.Error("[TTAW.Prefabs] PrefabInstance missing prefabId or instanceId.");
                 return 0;
             }
 
@@ -314,7 +314,7 @@ namespace OSE.Editor
             }
             if (string.IsNullOrEmpty(instance.assemblyId))
             {
-                Debug.LogError($"[TTAW.Prefabs] PrefabInstance '{instance.instanceId}' has no assemblyId; aborting merge.");
+                OseLog.Error($"[TTAW.Prefabs] PrefabInstance '{instance.instanceId}' has no assemblyId; aborting merge.");
                 return 0;
             }
 
@@ -334,7 +334,7 @@ namespace OSE.Editor
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[TTAW.Prefabs] Normalize after merge threw: {ex.Message}");
+                OseLog.Error($"[TTAW.Prefabs] Normalize after merge threw: {ex.Message}");
             }
 
             _dirtyPrefabInstanceIds.Add(instance.instanceId);
@@ -380,7 +380,7 @@ namespace OSE.Editor
             _pkg.prefabInstances = trimmed;
 
             try { MachinePackageNormalizer.Normalize(_pkg); }
-            catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Normalize after discard threw: {ex.Message}"); }
+            catch (System.Exception ex) { OseLog.Error($"[TTAW.Prefabs] Normalize after discard threw: {ex.Message}"); }
 
             _dirtyPrefabInstanceIds.Add(instanceId);
 
@@ -397,7 +397,7 @@ namespace OSE.Editor
         {
             if (!Directory.Exists(dir))
             {
-                Debug.LogWarning($"[TTAW.Prefabs] Folder does not exist: {dir}");
+                OseLog.Warn($"[TTAW.Prefabs] Folder does not exist: {dir}");
                 return;
             }
             EditorUtility.RevealInFinder(dir);

@@ -1,0 +1,13 @@
+# Temp input written by TTAW PrefabWizard at 2026-04-26 15:42:38
+prefab: CarriageBuild
+prefix: carriage_y_right
+start_seq: 65
+assembly: assembly_d3d_batch_carriage_build
+subassembly: subassembly_carriage_y_right
+parts:
+  half_a: y_right_carriage_half_a
+  half_b: y_right_carriage_half_b
+  bearings: [, , , ]
+  bolts_top: [, ]
+  bolts_bot: [, ]
+  nuts: [, , , ]

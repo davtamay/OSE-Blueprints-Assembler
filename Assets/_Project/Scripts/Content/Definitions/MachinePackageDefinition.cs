@@ -57,6 +57,16 @@ namespace OSE.Content
         /// </summary>
         [NonSerialized] public OSE.Content.Loading.PoseTable poseTable;
 
+        /// <summary>
+        /// Pre-baked per-partGroup lifecycle (firstBuiltSeq, lastTouchedSeq,
+        /// touchedSeqs[]). Populated by
+        /// <see cref="Loading.MachinePackageNormalizer.BakePartGroupLifecycle"/>.
+        /// Both TTAW and the runtime overlay query this via
+        /// <see cref="Loading.PartGroupLifecycleResolver"/> instead of rolling
+        /// their own per-step filter. Never persisted.
+        /// </summary>
+        [NonSerialized] public Dictionary<string, OSE.Content.Loading.PartGroupLifecycle> partGroupLifecycleByGroupId;
+
         public AssemblyDefinition[] GetAssemblies() => assemblies ?? Array.Empty<AssemblyDefinition>();
 
         public PartGroupDefinition[] GetPartGroups() => partGroups ?? Array.Empty<PartGroupDefinition>();

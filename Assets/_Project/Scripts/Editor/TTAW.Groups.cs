@@ -580,6 +580,21 @@ namespace OSE.Editor
                 }
             }
 
+            // Frame Members — fits the SceneView camera to the bounds of the
+            // selected group's member parts at their CURRENT live world poses.
+            // Mirrors the F-key target framing in OnSceneGUI so authors can
+            // jump straight to the group they're inspecting without manually
+            // orbiting. Uses live renderer bounds (not authored placement),
+            // so the toggle above (Start vs Assembled) drives what gets framed:
+            // toggle changes member positions → Frame fits the new layout.
+            if (GUILayout.Button(new GUIContent("Frame Members",
+                    "Fit the SceneView camera to all member parts at their current poses. " +
+                    "Use the Start/Assembled toggle to switch which layout is framed."),
+                    GUILayout.Width(110), GUILayout.Height(18)))
+            {
+                FrameGroupMembersInSceneView(ref g);
+            }
+
             EditorGUILayout.EndHorizontal();
 
             // Synthesized-pose pills (After cue N / Before cue N) — mirror
@@ -801,6 +816,444 @@ namespace OSE.Editor
             }
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Renders the group's member parts in an isolated 3D preview widget,
+        /// mirroring <c>DrawPartModelPreview</c> for a single part. Each member
+        /// is positioned at its <c>placement.startPosition</c> (Start mode) or
+        /// <c>placement.assembledPosition</c> (Assembled mode) so the author
+        /// sees the same layout the SceneView shows when the toggle flips —
+        /// just framed and isolated from the rest of the assembly.
+        ///
+        /// <para>The renderer is rebuilt when the selected group changes OR
+        /// the pose-mode toggle changes; otherwise it's drawn directly. Orbit
+        /// and zoom state persist between rebuilds via the renderer instance,
+        /// but selection swaps reset the camera so each new group lands at a
+        /// clean default angle.</para>
+        /// </summary>
+        private void DrawGroupModelPreview(ref GroupEditState g)
+        {
+            if (g.def == null || string.IsNullOrEmpty(_pkgId)) return;
+
+            int currentMode = _editingGroupPoseMode;
+            // Cue-mode previews depend on the active step's seq (Before
+            // cue → curStep.seq, After cue → next step's seq), so navigating
+            // to a different step while staying in cue mode must also
+            // rebuild — _groupPreviewPoseMode alone won't change. Stamp the
+            // step filter index into the rebuild key so the preview tracks.
+            int currentStepKey = _stepFilterIdx;
+            bool needsRebuild = _groupPreview == null
+                                || _groupPreviewId != g.def.id
+                                || _groupPreviewPoseMode != currentMode
+                                || _groupPreviewStepKey != currentStepKey;
+
+            if (needsRebuild)
+            {
+                bool selectionChanged = _groupPreviewId != g.def.id;
+                if (selectionChanged && _groupPreview != null)
+                {
+                    _groupPreview.Dispose();
+                    _groupPreview = null;
+                }
+
+                var members = CollectGroupMemberPosesForPreview(ref g, currentMode);
+                if (_groupPreview == null)
+                {
+                    _groupPreview = new PartGroupModelPreviewRenderer(members);
+                }
+                else
+                {
+                    _groupPreview.Rebuild(members);
+                }
+
+                _groupPreviewId = g.def.id;
+                _groupPreviewPoseMode = currentMode;
+                _groupPreviewStepKey  = currentStepKey;
+            }
+
+            if (_groupPreview == null) return;
+
+            // ── Header row: label + member count + unit toggle ───────────────
+            // memberCount uses the EFFECTIVE roster — authored partIds when
+            // present, otherwise the union of step.requiredPartIds across the
+            // group's stepIds. This matches the preview list above so a
+            // group whose parts only declare membership through step refs
+            // (frame_side groups in d3d_v18_10) doesn't read "0 members".
+            var effectiveIds = ResolveEffectivePartGroupMemberIds(g.def);
+            int memberCount = effectiveIds.Count;
+            bool memberCountIsInferred = (g.def.partIds?.Length ?? 0) == 0 && memberCount > 0;
+            string memberLabel = memberCountIsInferred
+                ? $"Group Preview ({memberCount} inferred member{(memberCount == 1 ? "" : "s")})"
+                : $"Group Preview ({memberCount} member{(memberCount == 1 ? "" : "s")})";
+            bool useMm = EditorPrefs.GetString(PrefDimUnit, "mm") == "mm";
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(new GUIContent(memberLabel,
+                memberCountIsInferred
+                    ? "No parts claim membership via partGroupIds; members were inferred from the group's stepIds → step.requiredPartIds. Authoring partIds (or part.partGroupIds) makes this canonical."
+                    : "Members declared on the partGroup (or via part.partGroupIds claims, derived at load)."),
+                EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Toggle(useMm,  "mm", EditorStyles.miniButtonLeft,  GUILayout.Width(32)))
+                { if (!useMm) { EditorPrefs.SetString(PrefDimUnit, "mm"); Repaint(); } }
+            if (GUILayout.Toggle(!useMm, "in", EditorStyles.miniButtonRight, GUILayout.Width(32)))
+                { if (useMm) { EditorPrefs.SetString(PrefDimUnit, "in"); Repaint(); } }
+            EditorGUILayout.EndHorizontal();
+
+            // ── 3D preview rect ──────────────────────────────────────────────
+            const float PreviewHeight = 240f;
+            Rect previewRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
+                GUILayout.Height(PreviewHeight), GUILayout.ExpandWidth(true));
+
+            var ev = Event.current;
+            if (ev.type == EventType.MouseDrag && previewRect.Contains(ev.mousePosition))
+            {
+                _groupPreview.Orbit(ev.delta);
+                ev.Use();
+                Repaint();
+            }
+
+            const string PrefShowBounds    = "OSE.PartPreview.ShowBounds";
+            const string PrefShowGridTicks = "OSE.PartPreview.ShowGridTicks";
+            bool showBounds    = EditorPrefs.GetBool(PrefShowBounds,    true);
+            bool showGridTicks = EditorPrefs.GetBool(PrefShowGridTicks, true);
+
+            var drawOpts = new PartGroupModelPreviewRenderer.DrawOptions
+            {
+                useMm         = useMm,
+                showBounds    = showBounds,
+                showGridTicks = showGridTicks,
+            };
+            bool needsRepaint = _groupPreview.Draw(previewRect, drawOpts);
+            if (needsRepaint) Repaint();
+
+            // Floating toolbar overlay — same as part preview so the prefs
+            // ride together (toggling either widget syncs the other).
+            var toolbarStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontSize  = 10,
+                alignment = TextAnchor.MiddleCenter,
+                padding   = new RectOffset(4, 4, 2, 2),
+            };
+            float btnW = 62f, btnH = 18f, pad = 4f;
+            var boundsRect = new Rect(previewRect.xMax - btnW - pad, previewRect.y + pad, btnW, btnH);
+            var ticksRect  = new Rect(previewRect.xMax - btnW - pad, boundsRect.yMax + 2f, btnW, btnH);
+
+            bool newShowBounds = GUI.Toggle(boundsRect, showBounds,
+                new GUIContent("⧉ Bounds", "Show/hide the wireframe bounding box and L×W×H edge labels."),
+                toolbarStyle);
+            if (newShowBounds != showBounds) { EditorPrefs.SetBool(PrefShowBounds, newShowBounds); Repaint(); }
+
+            bool newShowTicks = GUI.Toggle(ticksRect, showGridTicks,
+                new GUIContent("⌗ Ticks", "Show/hide distance labels on the major grid lines."),
+                toolbarStyle);
+            if (newShowTicks != showGridTicks) { EditorPrefs.SetBool(PrefShowGridTicks, newShowTicks); Repaint(); }
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Reset View", EditorStyles.miniButton, GUILayout.Width(80)))
+            {
+                _groupPreview.ResetView();
+                Repaint();
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4);
+        }
+
+        /// <summary>
+        /// Builds the per-member pose list the preview renderer needs.
+        /// Uses each part's <c>placement.startPosition</c> when
+        /// <paramref name="poseMode"/> is <c>PoseModeStart</c>, otherwise
+        /// <c>assembledPosition</c>. Falls back to identity transforms when no
+        /// placement is authored — the part still renders at the origin so the
+        /// author can see the GLB silhouette.
+        /// </summary>
+        private List<PartGroupModelPreviewRenderer.MemberPose> CollectGroupMemberPosesForPreview(
+            ref GroupEditState g, int poseMode)
+        {
+            var list = new List<PartGroupModelPreviewRenderer.MemberPose>();
+            if (g.def == null || _pkg?.parts == null) return list;
+
+            // Use the effective roster (authored partIds OR step-derived
+            // fallback) so the preview shows members for groups whose
+            // membership is implicit in their stepIds — see
+            // ResolveEffectivePartGroupMemberIds for the resolution rules.
+            var partIds = ResolveEffectivePartGroupMemberIds(g.def);
+            if (partIds.Count == 0) return list;
+
+            string partsFolder = $"Assets/_Project/Data/Packages/{_pkgId}/assets/parts/";
+
+            // Resolve cue-mode and start-mode seqs once. Mirrors what
+            // SyncAllGroupRootsToActivePose does for the live SceneView so
+            // the 3D preview widget agrees with the scene visual:
+            //   • Start (no startRigidBody) → poseTable at curStep.seq
+            //   • Assembled                 → placement.assembledPosition
+            //                                  (rigidBody composition handled below)
+            //   • Before-cue                → curStep.sequenceIndex
+            //   • After-cue                 → next step's sequenceIndex
+            bool useAssembled  = (poseMode == PoseModeAssembled);
+            bool isStart       = (poseMode == PoseModeStart);
+            bool isBeforeCue   = poseMode <= PoseModeBeforeCueBase
+                                 && poseMode > PoseModeAfterCueBase;
+            bool isAfterCue    = poseMode <= PoseModeAfterCueBase
+                                 && poseMode > PoseModeAfterCueBase - 100;
+
+            StepDefinition curStep = _sceneBuildStepActive && _stepIds != null
+                                      && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+
+            // Start-mode rigid-body composition: scene only applies
+            // startRigidBody when the active step actually PLACES this
+            // group (applyPoseOverride). Outside that case the scene
+            // leaves members at the spawner's poseTable-driven poses, so
+            // the widget must too — matching the same applyPoseOverride
+            // gate at lines 211-213 / 358-380 of SyncAllGroupRootsToActivePose.
+            bool currentStepPlacesThisGroup = curStep != null && g.def != null
+                && string.Equals(curStep.requiredPartGroupId, g.def.id, StringComparison.Ordinal);
+            var startRb = (isStart && currentStepPlacesThisGroup)
+                ? g.def?.startRigidBody : null;
+
+            // Cue-mode + ALL Start modes resolve via poseTable when no
+            // rigid-body composition applies. Start uses curStep.seq
+            // (mirrors SetRootToChildCentroidPreservingWorld and the
+            // non-applyPoseOverride branch — both leave members at
+            // whatever the spawner wrote at that seq). Before-cue same;
+            // After-cue uses next step's seq.
+            int poseTableSeq = -1;
+            bool usePoseTable = false;
+            if (_pkg?.poseTable != null && curStep != null)
+            {
+                if (isBeforeCue || (isStart && startRb == null))
+                {
+                    poseTableSeq = curStep.sequenceIndex;
+                    usePoseTable = true;
+                }
+                else if (isAfterCue)
+                {
+                    if (TryGetNextStepSeqForAfterCue(curStep, out poseTableSeq))
+                        usePoseTable = true;
+                }
+            }
+
+            for (int i = 0; i < partIds.Count; i++)
+            {
+                string pid = partIds[i];
+                if (string.IsNullOrEmpty(pid)) continue;
+
+                PartDefinition def = null;
+                for (int p = 0; p < _pkg.parts.Length; p++)
+                {
+                    if (_pkg.parts[p] != null && string.Equals(_pkg.parts[p].id, pid, StringComparison.Ordinal))
+                    { def = _pkg.parts[p]; break; }
+                }
+                if (def == null) continue;
+
+                string glbFile = ResolvePartAssetRef(def);
+                if (string.IsNullOrEmpty(glbFile)) continue;
+                string assetPath = partsFolder + glbFile;
+
+                Vector3 pos = Vector3.zero;
+                Quaternion rot = Quaternion.identity;
+                Vector3 scl = Vector3.one;
+                bool poseResolved = false;
+
+                // 1. START + startRigidBody: compose from baked offsets.
+                //    pos = groupCenter + groupRotation * offset (PreviewRoot-local).
+                //    rot = groupRotation * rotationOffset.
+                //    Same composition ApplyRigidBodyOffsetsToMembers + the
+                //    root pose write produce in scene.
+                if (startRb != null
+                    && startRb.memberPositionOffsets != null
+                    && startRb.memberPositionOffsets.TryGetValue(pid, out var off))
+                {
+                    pos = startRb.groupCenter + (startRb.groupRotation * off);
+                    rot = startRb.groupRotation;
+                    if (startRb.memberRotationOffsets != null
+                        && startRb.memberRotationOffsets.TryGetValue(pid, out var rOff))
+                        rot = startRb.groupRotation * rOff;
+                    if (startRb.memberScales != null
+                        && startRb.memberScales.TryGetValue(pid, out var s)
+                        && s.sqrMagnitude > 0.00001f)
+                        scl = s;
+                    poseResolved = true;
+                }
+
+                // 2. CUE-MODE / START-without-rigidBody: poseTable at the
+                //    chosen seq. Same source SyncAllGroupRootsToActivePose
+                //    uses, so the widget matches what the SceneView shows.
+                if (!poseResolved && usePoseTable
+                    && _pkg.poseTable.TryGet(pid, poseTableSeq, out var ptRes))
+                {
+                    pos = ptRes.pos;
+                    rot = ptRes.rot;
+                    scl = ptRes.scl;
+                    poseResolved = true;
+                }
+
+                if (!poseResolved)
+                {
+                    PartPreviewPlacement pp = FindPartPlacement(pid);
+                    if (pp != null)
+                    {
+                        if (useAssembled)
+                        {
+                            pos = PackageJsonUtils.ToVector3(pp.assembledPosition);
+                            rot = PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation);
+                            scl = PackageJsonUtils.ToVector3(pp.assembledScale);
+                        }
+                        else
+                        {
+                            pos = PackageJsonUtils.ToVector3(pp.startPosition);
+                            rot = PackageJsonUtils.ToUnityQuaternion(pp.startRotation);
+                            scl = PackageJsonUtils.ToVector3(pp.startScale);
+                        }
+                    }
+                    else if (def.stagingPose != null)
+                    {
+                        // No previewConfig placement — fall back to authored stagingPose
+                        // so the preview at least shows the staging layout.
+                        pos = PackageJsonUtils.ToVector3(def.stagingPose.position);
+                        rot = PackageJsonUtils.ToUnityQuaternion(def.stagingPose.rotation);
+                        var sp = def.stagingPose.scale;
+                        if (sp.x != 0f || sp.y != 0f || sp.z != 0f)
+                            scl = PackageJsonUtils.ToVector3(sp);
+                    }
+                }
+
+                if (scl.sqrMagnitude < 0.000001f) scl = Vector3.one;
+
+                list.Add(new PartGroupModelPreviewRenderer.MemberPose
+                {
+                    assetPath = assetPath,
+                    position  = pos,
+                    rotation  = rot,
+                    scale     = scl,
+                });
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// Returns the effective member partIds for a partGroup:
+        /// <list type="number">
+        ///   <item>If <c>group.partIds</c> is populated, use it verbatim
+        ///         (authored or baked by <c>DerivePartGroupPartIds</c>).</item>
+        ///   <item>Otherwise, walk <c>group.stepIds</c> and union each step's
+        ///         <c>requiredPartIds</c> + <c>optionalPartIds</c>. This is the
+        ///         "implicit roster" — useful for groups (like the d3d
+        ///         <c>partGroup_*_frame_side</c> entries) whose members are
+        ///         only declared by the steps that operate on them.</item>
+        /// </list>
+        /// Returned list preserves first-seen order so the preview's draw
+        /// order is deterministic.
+        /// </summary>
+        private List<string> ResolveEffectivePartGroupMemberIds(PartGroupDefinition group)
+        {
+            var result = new List<string>();
+            if (group == null) return result;
+
+            if (group.partIds != null && group.partIds.Length > 0)
+            {
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                for (int i = 0; i < group.partIds.Length; i++)
+                {
+                    var pid = group.partIds[i];
+                    if (!string.IsNullOrEmpty(pid) && seen.Add(pid)) result.Add(pid);
+                }
+                return result;
+            }
+
+            if (group.stepIds == null || group.stepIds.Length == 0 || _pkg == null)
+                return result;
+
+            var stepSeen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < group.stepIds.Length; i++)
+            {
+                var sid = group.stepIds[i];
+                if (string.IsNullOrEmpty(sid)) continue;
+                if (!_pkg.TryGetStep(sid, out var step) || step == null) continue;
+
+                if (step.requiredPartIds != null)
+                    for (int p = 0; p < step.requiredPartIds.Length; p++)
+                    {
+                        var pid = step.requiredPartIds[p];
+                        if (!string.IsNullOrEmpty(pid) && stepSeen.Add(pid)) result.Add(pid);
+                    }
+                if (step.optionalPartIds != null)
+                    for (int p = 0; p < step.optionalPartIds.Length; p++)
+                    {
+                        var pid = step.optionalPartIds[p];
+                        if (!string.IsNullOrEmpty(pid) && stepSeen.Add(pid)) result.Add(pid);
+                    }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Fits <c>SceneView.lastActiveSceneView</c> to the world-space bounds
+        /// of every member of <paramref name="g"/> that has a live spawned
+        /// GameObject with at least one Renderer. The bounds union is taken at
+        /// the parts' CURRENT poses, so toggling Start ↔ Assembled before
+        /// clicking Frame yields the layout the author wants to inspect.
+        /// Falls back to the group root's authored position when no members
+        /// have live renderers (e.g. before the spawner has finished).
+        /// </summary>
+        private void FrameGroupMembersInSceneView(ref GroupEditState g)
+        {
+            var sv = SceneView.lastActiveSceneView;
+            if (sv == null) return;
+
+            Bounds? combined = null;
+
+            if (g.def?.partIds != null)
+            {
+                for (int i = 0; i < g.def.partIds.Length; i++)
+                {
+                    string pid = g.def.partIds[i];
+                    if (string.IsNullOrEmpty(pid)) continue;
+
+                    GameObject go = FindLivePartGO(pid);
+                    if (go == null) continue;
+
+                    // Encapsulate every renderer under the part so we cover
+                    // multi-mesh GLBs (e.g. carriage halves with embedded
+                    // hardware children). One bounds-per-renderer keeps the
+                    // union tight; using only the part root's bounds would
+                    // miss renderers in nested children.
+                    var renderers = go.GetComponentsInChildren<Renderer>(includeInactive: false);
+                    for (int r = 0; r < renderers.Length; r++)
+                    {
+                        if (renderers[r] == null) continue;
+                        Bounds b = renderers[r].bounds;
+                        if (b.size.sqrMagnitude < 0.000001f) continue; // skip degenerate
+                        combined = combined.HasValue ? Encapsulate(combined.Value, b) : b;
+                    }
+                }
+            }
+
+            if (!combined.HasValue)
+            {
+                // Fallback: aim at the group root's authored position so the
+                // camera at least lands somewhere meaningful while spawning
+                // is still in progress.
+                Transform pr = GetPreviewRoot();
+                Vector3 fallbackWorld = pr != null ? pr.TransformPoint(GetActiveGroupPosition(ref g))
+                                                   : GetActiveGroupPosition(ref g);
+                combined = new Bounds(fallbackWorld, Vector3.one * 0.25f);
+            }
+
+            // 1.25× pad so the framed group has a little breathing room
+            // around the silhouette — same feel as Unity's built-in F-key
+            // frame on a selected GO.
+            Bounds padded = combined.Value;
+            padded.Expand(padded.size * 0.25f);
+            sv.Frame(padded, instant: false);
+        }
+
+        private static Bounds Encapsulate(Bounds a, Bounds b)
+        {
+            a.Encapsulate(b);
+            return a;
         }
 
         /// <summary>

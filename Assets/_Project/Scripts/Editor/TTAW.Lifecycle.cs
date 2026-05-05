@@ -134,6 +134,10 @@ namespace OSE.Editor
             _partPreview?.Dispose();
             _partPreview   = null;
             _partPreviewId = null;
+            _groupPreview?.Dispose();
+            _groupPreview = null;
+            _groupPreviewId = null;
+            _groupPreviewPoseMode = -1;
             RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
             ClearWirePreview();
@@ -376,6 +380,10 @@ namespace OSE.Editor
             _partPreview?.Dispose();
             _partPreview   = null;
             _partPreviewId = null;
+            _groupPreview?.Dispose();
+            _groupPreview = null;
+            _groupPreviewId = null;
+            _groupPreviewPoseMode = -1;
             RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
             ClearWirePreview();
@@ -402,6 +410,8 @@ namespace OSE.Editor
             _dirtyTaskOrderStepIds.Clear();
             _dirtyPartAssetRefIds.Clear();
             _dirtyPartGroupIds.Clear();
+            _dirtyHintIds.Clear();
+            _newHintDefs.Clear();
         }
     }
 }

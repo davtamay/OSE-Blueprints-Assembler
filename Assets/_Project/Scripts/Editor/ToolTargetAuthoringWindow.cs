@@ -126,6 +126,14 @@ namespace OSE.Editor
         private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartGroupIds  = new HashSet<string>(StringComparer.Ordinal); // Phase 7e — PartGroup writes
         private readonly HashSet<string> _dirtyPartIds         = new HashSet<string>(StringComparer.Ordinal); // Generic part-level edits (animationCues, partGroupIds, etc.)
+        // StepTextAuthoringWindow marks hint definitions dirty here when the
+        // user edits hint title / message / type / priority / scoping fields,
+        // OR adds a brand-new hint via _newHintDefs. WriteJson flushes both.
+        internal readonly HashSet<string> _dirtyHintIds         = new HashSet<string>(StringComparer.Ordinal);
+        // Newly-authored hints not yet persisted to any file — appended into
+        // shared.json (no targetId/partId/toolId scope) or the assembly file
+        // that owns the scoped target/part/tool, then cleared on save.
+        internal readonly List<HintDefinition> _newHintDefs     = new List<HintDefinition>();
         // Slice 1 — prefab drag-drop. Wizard appends a PrefabInstance to
         // _pkg.prefabInstances and adds its instanceId here; WriteJson flushes
         // the entire prefabInstances[] array of every assembly file that
@@ -204,6 +212,19 @@ namespace OSE.Editor
         // Part model preview panel
         private PartModelPreviewRenderer _partPreview;
         private string                   _partPreviewId;   // partId currently loaded in preview
+        // Group preview panel — multi-part variant of the renderer that loads
+        // every member's GLB and positions them at the group's current pose
+        // mode (Start or Assembled). Lazy-instantiated when a group task is
+        // selected; rebuilt when the selection or pose mode changes.
+        private PartGroupModelPreviewRenderer _groupPreview;
+        private string                        _groupPreviewId;     // partGroupId currently loaded
+        private int                           _groupPreviewPoseMode = -1; // sentinel for "rebuild on first draw"
+        // Step-filter index baked into the group preview's rebuild key.
+        // Cue-mode previews resolve poses against the current step's seq
+        // (Before cue) or the next step's seq (After cue), so changing
+        // steps mid-cue-mode must invalidate the cached preview. Sentinel
+        // -1 forces a rebuild on first draw.
+        private int                           _groupPreviewStepKey = -1;
         private const string             PrefDimUnit = "OSE.AuthoringWindow.DimUnit"; // "mm" or "in"
 
         private PartEditState[]          _parts;
@@ -480,6 +501,23 @@ namespace OSE.Editor
         private GroupEditState[]       _groups;
         private int                    _selectedGroupIdx = -1;
         private int                    _editingGroupPoseMode = PoseModeStart;
+
+        /// <summary>
+        /// Author-pinned group IDs — kept at the top of the PART GROUPS card
+        /// regardless of lifecycle tier. UI-only; not persisted to disk.
+        /// Used by <see cref="CollectGroupTierEntriesForStep"/> sort + the
+        /// pin toggle button on each row in <c>DrawCanvasPartGroupList</c>.
+        /// </summary>
+        private HashSet<string> _pinnedGroupIds = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Per-tier expansion state for the PART GROUPS card. Active is
+        /// expanded by default; Recent / Built collapse so step-200 packages
+        /// don't drown the panel. Author can toggle each section header.
+        /// </summary>
+        private bool _groupsTierActiveExpanded = true;
+        private bool _groupsTierRecentExpanded = false;
+        private bool _groupsTierBuiltExpanded  = false;
 
         // ── MenuItem ──────────────────────────────────────────────────────────
 

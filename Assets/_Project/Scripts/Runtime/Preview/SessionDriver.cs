@@ -61,6 +61,11 @@ namespace OSE.Runtime.Preview
         private IMachineSessionController _session;
         private IntroOverlayCoordinator _intro;
         private bool _sessionStarted;
+
+        // Sticky failure flag: once StartSessionAsync fails, we MUST NOT auto-retry every
+        // frame — that produces a log-spam storm and tanks WebGL perf. Cleared only by
+        // explicit RestartSession() or a package-id / session-mode change.
+        private bool _sessionFailedToStart;
         private bool _pendingStepUiPush;
         private string _lastPlayModePackageId;
         private SessionMode _lastPlayModeSessionMode;
@@ -122,13 +127,16 @@ namespace OSE.Runtime.Preview
             if (!isActiveAndEnabled || !Application.isPlaying) return;
 
             // Detect package ID or mode change in play mode and restart session.
-            if (_sessionStarted && _lastPlayModePackageId != _packageId)
+            // Also trigger when a previous start failed: changing the package id is
+            // the natural recovery path, so the sticky failure flag must not block it.
+            bool startedOrFailed = _sessionStarted || _sessionFailedToStart;
+            if (startedOrFailed && _lastPlayModePackageId != _packageId)
             {
                 _ = RestartSession();
                 return;
             }
 
-            if (_sessionStarted && _lastPlayModeSessionMode != _sessionMode)
+            if (startedOrFailed && _lastPlayModeSessionMode != _sessionMode)
             {
                 OseLog.Info($"[SessionDriver] Session mode changed to {_sessionMode}. Restarting session.");
                 _ = RestartSession();
@@ -163,7 +171,8 @@ namespace OSE.Runtime.Preview
             // Invariant: auto-start stays in Update, not OnEnable/Start. The UI/presentation
             // adapter is not reliably registered earlier when ExecuteAlways and no-domain-reload
             // are both active.
-            if (!_sessionStarted || _session == null || _session.SessionState == null)
+            if ((!_sessionStarted || _session == null || _session.SessionState == null)
+                && !_sessionFailedToStart)
             {
                 _ = StartSessionAsync();
                 return;
@@ -267,6 +276,7 @@ namespace OSE.Runtime.Preview
                 persistence.ClearSession(_packageId);
 
             _sessionStarted = false;
+            _sessionFailedToStart = false; // explicit retry — clear sticky failure gate
             _pendingStepUiPush = false;
             IsIntroActive = false;
             _savedCompletedSteps = 0;
@@ -469,9 +479,12 @@ namespace OSE.Runtime.Preview
             else
             {
                 _lifecycle = "ERROR: Session failed to start";
-                OseLog.Error($"[SessionDriver] Session failed to start for '{_packageId}'.");
+                OseLog.Error($"[SessionDriver] Session failed to start for '{_packageId}'. Auto-retry suppressed; use Restart Session or change package id.");
                 // Reset so Restart Session or package-ID change can retry cleanly.
+                // _sessionFailedToStart blocks the per-frame auto-retry in UpdatePlayMode
+                // until one of those explicit triggers fires (see RestartSession / OnValidate).
                 _sessionStarted = false;
+                _sessionFailedToStart = true;
             }
 
             RefreshInspectorState();

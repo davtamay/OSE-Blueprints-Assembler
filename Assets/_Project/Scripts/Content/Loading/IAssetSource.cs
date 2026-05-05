@@ -20,5 +20,22 @@ namespace OSE.Content.Loading
             string assetRef,
             Transform parent,
             CancellationToken ct = default);
+
+        /// <summary>
+        /// Asynchronously loads <paramref name="assetRef"/>, locates the child node named
+        /// <paramref name="nodeName"/> inside it, and returns an independent
+        /// <see cref="GameObject"/> containing that subtree under <paramref name="parent"/>.
+        /// Returns null if the file or the node cannot be loaded.
+        ///
+        /// Implementations should cache the loaded GLB root keyed by (packageId, assetRef)
+        /// so a multi-part GLB (e.g. <c>frame_approved.glb</c> with 24 child bars) is loaded
+        /// once per session and child nodes are cloned from the cached root.
+        /// </summary>
+        Task<GameObject> LoadCombinedNodeAsync(
+            string packageId,
+            string assetRef,
+            string nodeName,
+            Transform parent,
+            CancellationToken ct = default);
     }
 }

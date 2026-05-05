@@ -32,7 +32,7 @@ namespace OSE.Editor
             {
                 string stackSnippet = System.Environment.StackTrace;
                 if (stackSnippet.Length > 500) stackSnippet = stackSnippet.Substring(0, 500);
-                Debug.Log($"[TTAW.ToolPreview] Clear — destroying '{_toolPreviewGO.name}' (stack: {stackSnippet})");
+                OseLog.Info($"[TTAW.ToolPreview] Clear — destroying '{_toolPreviewGO.name}' (stack: {stackSnippet})");
                 DeselectIfSelected(_toolPreviewGO);
                 DestroyImmediate(_toolPreviewGO);
                 _toolPreviewGO = null;
@@ -49,7 +49,7 @@ namespace OSE.Editor
         {
             if (string.Equals(_lastRefreshDiagKey, msg, System.StringComparison.Ordinal)) return;
             _lastRefreshDiagKey = msg;
-            Debug.Log($"[TTAW.ToolPreview] {msg}");
+            OseLog.Info($"[TTAW.ToolPreview] {msg}");
         }
 
         private void ClearWirePreview()
@@ -241,7 +241,7 @@ namespace OSE.Editor
                 if (pfb == null)
                 {
                     LogRefreshDiag($"TRANSIENT bail: asset not found at '{path}'");
-                    Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");
+                    OseLog.Warn($"[ToolTargetAuthoring] Tool asset not found: {path}");
                     return;
                 }
             }
@@ -591,7 +591,7 @@ namespace OSE.Editor
                     duration    = duration,
                     started     = false,
                 });
-                Debug.Log($"[PanelPlay] row {rowIdx}: cueIdx={ci} type={cue.type} seqAfterPrev={cue.sequenceAfterPrevious} duration={duration:0.00}s startOffset={runningOffset:0.00}s");
+                OseLog.Info($"[PanelPlay] row {rowIdx}: cueIdx={ci} type={cue.type} seqAfterPrev={cue.sequenceAfterPrevious} duration={duration:0.00}s startOffset={runningOffset:0.00}s");
                 prevDuration = duration;
             }
 
@@ -607,7 +607,7 @@ namespace OSE.Editor
             EditorApplication.update += OnPanelPlayUpdate;
             _previewUpdateRegistered  = true;
 
-            Debug.Log($"[PanelPlay] Scheduled {_panelQueue.Count} cue(s) on step '{step.id}'.");
+            OseLog.Info($"[PanelPlay] Scheduled {_panelQueue.Count} cue(s) on step '{step.id}'.");
         }
 
         private void OnPanelPlayUpdate()
@@ -653,7 +653,7 @@ namespace OSE.Editor
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[PanelPlay] update failed: {ex.Message}");
+                OseLog.Error($"[PanelPlay] update failed: {ex.Message}");
                 StopPanelPreview();
             }
         }
@@ -762,7 +762,7 @@ namespace OSE.Editor
             if (_previewPlayer != null)
             {
                 try { _previewPlayer.Stop(); }
-                catch (System.Exception e) { Debug.LogWarning($"[AnimCuePreview] Stop failed: {e.Message}"); }
+                catch (System.Exception e) { OseLog.Warn($"[AnimCuePreview] Stop failed: {e.Message}"); }
                 _previewPlayer = null;
             }
 
@@ -882,16 +882,16 @@ namespace OSE.Editor
 
             if (targets.Count == 0)
             {
-                Debug.LogWarning($"[AnimCuePreview] No host target resolved. selectedGroupIdx={_selectedGroupIdx}, selectedPartIdx={_selectedPartIdx}, groups.Length={_groups?.Length ?? 0}, parts.Length={_parts?.Length ?? 0}, partGroupRootGOs.Count={_partGroupRootGOs?.Count ?? 0}");
+                OseLog.Warn($"[AnimCuePreview] No host target resolved. selectedGroupIdx={_selectedGroupIdx}, selectedPartIdx={_selectedPartIdx}, groups.Length={_groups?.Length ?? 0}, parts.Length={_parts?.Length ?? 0}, partGroupRootGOs.Count={_partGroupRootGOs?.Count ?? 0}");
                 return;
             }
 
-            Debug.Log($"[AnimCuePreview] Starting '{entry.type}' on {targets.Count} target(s): {string.Join(", ", targets.ConvertAll(t => t ? t.name : "<null>"))}");
+            OseLog.Info($"[AnimCuePreview] Starting '{entry.type}' on {targets.Count} target(s): {string.Join(", ", targets.ConvertAll(t => t ? t.name : "<null>"))}");
 
             OSE.UI.Root.IAnimationCuePlayer player = CreatePreviewPlayer(entry.type);
             if (player == null)
             {
-                Debug.LogWarning($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
+                OseLog.Warn($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
                 return;
             }
 
@@ -916,7 +916,7 @@ namespace OSE.Editor
             try { player.Start(ctx); }
             catch (System.Exception e)
             {
-                Debug.LogError($"[AnimCuePreview] player.Start failed: {e}");
+                OseLog.Error($"[AnimCuePreview] player.Start failed: {e}");
                 return;
             }
 
@@ -960,7 +960,7 @@ namespace OSE.Editor
             bool groupRootResolved = false;
             if (!string.IsNullOrEmpty(entry.targetPartGroupId))
             {
-                Debug.Log($"[AnimCuePreview] Cue scoped to partGroup '{entry.targetPartGroupId}'.");
+                OseLog.Info($"[AnimCuePreview] Cue scoped to partGroup '{entry.targetPartGroupId}'.");
                 // After editor restart, Group_ GOs (HideFlags.DontSave)
                 // are destroyed but the dictionary may hold stale keys.
                 // Trigger a package reload to recreate them if needed.
@@ -979,7 +979,7 @@ namespace OSE.Editor
                         var refreshStep = FindStep(_stepIds[_stepFilterIdx]);
                         if (refreshStep != null)
                         {
-                            Debug.Log("[AnimCuePreview] Group root missing — rebuilding partGroup roots.");
+                            OseLog.Info("[AnimCuePreview] Group root missing — rebuilding partGroup roots.");
                             EnsureAllPartGroupRoots(refreshStep);
                         }
                     }
@@ -1012,7 +1012,7 @@ namespace OSE.Editor
                     asmPoses.Add(gpose);
                     groupRootResolved = true;
 
-                    Debug.Log($"[AnimCuePreview] Resolved group root '{groupRoot.name}' at localPos={gt.localPosition}");
+                    OseLog.Info($"[AnimCuePreview] Resolved group root '{groupRoot.name}' at localPos={gt.localPosition}");
                 }
                 else if (_pkg != null
                     && _pkg.TryGetPartGroup(entry.targetPartGroupId, out var subDef)
@@ -1023,7 +1023,7 @@ namespace OSE.Editor
                     // parts under it, and animate the wrapper as a single
                     // group target. Cleanup on Stop restores every member's
                     // original parent.
-                    Debug.LogWarning($"[AnimCuePreview] No Group_ root for '{entry.targetPartGroupId}'. Creating transient wrapper for the preview.");
+                    OseLog.Warn($"[AnimCuePreview] No Group_ root for '{entry.targetPartGroupId}'. Creating transient wrapper for the preview.");
                     var previewRoot = GetPreviewRoot();
                     var wrapperGO   = new GameObject($"PreviewGroup_{entry.targetPartGroupId}")
                     {
@@ -1058,7 +1058,7 @@ namespace OSE.Editor
                         startPoses.Add(wpose);
                         asmPoses.Add(wpose);
                         groupRootResolved = true;
-                        Debug.Log($"[AnimCuePreview] Transient wrapper contains {scooped} member(s).");
+                        OseLog.Info($"[AnimCuePreview] Transient wrapper contains {scooped} member(s).");
                     }
                     else
                     {
@@ -1152,14 +1152,14 @@ namespace OSE.Editor
                 string fallbackNote = hasExplicitTargets || (entry.targetToolIds?.Length > 0)
                     ? "Check that the listed part/tool IDs are spawned in the scene."
                     : $"No requiredPartIds on step '{step.id}' and no explicit targets — add at least one.";
-                Debug.LogWarning($"[AnimCuePreview] No live GOs found for cue '{entry.type}' on step '{step.id}'. {fallbackNote}");
+                OseLog.Warn($"[AnimCuePreview] No live GOs found for cue '{entry.type}' on step '{step.id}'. {fallbackNote}");
                 return;
             }
 
             OSE.UI.Root.IAnimationCuePlayer player = CreatePreviewPlayer(entry.type);
             if (player == null)
             {
-                Debug.LogWarning($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
+                OseLog.Warn($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
                 return;
             }
 
@@ -1183,7 +1183,7 @@ namespace OSE.Editor
             try { player.Start(ctx); }
             catch (System.Exception e)
             {
-                Debug.LogError($"[AnimCuePreview] player.Start failed: {e}");
+                OseLog.Error($"[AnimCuePreview] player.Start failed: {e}");
                 return;
             }
 
@@ -1226,7 +1226,7 @@ namespace OSE.Editor
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[AnimCuePreview] OnPreviewUpdate failed: {e.Message}");
+                OseLog.Error($"[AnimCuePreview] OnPreviewUpdate failed: {e.Message}");
                 StopAllPreviews();
             }
         }
@@ -2558,7 +2558,7 @@ namespace OSE.Editor
             var q = t.localRotation;
             pose.rotation = new SceneQuaternion { x = q.x, y = q.y, z = q.z, w = q.w };
             pose.scale    = new SceneFloat3 { x = t.localScale.x, y = t.localScale.y, z = t.localScale.z };
-            Debug.Log($"[AnimCueCapture] Captured live transform on '{host.DisplayId}': pos={t.localPosition} rot={q.eulerAngles} scl={t.localScale}");
+            OseLog.Info($"[AnimCueCapture] Captured live transform on '{host.DisplayId}': pos={t.localPosition} rot={q.eulerAngles} scl={t.localScale}");
         }
 
         private static void NormalizeZeroScale(AnimationPose pose)
@@ -2623,7 +2623,7 @@ namespace OSE.Editor
                 break;
             }
             if (!found)
-                Debug.LogWarning("[ParticlePreview] No live GO found — spawning at scene origin.");
+                OseLog.Warn("[ParticlePreview] No live GO found — spawning at scene origin.");
 
             float scale = entry.scale > 0f ? entry.scale : 1f;
             _previewParticleGO = CompletionParticleEffect.TrySpawnContinuous(
@@ -2631,7 +2631,7 @@ namespace OSE.Editor
 
             if (_previewParticleGO == null)
             {
-                Debug.LogWarning($"[ParticlePreview] Preset '{entry.presetId}' not found or spawn failed.");
+                OseLog.Warn($"[ParticlePreview] Preset '{entry.presetId}' not found or spawn failed.");
                 return;
             }
 

@@ -57,8 +57,27 @@ namespace OSE.Editor
         private readonly Dictionary<string, Vector3>  _vector3OptionValues = new();
 
         private Vector2 _scroll;
+        private Vector2 _identityScroll;
         private string  _statusMessage;
         private bool    _statusIsError;
+
+        // Right-pane tab selection. Identity (prefix/start_seq/etc.) lives in
+        // the LEFT column always-visible; the right column rotates between
+        // these four tabs so a 50-task prefab doesn't push roles off-screen.
+        private enum WizardTab { Layers, Roles, Options, Preview }
+        private WizardTab _activeTab = WizardTab.Layers;
+
+        // Per-binding validation outcome — recomputed when bindings change or
+        // the package's parts catalog mutates. Keeps the badge draw cheap.
+        private enum BindingHealth { Unknown, Resolved, Heuristic, Missing, Empty }
+        private readonly Dictionary<string, BindingHealth> _bindingHealth = new();
+
+        // Dry-run expansion result — null until the Preview tab is opened.
+        // Marked dirty whenever the author edits prefix / start_seq / a
+        // binding so the preview re-runs lazily on the next GUI pass.
+        private OSE.Content.Loading.PrefabExpander.Result _dryRunResult;
+        private bool _dryRunDirty = true;
+        private Vector2 _previewScroll;
 
         // ── Public entry ─────────────────────────────────────────────────────
 
@@ -74,7 +93,11 @@ namespace OSE.Editor
                 : $"Instantiate {name}  ·  {summary.FormatSummaryLine()}";
             var w = GetWindow<PrefabWizardWindow>(true, title, true);
             w._summary = summary;
-            w.minSize = new Vector2(420, 320);
+            // Two-column tabbed shell needs ~720×500 to keep the identity
+            // column readable AND give the right-pane tabs (Layers/Roles/
+            // Options/Preview) enough width that a 50-task prefab still
+            // shows its rows without horizontal squish.
+            w.minSize = new Vector2(720, 500);
             w._owner             = owner;
             w._prefabYamlPath    = prefabYamlPath;
             w._targetStepId      = targetStepId;
@@ -131,7 +154,7 @@ namespace OSE.Editor
             _targetStep = _owner != null ? _owner.FindStepPublic(_targetStepId) : null;
             if (_targetStep != null)
             {
-                _prefix = DerivePrefix(_targetStep.partGroupId ?? _targetStep.id ?? "");
+                _prefix = DerivePrefix(_prefabName, _targetStep.partGroupId ?? _targetStep.id ?? "");
 
                 // Default start_seq priority:
                 //   1. Explicit override (drop-divider top/bottom gestures
@@ -157,7 +180,7 @@ namespace OSE.Editor
             }
             else
             {
-                _prefix   = "instance_" + System.Guid.NewGuid().ToString("N").Substring(0, 6);
+                _prefix   = DerivePrefix(_prefabName, "instance_" + System.Guid.NewGuid().ToString("N").Substring(0, 6));
                 _startSeq = _startSeqOverride > 0 ? _startSeqOverride : 1;
             }
 
@@ -224,55 +247,337 @@ namespace OSE.Editor
 
         private void OnGUI()
         {
+            // Header row — full-width title + summary + description so the
+            // identity of the prefab is always visible regardless of which
+            // tab is open.
+            DrawHeader();
+
+            // Two-column body. LEFT = identity / settings / status (always
+            // visible). RIGHT = tabbed pane (Layers / Roles / Options /
+            // Preview). Footer (Cancel / Instantiate) is below the body.
+            float leftWidth = Mathf.Max(220f, position.width * 0.32f);
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical(GUILayout.Width(leftWidth));
+            DrawIdentityColumn();
+            EditorGUILayout.EndVertical();
+
+            // Vertical separator — 1px line between columns so the split is
+            // visible even when both sides scroll.
+            var sep = GUILayoutUtility.GetRect(1f, 1f, GUILayout.ExpandHeight(true), GUILayout.Width(1f));
+            EditorGUI.DrawRect(sep, new Color(1f, 1f, 1f, 0.06f));
+
+            EditorGUILayout.BeginVertical();
+            DrawTabBar();
+            DrawTabBody();
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(4);
+            if (!string.IsNullOrEmpty(_statusMessage))
+                EditorGUILayout.HelpBox(_statusMessage,
+                    _statusIsError ? MessageType.Error : MessageType.Info);
+
+            DrawFooter();
+        }
+
+        private void DrawHeader()
+        {
             EditorGUILayout.LabelField($"Prefab: {_prefabName}",
                 new GUIStyle(EditorStyles.largeLabel) { fontStyle = FontStyle.Bold });
             if (_summary != null)
                 EditorGUILayout.LabelField(_summary.FormatSummaryLine(), EditorStyles.miniLabel);
             if (!string.IsNullOrEmpty(_prefabDescription))
                 EditorGUILayout.LabelField(_prefabDescription, EditorStyles.wordWrappedMiniLabel);
-            EditorGUILayout.LabelField($"Target step: {_targetStepId ?? "(none)"}", EditorStyles.miniLabel);
             EditorGUILayout.Space(4);
+        }
 
-            EditorGUILayout.BeginHorizontal();
-            _prefix = EditorGUILayout.TextField(new GUIContent("Prefix",
-                "Prepended to every step ID emitted by this prefab. Step ids become " +
-                "step_<prefix>_<id_suffix>. Defaults to the target step's partGroupId."),
-                _prefix ?? "");
-            _startSeq = EditorGUILayout.IntField(new GUIContent("Start seq",
-                "First sequenceIndex assigned to the emitted steps. Defaults to target step + 1."),
-                _startSeq, GUILayout.MaxWidth(180));
-            EditorGUILayout.EndHorizontal();
+        private void DrawIdentityColumn()
+        {
+            _identityScroll = EditorGUILayout.BeginScrollView(_identityScroll);
+
+            EditorGUILayout.LabelField("IDENTITY", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField($"Target step:",  EditorStyles.miniLabel);
+            EditorGUILayout.SelectableLabel(_targetStepId ?? "(none)",
+                EditorStyles.miniLabel, GUILayout.Height(16));
+
             EditorGUILayout.Space(6);
+            EditorGUILayout.LabelField("EMITTED IDs", EditorStyles.miniBoldLabel);
 
-            DrawSectionPreview();
+            string newPrefix = EditorGUILayout.TextField(new GUIContent("Prefix",
+                "Prepended to every emitted step / part / partGroup id. " +
+                "Defaults to prefab_<prefabName>_<derived> so emitted ids " +
+                "carry their prefab origin."),
+                _prefix ?? "");
+            if (newPrefix != _prefix)
+            {
+                _prefix = newPrefix;
+                _dryRunDirty = true;
+            }
 
-            EditorGUILayout.LabelField("Roles", EditorStyles.boldLabel);
+            int newStartSeq = EditorGUILayout.IntField(new GUIContent("Start seq",
+                "First sequenceIndex assigned to the emitted steps. Defaults to target step + 1."),
+                _startSeq);
+            if (newStartSeq != _startSeq)
+            {
+                _startSeq = newStartSeq;
+                _dryRunDirty = true;
+            }
+
+            // Live preview of the first emitted step id so the author can
+            // see whether the prefix is overlong / readable before clicking
+            // Instantiate.
+            EditorGUILayout.LabelField("Sample step id:", EditorStyles.miniLabel);
+            EditorGUILayout.SelectableLabel($"step_{_prefix}_<id_suffix>",
+                EditorStyles.miniLabel, GUILayout.Height(16));
+
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("BINDING HEALTH", EditorStyles.miniBoldLabel);
+            DrawBindingHealthSummary();
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawTabBar()
+        {
+            EditorGUILayout.BeginHorizontal();
+            DrawTabButton(WizardTab.Layers,  "Layers",          _previewPartRows.Count + _previewGroupRows.Count + _previewStepRows.Count);
+            DrawTabButton(WizardTab.Roles,   "Roles",           _roles?.Count ?? 0);
+            DrawTabButton(WizardTab.Options, "Options",         _options?.Count ?? 0);
+            DrawTabButton(WizardTab.Preview, "Preview",         -1);
+            EditorGUILayout.EndHorizontal();
+
+            // 1px underline under the active tab to anchor it visually.
+            var underline = GUILayoutUtility.GetRect(1f, 1f, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(underline, new Color(1f, 1f, 1f, 0.10f));
+        }
+
+        private void DrawTabButton(WizardTab tab, string label, int count)
+        {
+            bool active = _activeTab == tab;
+            string text = count >= 0 ? $"{label}  ({count})" : label;
+            var style = new GUIStyle(EditorStyles.toolbarButton)
+            {
+                fontStyle = active ? FontStyle.Bold : FontStyle.Normal,
+                normal = { textColor = active ? new Color(0.85f, 0.85f, 0.95f) : new Color(0.65f, 0.65f, 0.7f) },
+            };
+            if (GUILayout.Button(text, style, GUILayout.MinWidth(80)))
+                _activeTab = tab;
+        }
+
+        private void DrawTabBody()
+        {
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            switch (_activeTab)
+            {
+                case WizardTab.Layers:  DrawLayersTab();  break;
+                case WizardTab.Roles:   DrawRolesTab();   break;
+                case WizardTab.Options: DrawOptionsTab(); break;
+                case WizardTab.Preview: DrawPreviewTab(); break;
+            }
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawLayersTab()
+        {
+            DrawSectionPreview();
+        }
+
+        private void DrawRolesTab()
+        {
             if (_roles == null || _roles.Count == 0)
             {
                 EditorGUILayout.HelpBox(
                     "Prefab has no roles, or YAML failed to parse. See status at the bottom.",
                     MessageType.None);
-            }
-            else
-            {
-                foreach (var role in _roles) DrawRoleRow(role);
+                return;
             }
 
-            if (_options != null && _options.Count > 0)
+            // Two groups: bindings that need attention vs. ones that look
+            // good. Authors can scan the "needs review" group first and
+            // ignore the rest.
+            RecomputeBindingHealth();
+            var needsReview = new List<RoleSpec>();
+            var resolved   = new List<RoleSpec>();
+            foreach (var role in _roles)
             {
+                var h = AggregateRoleHealth(role);
+                if (h == BindingHealth.Resolved) resolved.Add(role);
+                else                              needsReview.Add(role);
+            }
+
+            if (needsReview.Count > 0)
+            {
+                EditorGUILayout.LabelField($"NEEDS REVIEW  ({needsReview.Count})",
+                    EditorStyles.miniBoldLabel);
+                foreach (var role in needsReview) DrawRoleRow(role);
                 EditorGUILayout.Space(8);
-                EditorGUILayout.LabelField("Options", EditorStyles.boldLabel);
-                foreach (var opt in _options) DrawOptionRow(opt);
             }
-            EditorGUILayout.EndScrollView();
+            if (resolved.Count > 0)
+            {
+                EditorGUILayout.LabelField($"AUTO-BOUND  ({resolved.Count})",
+                    EditorStyles.miniBoldLabel);
+                foreach (var role in resolved) DrawRoleRow(role);
+            }
+        }
 
-            // Status / footer
+        private void DrawOptionsTab()
+        {
+            if (_options == null || _options.Count == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "Prefab has no authored options. Optional values like " +
+                    "torque settings, offsets, or size variants would appear here.",
+                    MessageType.None);
+                return;
+            }
+            foreach (var opt in _options) DrawOptionRow(opt);
+        }
+
+        /// <summary>
+        /// Dry-run expansion showing what the prefab will emit with the
+        /// current bindings + prefix + start_seq, before the author commits.
+        /// Re-runs lazily when <see cref="_dryRunDirty"/> flips. Errors and
+        /// warnings from the expander surface inline so the author can fix
+        /// bindings without committing first.
+        /// </summary>
+        private void DrawPreviewTab()
+        {
+            EditorGUILayout.LabelField(
+                "Dry-run of the prefab with the current bindings. Nothing is " +
+                "written to the package until you press Instantiate.",
+                EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.Space(4);
-            if (!string.IsNullOrEmpty(_statusMessage))
-                EditorGUILayout.HelpBox(_statusMessage,
-                    _statusIsError ? MessageType.Error : MessageType.Info);
 
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("↻  Refresh dry-run",
+                    "Re-runs the prefab expander with the current bindings."),
+                EditorStyles.miniButton, GUILayout.Width(160)))
+            {
+                _dryRunDirty = true;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (_dryRunDirty)
+            {
+                _dryRunResult = TryRunDryRun();
+                _dryRunDirty = false;
+            }
+
+            if (_dryRunResult == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Dry-run unavailable — the prefab YAML couldn't be parsed " +
+                    "or the package context is missing.",
+                    MessageType.Warning);
+                return;
+            }
+
+            // Errors → red banner; warnings → yellow banner. Both come from
+            // PrefabExpander.Result so the messages match what RunInstantiation
+            // would surface.
+            if (_dryRunResult.Errors != null && _dryRunResult.Errors.Count > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "• " + string.Join("\n• ", _dryRunResult.Errors),
+                    MessageType.Error);
+            }
+            if (_dryRunResult.Warnings != null && _dryRunResult.Warnings.Count > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "• " + string.Join("\n• ", _dryRunResult.Warnings),
+                    MessageType.Warning);
+            }
+
+            _previewScroll = EditorGUILayout.BeginScrollView(_previewScroll);
+
+            int partCount = _dryRunResult.Parts?.Length ?? 0;
+            int groupCount = _dryRunResult.PartGroups?.Length ?? 0;
+            int stepCount = _dryRunResult.Steps?.Length ?? 0;
+
+            if (partCount > 0)
+            {
+                EditorGUILayout.LabelField($"PARTS  ({partCount})", EditorStyles.miniBoldLabel);
+                foreach (var p in _dryRunResult.Parts)
+                {
+                    if (p == null) continue;
+                    EditorGUILayout.LabelField($"  · {p.id}",
+                        EditorStyles.miniLabel);
+                }
+                EditorGUILayout.Space(6);
+            }
+            if (groupCount > 0)
+            {
+                EditorGUILayout.LabelField($"PART GROUP  ({groupCount})", EditorStyles.miniBoldLabel);
+                foreach (var g in _dryRunResult.PartGroups)
+                {
+                    if (g == null) continue;
+                    int memberCount = g.partIds?.Length ?? 0;
+                    EditorGUILayout.LabelField($"  · {g.id}  ({memberCount} parts)",
+                        EditorStyles.miniLabel);
+                }
+                EditorGUILayout.Space(6);
+            }
+            if (stepCount > 0)
+            {
+                EditorGUILayout.LabelField($"PROCEDURE STEPS  ({stepCount})", EditorStyles.miniBoldLabel);
+                foreach (var s in _dryRunResult.Steps)
+                {
+                    if (s == null) continue;
+                    string family = string.IsNullOrEmpty(s.family) ? "?" : s.family;
+                    int reqs = s.requiredPartIds?.Length ?? 0;
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField($"  · seq {s.sequenceIndex}  ·  [{family}]  {s.id}",
+                        EditorStyles.miniLabel);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.LabelField(reqs > 0 ? $"{reqs} req parts" : "—",
+                        EditorStyles.miniLabel, GUILayout.Width(80));
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+            if (partCount == 0 && groupCount == 0 && stepCount == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "Dry-run produced 0 entries. Either every section is unchecked " +
+                    "in the Layers tab or the prefab has nothing to emit.",
+                    MessageType.Info);
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private OSE.Content.Loading.PrefabExpander.Result TryRunDryRun()
+        {
+            try
+            {
+                var instance = new PrefabInstance
+                {
+                    prefabId      = _prefabName,
+                    instanceId    = $"{_prefabName}_dryrun",
+                    prefix        = _prefix ?? "",
+                    startSeq      = _startSeq,
+                    assemblyId    = _targetStep?.assemblyId,
+                    partGroupId   = _targetStep?.partGroupId,
+                    bindings      = SnapshotBindings(),
+                    options       = SnapshotOptions(),
+                    skipParts     = !_includeParts,
+                    skipPartGroup = !_includePartGroup,
+                    skipSteps     = !_includeSteps,
+                };
+
+                string prefabsDir = OSE.Content.Loading.PrefabExpander.GetPrefabsDir();
+                if (string.IsNullOrEmpty(prefabsDir)) return null;
+                return OSE.Content.Loading.PrefabExpander.Expand(instance, prefabsDir);
+            }
+            catch (System.Exception ex)
+            {
+                OseLog.Warn($"[TTAW.PrefabWizard] Dry-run threw: {ex.Message}");
+                return null;
+            }
+        }
+
+        private void DrawFooter()
+        {
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Cancel", GUILayout.Width(96))) Close();
@@ -293,9 +598,13 @@ namespace OSE.Editor
         private void DrawRoleRow(RoleSpec role)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(
                 role.IsList ? $"{role.Name}  [list × {role.Count}]" : role.Name,
                 new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            DrawBindingBadge(AggregateRoleHealth(role));
+            EditorGUILayout.EndHorizontal();
+
             if (!string.IsNullOrEmpty(role.Description))
                 EditorGUILayout.LabelField(role.Description, EditorStyles.wordWrappedMiniLabel);
 
@@ -308,16 +617,263 @@ namespace OSE.Editor
                     arr = new string[n];
                     _listBindings[role.Name] = arr;
                 }
-                for (int i = 0; i < arr.Length; i++)
-                    arr[i] = EditorGUILayout.TextField($"  [{i}] partId", arr[i] ?? "");
+
+                int targetCount = role.Count > 0 ? role.Count : arr.Length;
+                for (int i = 0; i < targetCount; i++)
+                {
+                    string current = i < arr.Length ? (arr[i] ?? "") : "";
+                    string updated = DrawPartPickerField($"  [{i}] partId", current,
+                        $"role:{role.Name}#{i}");
+                    if (updated != current)
+                    {
+                        if (i >= arr.Length)
+                        {
+                            var grown = new string[i + 1];
+                            System.Array.Copy(arr, grown, arr.Length);
+                            arr = grown;
+                            _listBindings[role.Name] = arr;
+                        }
+                        arr[i] = updated;
+                        _dryRunDirty = true;
+                    }
+                }
+
+                // +/- buttons for variable-count list roles. Fixed-count
+                // roles (role.Count > 0) skip these because the prefab YAML
+                // dictates the exact count.
+                if (role.Count <= 0)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("− remove last", EditorStyles.miniButton, GUILayout.Width(96)))
+                    {
+                        if (arr.Length > 0)
+                        {
+                            var trimmed = new string[arr.Length - 1];
+                            System.Array.Copy(arr, trimmed, trimmed.Length);
+                            _listBindings[role.Name] = trimmed;
+                            _dryRunDirty = true;
+                        }
+                    }
+                    if (GUILayout.Button("+ add slot", EditorStyles.miniButton, GUILayout.Width(96)))
+                    {
+                        var grown = new string[arr.Length + 1];
+                        System.Array.Copy(arr, grown, arr.Length);
+                        grown[arr.Length] = "";
+                        _listBindings[role.Name] = grown;
+                        _dryRunDirty = true;
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
             }
             else
             {
                 _singleBindings.TryGetValue(role.Name, out var v);
-                _singleBindings[role.Name] = EditorGUILayout.TextField("  partId", v ?? "");
+                string updated = DrawPartPickerField("  partId", v ?? "", $"role:{role.Name}");
+                if (updated != (v ?? ""))
+                {
+                    _singleBindings[role.Name] = updated;
+                    _dryRunDirty = true;
+                }
             }
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space(2);
+        }
+
+        // ── Part picker, validation, dry-run helpers ─────────────────────────
+
+        /// <summary>
+        /// One row: text field + small "Pick…" button that opens a searchable
+        /// dropdown of the package's parts catalog. Author can still type a
+        /// raw partId for ids that don't exist yet (the prefab might emit
+        /// the part itself). The badge after the row signals whether the
+        /// id resolves against the package's parts[] today.
+        /// </summary>
+        private string DrawPartPickerField(string label, string current, string controlId)
+        {
+            EditorGUILayout.BeginHorizontal();
+            string updated = EditorGUILayout.TextField(label, current ?? "");
+            if (GUILayout.Button(new GUIContent("Pick…",
+                    "Browse the package's parts catalog and pick by name."),
+                EditorStyles.miniButton, GUILayout.Width(54)))
+            {
+                ShowPartPickerPopup(controlId, current);
+            }
+            DrawBindingBadge(ClassifyBinding(updated));
+            EditorGUILayout.EndHorizontal();
+
+            // Picker popup writes its result back here on its next paint.
+            if (_pickerResultControlId == controlId && _pickerResultPartId != null)
+            {
+                updated = _pickerResultPartId;
+                _pickerResultPartId    = null;
+                _pickerResultControlId = null;
+            }
+            return updated;
+        }
+
+        // Dropdown -> picker handshake. The popup runs as a separate window
+        // and writes its selection here; the next OnGUI tick reads + clears.
+        private string _pickerResultControlId;
+        private string _pickerResultPartId;
+
+        private void ShowPartPickerPopup(string controlId, string current)
+        {
+            var pkg = _owner != null ? _owner._pkgPublic : null;
+            var parts = pkg?.GetParts();
+            if (parts == null || parts.Length == 0)
+            {
+                _statusMessage = "Package has no parts catalog loaded — type the partId by hand.";
+                _statusIsError = false;
+                return;
+            }
+
+            // Snapshot the parts catalog into a sorted display list so the
+            // popup doesn't allocate per keystroke.
+            var entries = new List<string>(parts.Length);
+            foreach (var p in parts)
+                if (p != null && !string.IsNullOrEmpty(p.id)) entries.Add(p.id);
+            entries.Sort(System.StringComparer.Ordinal);
+
+            PartPickerPopup.Open(this, controlId, entries, current);
+        }
+
+        // Called by PartPickerPopup when the author confirms a pick.
+        internal void OnPartPicked(string controlId, string partId)
+        {
+            _pickerResultControlId = controlId;
+            _pickerResultPartId    = partId ?? "";
+            _dryRunDirty = true;
+            Repaint();
+        }
+
+        private void DrawBindingBadge(BindingHealth h)
+        {
+            string glyph; string tip; Color color;
+            switch (h)
+            {
+                case BindingHealth.Resolved:  glyph = "✓"; color = new Color(0.55f, 0.85f, 0.55f);
+                    tip = "Resolves to a part in the package's parts[]."; break;
+                case BindingHealth.Heuristic: glyph = "≈"; color = new Color(0.95f, 0.85f, 0.45f);
+                    tip = "Auto-bound by name match — verify it's the right part."; break;
+                case BindingHealth.Missing:   glyph = "✗"; color = new Color(0.95f, 0.55f, 0.55f);
+                    tip = "PartId is not in the package. Typo, or this prefab will emit the part itself."; break;
+                case BindingHealth.Empty:     glyph = "○"; color = new Color(0.7f, 0.7f, 0.75f);
+                    tip = "No binding yet. Pick a partId or leave blank if optional."; break;
+                default:                      return;
+            }
+            var style = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = color },
+                alignment = TextAnchor.MiddleCenter,
+            };
+            GUILayout.Label(new GUIContent(glyph, tip), style, GUILayout.Width(16));
+        }
+
+        /// <summary>
+        /// Recomputes <see cref="_bindingHealth"/> from the current bindings
+        /// and the package's parts catalog. Call once per OnGUI tick before
+        /// rendering the Roles tab so the badges are consistent.
+        /// </summary>
+        private void RecomputeBindingHealth()
+        {
+            _bindingHealth.Clear();
+            foreach (var role in _roles ?? new List<RoleSpec>())
+            {
+                if (role.IsList)
+                {
+                    if (!_listBindings.TryGetValue(role.Name, out var arr) || arr == null) continue;
+                    for (int i = 0; i < arr.Length; i++)
+                        _bindingHealth[$"role:{role.Name}#{i}"] = ClassifyBinding(arr[i]);
+                }
+                else
+                {
+                    _singleBindings.TryGetValue(role.Name, out var v);
+                    _bindingHealth[$"role:{role.Name}"] = ClassifyBinding(v);
+                }
+            }
+        }
+
+        private BindingHealth AggregateRoleHealth(RoleSpec role)
+        {
+            // Worst-state-wins so a role with one Missing slot doesn't read
+            // as "Resolved" overall.
+            BindingHealth worst = BindingHealth.Resolved;
+            int seen = 0;
+            if (role.IsList && _listBindings.TryGetValue(role.Name, out var arr) && arr != null)
+            {
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (_bindingHealth.TryGetValue($"role:{role.Name}#{i}", out var h))
+                    {
+                        if (Worse(h, worst)) worst = h;
+                        seen++;
+                    }
+                }
+            }
+            else if (!role.IsList && _bindingHealth.TryGetValue($"role:{role.Name}", out var h))
+            {
+                worst = h;
+                seen = 1;
+            }
+            return seen == 0 ? BindingHealth.Empty : worst;
+        }
+
+        private static bool Worse(BindingHealth a, BindingHealth b)
+        {
+            // Severity: Missing > Empty > Heuristic > Resolved > Unknown.
+            int Score(BindingHealth h) => h switch
+            {
+                BindingHealth.Missing   => 4,
+                BindingHealth.Empty     => 3,
+                BindingHealth.Heuristic => 2,
+                BindingHealth.Resolved  => 1,
+                _                       => 0,
+            };
+            return Score(a) > Score(b);
+        }
+
+        private BindingHealth ClassifyBinding(string partId)
+        {
+            if (string.IsNullOrWhiteSpace(partId)) return BindingHealth.Empty;
+            var pkg = _owner != null ? _owner._pkgPublic : null;
+            if (pkg == null) return BindingHealth.Unknown;
+
+            // Does the partId resolve to an existing PartDefinition?
+            foreach (var p in pkg.GetParts())
+            {
+                if (p != null && string.Equals(p.id, partId, System.StringComparison.Ordinal))
+                    return BindingHealth.Resolved;
+            }
+            // The prefab itself may emit a part with this id at expansion
+            // time (Slice 2's partDefinitions). Treat ids that match a
+            // role-emitted part suffix as Heuristic so they don't read as
+            // hard Missing.
+            return BindingHealth.Missing;
+        }
+
+        private void DrawBindingHealthSummary()
+        {
+            // Re-classify on every paint — cheap and ensures the LEFT
+            // identity column stays in sync without explicit invalidation
+            // hooks.
+            RecomputeBindingHealth();
+            int resolved = 0, heuristic = 0, missing = 0, empty = 0;
+            foreach (var kv in _bindingHealth)
+            {
+                switch (kv.Value)
+                {
+                    case BindingHealth.Resolved:  resolved++;  break;
+                    case BindingHealth.Heuristic: heuristic++; break;
+                    case BindingHealth.Missing:   missing++;   break;
+                    case BindingHealth.Empty:     empty++;     break;
+                }
+            }
+            EditorGUILayout.LabelField($"  ✓ Resolved: {resolved}",  EditorStyles.miniLabel);
+            if (heuristic > 0) EditorGUILayout.LabelField($"  ≈ Heuristic: {heuristic}", EditorStyles.miniLabel);
+            if (missing > 0)   EditorGUILayout.LabelField($"  ✗ Missing: {missing}",   EditorStyles.miniLabel);
+            if (empty > 0)     EditorGUILayout.LabelField($"  ○ Empty: {empty}",       EditorStyles.miniLabel);
         }
 
         // Slice 2e — visible-by-design preview of what the prefab will
@@ -339,19 +895,32 @@ namespace OSE.Editor
                 "Will create — uncheck a section to skip it on import", true);
             if (_previewExpanded)
             {
-                if (hasParts)  DrawSectionToggleAndLeaves("Parts",      ref _includeParts,     _previewPartRows);
-                if (hasGroup)  DrawSectionToggleAndLeaves("Part Group", ref _includePartGroup, _previewGroupRows);
-                if (hasSteps)  DrawSectionToggleAndLeaves("Steps",      ref _includeSteps,     _previewStepRows);
+                if (hasParts)  DrawSectionToggleAndLeaves(
+                    new GUIContent("Parts",
+                        "PartDefinition entries this prefab will add to the package's parts[]."),
+                    ref _includeParts, _previewPartRows);
+                if (hasGroup)  DrawSectionToggleAndLeaves(
+                    new GUIContent("Part Group",
+                        "PartGroupDefinition entry this prefab will add to the package's partGroups[]."),
+                    ref _includePartGroup, _previewGroupRows);
+                if (hasSteps)  DrawSectionToggleAndLeaves(
+                    new GUIContent("Procedure Steps",
+                        "Each entry below becomes one StepDefinition (a sequenceIndex slot in " +
+                        "the assembly's step list). Inside each procedure step the runtime " +
+                        "may have several sub-tasks (taskOrder entries) — those are NOT " +
+                        "shown here. If you came from \"task\", read this as the parent." ),
+                    ref _includeSteps, _previewStepRows);
             }
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space(2);
         }
 
-        private void DrawSectionToggleAndLeaves(string sectionLabel, ref bool included, List<string> leaves)
+        private void DrawSectionToggleAndLeaves(GUIContent sectionLabel, ref bool included, List<string> leaves)
         {
             EditorGUILayout.BeginHorizontal();
+            var labelText = $"{sectionLabel.text}  ({leaves.Count})";
             included = EditorGUILayout.ToggleLeft(
-                $"{sectionLabel}  ({leaves.Count})",
+                new GUIContent(labelText, sectionLabel.tooltip),
                 included,
                 new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
             EditorGUILayout.EndHorizontal();
@@ -617,15 +1186,23 @@ namespace OSE.Editor
             }
         }
 
-        private static string DerivePrefix(string idLike)
+        private static string DerivePrefix(string prefabName, string idLike)
         {
-            // Strip common "partGroup_" / "step_" prefixes; the prefab's
-            // step ids will already prepend "step_<prefix>_<id_suffix>".
+            // Strip common "partGroup_" / "step_" prefixes from the seed
+            // (the prefab's step ids prepend "step_<prefix>_<id_suffix>"
+            // already, so adding them here would duplicate).
             string s = idLike ?? "";
             const string subPfx  = "partGroup_";
             const string stepPfx = "step_";
-            if (s.StartsWith(subPfx,  System.StringComparison.Ordinal)) s = s.Substring(subPfx.Length);
-            if (s.StartsWith(stepPfx, System.StringComparison.Ordinal)) s = s.Substring(stepPfx.Length);
+            const string prefabPfx = "prefab_";
+            if (s.StartsWith(subPfx,    System.StringComparison.Ordinal)) s = s.Substring(subPfx.Length);
+            if (s.StartsWith(stepPfx,   System.StringComparison.Ordinal)) s = s.Substring(stepPfx.Length);
+            // Author's seed may already start with "prefab_" if they pasted
+            // an existing prefix back in — don't double-stamp. Otherwise
+            // prepend "prefab_<prefabName>_" so the emitted IDs scream their
+            // origin (e.g. step_prefab_carriage_left_frame_side_place_bearings).
+            if (!s.StartsWith(prefabPfx, System.StringComparison.Ordinal) && !string.IsNullOrEmpty(prefabName))
+                s = $"{prefabPfx}{prefabName}_{s}";
             return s;
         }
 
@@ -648,6 +1225,73 @@ namespace OSE.Editor
             public string Description;
             public bool   IsList;
             public int    Count;
+        }
+    }
+
+    /// <summary>
+    /// Searchable picker popup for selecting a partId from the package's
+    /// parts catalog. Opened by <see cref="PrefabWizardWindow"/>'s role-row
+    /// "Pick…" button. Writes the selection back to the owning wizard via
+    /// <see cref="PrefabWizardWindow.OnPartPicked"/>.
+    /// </summary>
+    internal sealed class PartPickerPopup : EditorWindow
+    {
+        private PrefabWizardWindow _owner;
+        private string _controlId;
+        private List<string> _entries;
+        private string _filter = "";
+        private Vector2 _scroll;
+
+        public static void Open(PrefabWizardWindow owner, string controlId,
+            List<string> entries, string current)
+        {
+            var w = CreateInstance<PartPickerPopup>();
+            w.titleContent = new GUIContent("Pick part");
+            w._owner = owner;
+            w._controlId = controlId;
+            w._entries = entries;
+            w._filter = current ?? "";
+            w.ShowAuxWindow();
+            w.minSize = new Vector2(320, 360);
+            w.Focus();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("Filter:", EditorStyles.miniBoldLabel);
+            _filter = EditorGUILayout.TextField(_filter ?? "");
+            EditorGUILayout.Space(4);
+
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            int matched = 0;
+            foreach (var id in _entries)
+            {
+                if (!string.IsNullOrEmpty(_filter)
+                    && id.IndexOf(_filter, System.StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+                if (GUILayout.Button(id, EditorStyles.miniButton))
+                {
+                    _owner?.OnPartPicked(_controlId, id);
+                    Close();
+                    return;
+                }
+                matched++;
+            }
+            if (matched == 0)
+                EditorGUILayout.LabelField("No parts match the filter.", EditorStyles.miniLabel);
+            EditorGUILayout.EndScrollView();
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Clear", EditorStyles.miniButton, GUILayout.Width(72)))
+            {
+                _owner?.OnPartPicked(_controlId, "");
+                Close();
+            }
+            if (GUILayout.Button("Cancel", EditorStyles.miniButton, GUILayout.Width(72)))
+                Close();
+            EditorGUILayout.EndHorizontal();
         }
     }
 }

@@ -144,34 +144,5 @@
     "trackHintUsage": true,
     "leaderboardReady": false,
     "strictValidationModeAvailable": true
-  },
-  "assetManifest": {
-    "modelRefs": [
-      "assets/parts/d3d_frame_flat_bar_approved.glb",
-      "assets/parts/d3d_titan_aero_core_approved.glb",
-      "assets/parts/d3d_extruder_nozzle_assembly_approved.glb",
-      "assets/parts/d3d_extruder_blower_approved.glb",
-      "assets/parts/d3d_extruder_sensor_holder_approved.glb",
-      "assets/parts/d3d_8mm_sensor_approved.glb",
-      "assets/parts/d3d_extruder_mount_bracket_approved.glb",
-      "assets/parts/d3d_extruder_mount_top_plate_approved.glb",
-      "assets/tools/tool_framing_square.glb",
-      "assets/tools/tool_locking_clamp.glb",
-      "assets/tools/tool_mig_torch.glb",
-      "assets/tools/tool_allen_key_metric.glb",
-      "assets/tools/tool_hex_driver_metric_small.glb",
-      "assets/tools/tool_pliers.glb",
-      "assets/tools/tool_screwdriver_small.glb",
-      "assets/parts/d3d_axis_mount_m6x30_bolt_approved.glb",
-      "assets/parts/d3d_y_left_axis_unit_approved.glb",
-      "assets/parts/d3d_y_right_axis_unit_approved.glb",
-      "assets/parts/d3d_x_axis_carriage_side_approved.glb",
-      "assets/parts/d3d_x_axis_half_carriage_approved.glb",
-      "assets/parts/d3d_extruder_simplified_carriage_approved.glb",
-      "assets/parts/d3d_heatbed_body_approved.glb",
-      "assets/parts/d3d_heatbed_snapbuckle_approved.glb"
-    ],
-    "effectRefs": [],
-    "uiRefs": []
   }
 }

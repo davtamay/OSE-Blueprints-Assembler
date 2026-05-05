@@ -76,7 +76,7 @@ namespace OSE.Editor
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[PackageJsonPostprocessor] Failed to load '{packageId}' for validation: {ex.Message}");
+                OseLog.Error($"[PackageJsonPostprocessor] Failed to load '{packageId}' for validation: {ex.Message}");
                 return;
             }
             if (pkg == null) return;
@@ -87,7 +87,7 @@ namespace OSE.Editor
             try { MachinePackageNormalizer.Normalize(pkg); }
             catch (Exception ex)
             {
-                Debug.LogError($"[PackageJsonPostprocessor] Normalize failed for '{packageId}': {ex.Message}");
+                OseLog.Error($"[PackageJsonPostprocessor] Normalize failed for '{packageId}': {ex.Message}");
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace OSE.Editor
             try { result = MachinePackageValidator.Validate(pkg); }
             catch (Exception ex)
             {
-                Debug.LogError($"[PackageJsonPostprocessor] Validate failed for '{packageId}': {ex.Message}");
+                OseLog.Error($"[PackageJsonPostprocessor] Validate failed for '{packageId}': {ex.Message}");
                 return;
             }
 
@@ -109,18 +109,18 @@ namespace OSE.Editor
                     if (issue.Severity == MachinePackageIssueSeverity.Error)
                     {
                         errors++;
-                        Debug.LogError(line);
+                        OseLog.Error(line);
                     }
                     else
                     {
                         warnings++;
-                        Debug.LogWarning(line);
+                        OseLog.Warn(line);
                     }
                 }
             }
 
             if (errors > 0 || warnings > 0)
-                Debug.Log($"[PackageJsonPostprocessor] '{packageId}' validated after edit: {errors} error(s), {warnings} warning(s).");
+                OseLog.Info($"[PackageJsonPostprocessor] '{packageId}' validated after edit: {errors} error(s), {warnings} warning(s).");
         }
     }
 }

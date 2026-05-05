@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     /// <summary>
@@ -59,7 +60,7 @@ namespace OSE.Editor
             // time scripts have finished recompiling and the new domain is
             // up, the editor is back in Edit mode with a clean session
             // boot waiting for the next Play press.
-            Debug.Log("[OSE] Script recompile detected during Play — exiting Play mode to avoid runtime state loss. Press Play again to resume from your last completed step.");
+            OseLog.Info("[OSE] Script recompile detected during Play — exiting Play mode to avoid runtime state loss. Press Play again to resume from your last completed step.");
             EditorApplication.isPlaying = false;
         }
     }

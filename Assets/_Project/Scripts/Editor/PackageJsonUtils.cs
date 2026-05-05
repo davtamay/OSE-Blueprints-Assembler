@@ -7,6 +7,7 @@ using OSE.Content;
 using UnityEditor;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     /// <summary>
@@ -92,7 +93,7 @@ namespace OSE.Editor
                 if (string.IsNullOrWhiteSpace(id)) continue;
                 if (map.TryGetValue(id, out string prior) && prior != sourceFile)
                 {
-                    Debug.LogError(
+                    OseLog.Error(
                         $"[PackageJsonUtils] Duplicate {kind} definition for id '{id}': " +
                         $"first seen in '{prior}', also found in '{sourceFile}'. " +
                         "Editor edits will write to the FIRST-seen file, silently dropping " +

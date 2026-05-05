@@ -1339,40 +1339,77 @@ namespace OSE.Editor
         /// </summary>
         private List<PartGroupDefinition> CollectRelevantPartGroupsForStep(StepDefinition step)
         {
-            var relevant = new List<PartGroupDefinition>();
-            if (_pkg == null) return relevant;
-            var allSubs = _pkg.GetPartGroups();
-            if (allSubs == null || allSubs.Length == 0) return relevant;
+            var entries = CollectGroupTierEntriesForStep(step);
+            var result = new List<PartGroupDefinition>(entries.Count);
+            for (int i = 0; i < entries.Count; i++)
+                result.Add(entries[i].Group);
+            return result;
+        }
 
-            string ownerSubId    = step?.partGroupId;
-            string requiredSubId = step?.requiredPartGroupId;
+        /// <summary>
+        /// One entry per group considered visible at the active step's
+        /// seqIndex, tagged with its <see cref="OSE.Content.Loading.PartGroupLifecycleTier"/>.
+        /// Sorted: Active → Recent → Built, then leaves before aggregates,
+        /// then by display name. Hidden groups are excluded entirely.
+        /// Pinned groups are forced to the top of their natural tier.
+        /// </summary>
+        internal struct GroupTierEntry
+        {
+            public PartGroupDefinition Group;
+            public OSE.Content.Loading.PartGroupLifecycleTier Tier;
+            public bool IsPinned;
+        }
+
+        internal List<GroupTierEntry> CollectGroupTierEntriesForStep(StepDefinition step)
+        {
+            var result = new List<GroupTierEntry>();
+            if (_pkg == null) return result;
+            var allSubs = _pkg.GetPartGroups();
+            if (allSubs == null || allSubs.Length == 0) return result;
+
+            int currentSeq = step?.sequenceIndex ?? -1;
 
             for (int i = 0; i < allSubs.Length; i++)
             {
                 var sub = allSubs[i];
-                if (sub == null) continue;
-                bool isOwner    = !string.IsNullOrEmpty(ownerSubId)
-                                  && string.Equals(sub.id, ownerSubId, StringComparison.Ordinal);
-                bool isRequired = !string.IsNullOrEmpty(requiredSubId)
-                                  && string.Equals(sub.id, requiredSubId, StringComparison.Ordinal);
-                bool containsStep = false;
-                if (!isOwner && !isRequired && sub.stepIds != null && step != null)
+                if (sub == null || string.IsNullOrEmpty(sub.id)) continue;
+
+                var tier = OSE.Content.Loading.PartGroupLifecycleResolver
+                    .Classify(_pkg, sub.id, currentSeq);
+
+                bool isPinned = _pinnedGroupIds != null && _pinnedGroupIds.Contains(sub.id);
+
+                // Pinned groups bypass Hidden so the author can keep an early
+                // group visible from the very first step. Otherwise drop
+                // anything that hasn't been built yet.
+                if (tier == OSE.Content.Loading.PartGroupLifecycleTier.Hidden && !isPinned)
+                    continue;
+
+                result.Add(new GroupTierEntry
                 {
-                    foreach (var sid in sub.stepIds)
-                        if (string.Equals(sid, step.id, StringComparison.Ordinal))
-                        { containsStep = true; break; }
-                }
-                if (isOwner || isRequired || containsStep)
-                    relevant.Add(sub);
+                    Group = sub,
+                    Tier = tier,
+                    IsPinned = isPinned,
+                });
             }
 
-            relevant.Sort((a, b) =>
+            result.Sort((a, b) =>
             {
-                int aScore = a.isAggregate ? 1 : 0;
-                int bScore = b.isAggregate ? 1 : 0;
-                return aScore.CompareTo(bScore);
+                // Pinned-Active first, then Pinned-Recent/Built grouped by
+                // their tier, then unpinned by descending tier (Active >
+                // Recent > Built > Hidden), then leaves before aggregates,
+                // then alphabetical by display name. Tier descending = higher
+                // enum value first; PartGroupLifecycleTier defines Active=3.
+                int pinCompare = (b.IsPinned ? 1 : 0).CompareTo(a.IsPinned ? 1 : 0);
+                if (pinCompare != 0) return pinCompare;
+                int tierCompare = ((int)b.Tier).CompareTo((int)a.Tier);
+                if (tierCompare != 0) return tierCompare;
+                int aggCompare = (a.Group.isAggregate ? 1 : 0)
+                    .CompareTo(b.Group.isAggregate ? 1 : 0);
+                if (aggCompare != 0) return aggCompare;
+                return string.CompareOrdinal(a.Group.GetDisplayName(), b.Group.GetDisplayName());
             });
-            return relevant;
+            return result;
         }
 
         /// <summary>
@@ -1397,7 +1434,21 @@ namespace OSE.Editor
             var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0) return;
 
-            var relevant = CollectRelevantPartGroupsForStep(step);
+            var entries = CollectGroupTierEntriesForStep(step);
+
+            // Bucket by tier so each section can render its own collapsed
+            // header. Sort order from CollectGroupTierEntriesForStep already
+            // groups by tier descending; we just split the runs.
+            int activeCount = 0, recentCount = 0, builtCount = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                switch (entries[i].Tier)
+                {
+                    case OSE.Content.Loading.PartGroupLifecycleTier.Active: activeCount++; break;
+                    case OSE.Content.Loading.PartGroupLifecycleTier.Recent: recentCount++; break;
+                    case OSE.Content.Loading.PartGroupLifecycleTier.Built:  builtCount++;  break;
+                }
+            }
 
             // Header + "+" button — drawn only when the caller isn't already
             // providing card chrome (the Slice-ME-C card wrapper supplies both).
@@ -1405,9 +1456,10 @@ namespace OSE.Editor
             {
                 EditorGUILayout.BeginHorizontal();
                 var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-                GUILayout.Label(new GUIContent($"PART GROUPS ({relevant.Count})",
-                    "Part groups that this step belongs to. Click to inspect. " +
-                    "Drag parts from the Hierarchy onto the drop zone to create/add."),
+                GUILayout.Label(new GUIContent($"PART GROUPS ({entries.Count})",
+                    "Part groups visible at this step. Active = touched now; " +
+                    "Recent = touched in the last few steps; Built = exists but " +
+                    "idle. Pin a group to keep it always at the top."),
                     titleStyle);
                 GUILayout.FlexibleSpace();
                 var addBtnStyle = new GUIStyle(EditorStyles.miniButton)
@@ -1424,139 +1476,220 @@ namespace OSE.Editor
                 EditorGUILayout.EndHorizontal();
             }
 
-            if (relevant.Count == 0)
+            if (entries.Count == 0)
             {
                 DrawSmartGroupDropZone(step);
                 return;
             }
 
-            // Rows
-            for (int i = 0; i < relevant.Count; i++)
-            {
-                var sub = relevant[i];
-                int parts = sub.partIds?.Length ?? 0;
-                int steps = sub.stepIds?.Length ?? 0;
-                bool isSelected = string.Equals(_canvasSelectedSubId, sub.id, StringComparison.Ordinal);
-
-                var rowRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
-
-                // Background — highlight selected
-                if (isSelected)
-                    EditorGUI.DrawRect(rowRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.20f));
-                else if ((i & 1) == 0)
-                    EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.025f));
-
-                // Per-group accent dot — hue derived from the group id via
-                // GroupAccentColor so the same group reads as the same color
-                // in the task-row pill above AND this card row. Reinforces
-                // "the blue dot on the task row corresponds to this group."
-                EditorGUI.DrawRect(new Rect(rowRect.x + 6f, rowRect.y + 9f, 5f, 5f),
-                    GroupAccentColor(sub.id));
-
-                // Name + counts
-                var nameStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
-                    normal    = { textColor = isSelected ? SubAccent : new Color(0.78f, 0.78f, 0.78f) },
-                    alignment = TextAnchor.MiddleLeft,
-                };
-                var nameRect = new Rect(rowRect.x + 18f, rowRect.y, rowRect.width - 140f, rowRect.height);
-                GUI.Label(nameRect, sub.GetDisplayName(), nameStyle);
-
-                // Aggregate/phase flag badge — same row, just a tag.
-                // Hovering explains: "a group whose members are other groups."
-                if (sub.isAggregate)
-                {
-                    var badgeRect = new Rect(nameRect.xMax + 4f, rowRect.y + 4f, 40f, rowRect.height - 8f);
-                    EditorGUI.DrawRect(badgeRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.28f));
-                    var badgeStyle = new GUIStyle(EditorStyles.miniLabel)
-                    {
-                        normal    = { textColor = new Color(0.70f, 0.85f, 1f) },
-                        fontSize  = 8,
-                        alignment = TextAnchor.MiddleCenter,
-                        fontStyle = FontStyle.Bold,
-                    };
-                    GUI.Label(badgeRect,
-                        new GUIContent("SCOPE", "This group is an aggregate — its members are other groups. Select to move the whole scope (e.g. the entire frame cube) as one unit."),
-                        badgeStyle);
-                }
-
-                var countStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal    = { textColor = new Color(0.55f, 0.58f, 0.62f) },
-                    alignment = TextAnchor.MiddleRight,
-                };
-                // Cue-count badges — inline at-a-glance affordance so authors
-                // see which groups own animation/particle cues without having
-                // to select each row.
-                var badgeArea = new Rect(rowRect.xMax - 160f, rowRect.y, 78f, rowRect.height);
-                DrawCueCountBadges(badgeArea, sub);
-
-                var countRect = new Rect(rowRect.xMax - 80f, rowRect.y, 74f, rowRect.height);
-                int groupChildren = sub.memberPartGroupIds?.Length ?? 0;
-                string countText = sub.isAggregate && groupChildren > 0
-                    ? $"{groupChildren}g · {steps}s"
-                    : $"{parts}p · {steps}s";
-                GUI.Label(countRect, countText, countStyle);
-
-                // Click to select/deselect
-                if (Event.current.type == EventType.MouseDown
-                    && Event.current.button == 0
-                    && rowRect.Contains(Event.current.mousePosition))
-                {
-                    _canvasSelectedSubId = isSelected ? null : sub.id;
-                    if (!isSelected)
-                    {
-                        // Clear task-sequence selection so the inspector
-                        // switches to the partGroup view.
-                        _selectedTaskSeqIdx = -1;
-                        _multiSelectedTaskSeqIdxs.Clear();
-                        _selectedPartIdx = -1;
-                        _selectedIdx     = -1;
-                        _multiSelectedParts.Clear();
-                        _multiSelected.Clear();
-
-                        // Select the group's root GO in the Hierarchy so the
-                        // author can see all children at a glance.
-                        // Ping the group root in Hierarchy but don't select it
-                        // (HideFlags.DontSave causes Inspector NullReferenceException).
-                        if (_partGroupRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
-                            EditorGUIUtility.PingObject(rootGO);
-                        Selection.activeGameObject = null;
-
-                        // Highlight the group's member parts in the task sequence
-                        // by multi-selecting their rows.
-                        SelectGroupMembersInTaskSequence(sub, step);
-                    }
-                    else
-                    {
-                        // Deselecting — clear highlights
-                        _multiSelectedTaskSeqIdxs.Clear();
-                        Selection.activeGameObject = null;
-                    }
-                    Event.current.Use();
-                    SceneView.RepaintAll();
-                    Repaint();
-                }
-            }
-
-            // Gizmo hint (when a group is selected)
-            if (!string.IsNullOrEmpty(_canvasSelectedSubId))
-            {
-                var hintStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal    = { textColor = SubAccent },
-                    fontStyle = FontStyle.Italic,
-                    alignment = TextAnchor.MiddleCenter,
-                };
-                EditorGUILayout.LabelField("Rotate/move via the gizmo in SceneView", hintStyle);
-            }
+            int rowIdx = 0;
+            DrawGroupTierSection("ACTIVE", activeCount,
+                ref _groupsTierActiveExpanded, OSE.Content.Loading.PartGroupLifecycleTier.Active,
+                entries, step, ref rowIdx, defaultExpanded: true);
+            DrawGroupTierSection("RECENT", recentCount,
+                ref _groupsTierRecentExpanded, OSE.Content.Loading.PartGroupLifecycleTier.Recent,
+                entries, step, ref rowIdx, defaultExpanded: false);
+            DrawGroupTierSection("BUILT EARLIER", builtCount,
+                ref _groupsTierBuiltExpanded, OSE.Content.Loading.PartGroupLifecycleTier.Built,
+                entries, step, ref rowIdx, defaultExpanded: false);
 
             // ── Single smart drop zone ────────────────────────────────────────
             // If a group is selected → dropping adds parts to that group.
             // If no group is selected → dropping creates a new group.
             // One strip, zero ambiguity.
             DrawSmartGroupDropZone(step);
+        }
+
+        /// <summary>
+        /// Renders one lifecycle-tier section of the PART GROUPS card: a
+        /// foldable header followed by the group rows whose tier matches.
+        /// Counts include pinned-but-different-tier rows when they appear in
+        /// their natural section, so the user always sees an accurate header.
+        /// </summary>
+        private void DrawGroupTierSection(
+            string label,
+            int count,
+            ref bool expanded,
+            OSE.Content.Loading.PartGroupLifecycleTier tier,
+            List<GroupTierEntry> entries,
+            StepDefinition step,
+            ref int rowIdx,
+            bool defaultExpanded)
+        {
+            if (count == 0) return;
+
+            EditorGUILayout.BeginHorizontal();
+            var headerStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                normal = { textColor = TierHeaderColor(tier) },
+            };
+            string arrow = expanded ? "▼" : "▶";
+            if (GUILayout.Button($"{arrow}  {label}  ({count})", headerStyle, GUILayout.ExpandWidth(true)))
+                expanded = !expanded;
+            EditorGUILayout.EndHorizontal();
+
+            if (!expanded) return;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Tier != tier) continue;
+                DrawCanvasPartGroupRow(entries[i], step, rowIdx);
+                rowIdx++;
+            }
+        }
+
+        private static Color TierHeaderColor(OSE.Content.Loading.PartGroupLifecycleTier tier)
+        {
+            switch (tier)
+            {
+                case OSE.Content.Loading.PartGroupLifecycleTier.Active: return new Color(0.85f, 0.85f, 0.92f);
+                case OSE.Content.Loading.PartGroupLifecycleTier.Recent: return new Color(0.70f, 0.72f, 0.78f);
+                default:                                                return new Color(0.55f, 0.55f, 0.58f);
+            }
+        }
+
+        private void DrawCanvasPartGroupRow(GroupTierEntry entry, StepDefinition step, int rowIdx)
+        {
+            var sub = entry.Group;
+            int parts = sub.partIds?.Length ?? 0;
+            int steps = sub.stepIds?.Length ?? 0;
+            bool isSelected = string.Equals(_canvasSelectedSubId, sub.id, StringComparison.Ordinal);
+
+            // Tier-driven dim factor — Active full, Recent ~75%, Built ~50%.
+            float tierAlpha = entry.Tier == OSE.Content.Loading.PartGroupLifecycleTier.Active ? 1f
+                            : entry.Tier == OSE.Content.Loading.PartGroupLifecycleTier.Recent ? 0.75f
+                            : 0.50f;
+
+            var rowRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
+
+            // Background — highlight selected; alternating tint applies per
+            // visible position so the stripe pattern survives section folds.
+            if (isSelected)
+                EditorGUI.DrawRect(rowRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.20f));
+            else if ((rowIdx & 1) == 0)
+                EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.025f));
+
+            // Pin toggle — leftmost slot. UI-only state, no JSON write.
+            var pinRect = new Rect(rowRect.x + 2f, rowRect.y + 4f, 14f, rowRect.height - 8f);
+            string pinGlyph = entry.IsPinned ? "★" : "☆";
+            var pinStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 12,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = entry.IsPinned
+                    ? new Color(1f, 0.85f, 0.35f)
+                    : new Color(0.5f, 0.5f, 0.55f) },
+            };
+            if (GUI.Button(pinRect, new GUIContent(pinGlyph,
+                    entry.IsPinned ? "Unpin: this group will follow the lifecycle tiers."
+                                   : "Pin: this group stays at the top regardless of tier."),
+                pinStyle))
+            {
+                if (_pinnedGroupIds == null)
+                    _pinnedGroupIds = new HashSet<string>(StringComparer.Ordinal);
+                if (entry.IsPinned) _pinnedGroupIds.Remove(sub.id);
+                else                _pinnedGroupIds.Add(sub.id);
+                Repaint();
+            }
+
+            // Per-group accent dot — hue derived from the group id via
+            // GroupAccentColor so the same group reads as the same color
+            // in the task-row pill above AND this card row. Reinforces
+            // "the blue dot on the task row corresponds to this group."
+            var accent = GroupAccentColor(sub.id);
+            EditorGUI.DrawRect(new Rect(rowRect.x + 18f, rowRect.y + 9f, 5f, 5f),
+                new Color(accent.r, accent.g, accent.b, accent.a * tierAlpha));
+
+            // Name + counts
+            var nameStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                normal    = { textColor = isSelected
+                    ? SubAccent
+                    : new Color(0.78f, 0.78f, 0.78f, tierAlpha) },
+                alignment = TextAnchor.MiddleLeft,
+            };
+            var nameRect = new Rect(rowRect.x + 30f, rowRect.y, rowRect.width - 152f, rowRect.height);
+            GUI.Label(nameRect, sub.GetDisplayName(), nameStyle);
+
+            // Aggregate/phase flag badge — same row, just a tag.
+            // Hovering explains: "a group whose members are other groups."
+            if (sub.isAggregate)
+            {
+                var badgeRect = new Rect(nameRect.xMax + 4f, rowRect.y + 4f, 40f, rowRect.height - 8f);
+                EditorGUI.DrawRect(badgeRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.28f * tierAlpha));
+                var badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.70f, 0.85f, 1f, tierAlpha) },
+                    fontSize  = 8,
+                    alignment = TextAnchor.MiddleCenter,
+                    fontStyle = FontStyle.Bold,
+                };
+                GUI.Label(badgeRect,
+                    new GUIContent("SCOPE", "This group is an aggregate — its members are other groups. Select to move the whole scope (e.g. the entire frame cube) as one unit."),
+                    badgeStyle);
+            }
+
+            var countStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = new Color(0.55f, 0.58f, 0.62f, tierAlpha) },
+                alignment = TextAnchor.MiddleRight,
+            };
+            // Cue-count badges — inline at-a-glance affordance so authors
+            // see which groups own animation/particle cues without having
+            // to select each row.
+            var badgeArea = new Rect(rowRect.xMax - 160f, rowRect.y, 78f, rowRect.height);
+            DrawCueCountBadges(badgeArea, sub);
+
+            var countRect = new Rect(rowRect.xMax - 80f, rowRect.y, 74f, rowRect.height);
+            int groupChildren = sub.memberPartGroupIds?.Length ?? 0;
+            string countText = sub.isAggregate && groupChildren > 0
+                ? $"{groupChildren}g · {steps}s"
+                : $"{parts}p · {steps}s";
+            GUI.Label(countRect, countText, countStyle);
+
+            // Click to select/deselect — pin button rect already consumed
+            // its own clicks via GUI.Button above so this only fires on the
+            // body of the row.
+            if (Event.current.type == EventType.MouseDown
+                && Event.current.button == 0
+                && rowRect.Contains(Event.current.mousePosition)
+                && !pinRect.Contains(Event.current.mousePosition))
+            {
+                _canvasSelectedSubId = isSelected ? null : sub.id;
+                if (!isSelected)
+                {
+                    // Clear task-sequence selection so the inspector
+                    // switches to the partGroup view.
+                    _selectedTaskSeqIdx = -1;
+                    _multiSelectedTaskSeqIdxs.Clear();
+                    _selectedPartIdx = -1;
+                    _selectedIdx     = -1;
+                    _multiSelectedParts.Clear();
+                    _multiSelected.Clear();
+
+                    // Select the group's root GO in the Hierarchy so the
+                    // author can see all children at a glance.
+                    // Ping the group root in Hierarchy but don't select it
+                    // (HideFlags.DontSave causes Inspector NullReferenceException).
+                    if (_partGroupRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
+                        EditorGUIUtility.PingObject(rootGO);
+                    Selection.activeGameObject = null;
+
+                    // Highlight the group's member parts in the task sequence
+                    // by multi-selecting their rows.
+                    SelectGroupMembersInTaskSequence(sub, step);
+                }
+                else
+                {
+                    // Deselecting — clear highlights
+                    _multiSelectedTaskSeqIdxs.Clear();
+                    Selection.activeGameObject = null;
+                }
+                Event.current.Use();
+                SceneView.RepaintAll();
+                Repaint();
+            }
         }
 
         /// <summary>

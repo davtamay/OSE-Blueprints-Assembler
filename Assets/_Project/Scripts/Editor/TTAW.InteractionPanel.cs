@@ -84,14 +84,14 @@ namespace OSE.Editor
             string partId = ResolvePartIdForTarget(taskAction.targetId);
             if (string.IsNullOrEmpty(partId))
             {
-                Debug.LogWarning("[TTAW] Preview aborted: target has no associatedPartId.");
+                OseLog.Warn("[TTAW] Preview aborted: target has no associatedPartId.");
                 return;
             }
 
             var partGo = FindLivePartGO(partId);
             if (partGo == null)
             {
-                Debug.LogWarning($"[TTAW] Preview aborted: no live GameObject for part '{partId}'. " +
+                OseLog.Warn($"[TTAW] Preview aborted: no live GameObject for part '{partId}'. " +
                                  "Spawn the scene via the TTAW preview first.");
                 return;
             }
@@ -103,7 +103,7 @@ namespace OSE.Editor
             if (!TryResolvePreviewEndPose(partId, step.id, toPoseToken,
                                           out Vector3 endPos, out Quaternion endRot, out Vector3 endScale))
             {
-                Debug.LogWarning($"[TTAW] Preview aborted: no end pose for part '{partId}' in step '{step.id}'. " +
+                OseLog.Warn($"[TTAW] Preview aborted: no end pose for part '{partId}' in step '{step.id}'. " +
                                  "Author a stepPose in the Part task first.");
                 return;
             }
@@ -129,7 +129,7 @@ namespace OSE.Editor
             var effect = PartEffectRegistry.Build(archetype, args);
             if (effect == null)
             {
-                Debug.LogWarning($"[TTAW] Preview aborted: no effect factory registered for '{archetype}'.");
+                OseLog.Warn($"[TTAW] Preview aborted: no effect factory registered for '{archetype}'.");
                 return;
             }
 
@@ -206,7 +206,7 @@ namespace OSE.Editor
                     // the runtime guard in ToolActionExecutor.ResolveEndPose.
                     if (!string.IsNullOrEmpty(refStepId) && !string.Equals(refStepId, stepId, StringComparison.Ordinal))
                     {
-                        Debug.LogWarning($"[TTAW Preview] Cross-task pose reference ignored: " +
+                        OseLog.Warn($"[TTAW Preview] Cross-task pose reference ignored: " +
                                          $"toPose='{toPoseToken}' on step '{stepId}'. Only self-step refs are valid.");
                     }
                     else if (pp.stepPoses != null)
@@ -488,7 +488,7 @@ namespace OSE.Editor
             var go = FindLivePartGO(partId);
             if (go == null)
             {
-                Debug.LogWarning($"[TTAW] Capture aborted: no live GameObject for part '{partId}'. " +
+                OseLog.Warn($"[TTAW] Capture aborted: no live GameObject for part '{partId}'. " +
                                  "Spawn the scene via the TTAW preview first.");
                 return;
             }
@@ -508,7 +508,7 @@ namespace OSE.Editor
         private void CaptureAssembledIntoTaskEndTransform(StepDefinition step, TaskOrderEntry taskEntry, string partId)
         {
             var pp = FindPartPlacement(partId);
-            if (pp == null) { Debug.LogWarning($"[TTAW] No PartPreviewPlacement for '{partId}'."); return; }
+            if (pp == null) { OseLog.Warn($"[TTAW] No PartPreviewPlacement for '{partId}'."); return; }
             taskEntry.endTransform ??= new TaskEndTransform();
             taskEntry.endTransform.position = pp.assembledPosition;
             taskEntry.endTransform.rotation = pp.assembledRotation;

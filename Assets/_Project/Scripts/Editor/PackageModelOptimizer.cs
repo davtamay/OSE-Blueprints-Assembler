@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     /// <summary>
@@ -80,7 +81,7 @@ namespace OSE.Editor
             string fullRoot = Path.GetFullPath(PackageJsonUtils.AuthoringRoot);
             if (!Directory.Exists(fullRoot))
             {
-                Debug.LogError("[ModelOptimizer] Authoring root not found: " + fullRoot);
+                OseLog.Error("[ModelOptimizer] Authoring root not found: " + fullRoot);
                 return;
             }
 
@@ -146,7 +147,7 @@ namespace OSE.Editor
 
                             if (proc.ExitCode != 0)
                             {
-                                Debug.LogWarning($"[ModelOptimizer] gltfpack failed for {relativePath}: {stderr}");
+                                OseLog.Warn($"[ModelOptimizer] gltfpack failed for {relativePath}: {stderr}");
                                 if (File.Exists(tempOutput)) File.Delete(tempOutput);
                                 errors++;
                                 continue;
@@ -161,7 +162,7 @@ namespace OSE.Editor
                         {
                             File.Delete(tempOutput);
                             skipped++;
-                            Debug.Log($"[ModelOptimizer] Skipped {relativePath} (no size reduction)");
+                            OseLog.Info($"[ModelOptimizer] Skipped {relativePath} (no size reduction)");
                             continue;
                         }
 
@@ -175,12 +176,12 @@ namespace OSE.Editor
                         optimized++;
 
                         float pct = (1f - (float)optimizedSize / originalSize) * 100f;
-                        Debug.Log($"[ModelOptimizer] {relativePath}: {FormatBytes(originalSize)} → " +
+                        OseLog.Info($"[ModelOptimizer] {relativePath}: {FormatBytes(originalSize)} → " +
                                   $"{FormatBytes(optimizedSize)} ({pct:F0}% reduction)");
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError($"[ModelOptimizer] Error processing {relativePath}: {ex.Message}");
+                        OseLog.Error($"[ModelOptimizer] Error processing {relativePath}: {ex.Message}");
                         if (File.Exists(tempOutput)) File.Delete(tempOutput);
                         errors++;
                     }

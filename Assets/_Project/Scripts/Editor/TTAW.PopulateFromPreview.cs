@@ -15,6 +15,7 @@ using OSE.Content;
 using UnityEditor;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
@@ -84,7 +85,7 @@ namespace OSE.Editor
                 case "Square": AppendSquareCues(authored, stepId);     break;
                 case "Measure": AppendMeasureCues(authored, stepId);   break;
                 default:
-                    Debug.LogWarning($"[TTAW] No preview recipe for profile '{profile}'. Use Weld / Drill / Torque / Cut / Square / Measure.");
+                    OseLog.Warn($"[TTAW] No preview recipe for profile '{profile}'. Use Weld / Drill / Torque / Cut / Square / Measure.");
                     return;
             }
 
@@ -111,7 +112,7 @@ namespace OSE.Editor
             storage.setter(authored.ToArray());
             storage.markDirty();
             int added = authored.Count - countBefore;
-            Debug.Log($"[TTAW] Populated {added} cue row(s) from '{profile}' preview onto tool '{scopeKey}'. Open any row to inspect the decomposition.");
+            OseLog.Info($"[TTAW] Populated {added} cue row(s) from '{profile}' preview onto tool '{scopeKey}'. Open any row to inspect the decomposition.");
             Repaint();
         }
 

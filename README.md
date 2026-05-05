@@ -8,11 +8,12 @@ XR assembly training application. Users follow step-by-step guided instructions 
 
 | Requirement | Version |
 |---|---|
-| Unity | 2022.3 LTS |
-| Universal Render Pipeline | 14.x (included) |
-| XR Interaction Toolkit | 2.5.x |
-| XR Plugin Management | 4.x |
-| Target platforms | WebGL, Windows (standalone) |
+| Unity | 6000.3.11f1 (Unity 6) |
+| Universal Render Pipeline | 17.3.0 (included) |
+| XR Interaction Toolkit | 3.3.1 |
+| XR Plugin Management | 4.5.4 |
+| OpenXR | 1.16.1 |
+| Target platforms | WebGL, Windows (standalone), Quest |
 
 ---
 

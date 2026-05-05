@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GLTFast;
@@ -68,6 +69,54 @@ namespace OSE.Content.Loading
             }
 
             return wrapper;
+        }
+
+        private readonly Dictionary<string, GameObject> _combinedRootCache =
+            new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
+        private GameObject _combinedCacheHolder;
+
+        public async Task<GameObject> LoadCombinedNodeAsync(
+            string packageId,
+            string assetRef,
+            string nodeName,
+            Transform parent,
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(assetRef) || string.IsNullOrWhiteSpace(nodeName))
+                return null;
+
+            string cacheKey = packageId + "/" + assetRef;
+            if (!_combinedRootCache.TryGetValue(cacheKey, out GameObject root) || root == null)
+            {
+                if (_combinedCacheHolder == null)
+                {
+                    _combinedCacheHolder = new GameObject("OSE.RemoteCombinedGlbCache");
+                    _combinedCacheHolder.SetActive(false);
+                    UnityEngine.Object.DontDestroyOnLoad(_combinedCacheHolder);
+                }
+
+                root = await LoadAsync(packageId, assetRef, _combinedCacheHolder.transform, ct);
+                if (root == null) return null;
+                _combinedRootCache[cacheKey] = root;
+            }
+
+            Transform node = FindNodeRecursive(root.transform, nodeName);
+            if (node == null) return null;
+
+            GameObject copy = UnityEngine.Object.Instantiate(node.gameObject, parent);
+            copy.name = node.name;
+            return copy;
+        }
+
+        private static Transform FindNodeRecursive(Transform t, string name)
+        {
+            if (t.name.Equals(name, StringComparison.OrdinalIgnoreCase)) return t;
+            foreach (Transform child in t)
+            {
+                var found = FindNodeRecursive(child, name);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private string BuildUri(string packageId, string assetRef) =>

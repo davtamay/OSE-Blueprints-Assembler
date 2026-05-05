@@ -78,6 +78,150 @@ namespace OSE.Editor
             return sb.ToString();
         }
 
+        // ── Step text payloads ─────────────────────────────────────────────
+        //
+        // The four payload blocks below carry every authored TEXT field on a
+        // step: instruction, why-it-matters, hint refs, validation rule refs,
+        // feedback messages, and post-completion reinforcement. Until these
+        // builders existed, TTAW.WriteJson silently skipped these blocks on
+        // every save — guidance/validation/feedback/reinforcement edits made
+        // anywhere were dropped on disk. See the "no empty payloads" rule in
+        // CLAUDE.md and the JsonUtility default-instance trap captured by
+        // feedback_jsonutility_inflates_empty_payloads.md: every builder
+        // returns null when its payload carries no authored content so the
+        // caller can omit the key entirely instead of writing `"x": {}`.
+
+        public static bool IsEmpty(StepGuidancePayload g) =>
+            g == null
+            || (string.IsNullOrEmpty(g.instructionText)
+                && string.IsNullOrEmpty(g.whyItMattersText)
+                && string.IsNullOrEmpty(g.contextualDiagramRef)
+                && (g.hintIds == null || g.hintIds.Length == 0));
+
+        public static bool IsEmpty(StepValidationPayload v) =>
+            v == null || v.validationRuleIds == null || v.validationRuleIds.Length == 0;
+
+        public static bool IsEmpty(StepFeedbackPayload f) =>
+            f == null
+            || ((f.effectTriggerIds == null || f.effectTriggerIds.Length == 0)
+                && string.IsNullOrEmpty(f.completionEffectColor)
+                && f.completionPulseScale == 0f
+                && string.IsNullOrEmpty(f.completionParticleId));
+
+        public static bool IsEmpty(StepReinforcementPayload r) =>
+            r == null
+            || (string.IsNullOrEmpty(r.milestoneMessage)
+                && string.IsNullOrEmpty(r.consequenceText)
+                && string.IsNullOrEmpty(r.safetyNote)
+                && string.IsNullOrEmpty(r.counterfactualText));
+
+        /// <summary>Returns null when the payload is empty (caller should omit the key).</summary>
+        public static string BuildGuidanceJson(StepGuidancePayload g)
+        {
+            if (IsEmpty(g)) return null;
+            var sb = new StringBuilder("{");
+            bool first = true;
+            void Sep() { if (!first) sb.Append(","); first = false; }
+
+            if (!string.IsNullOrEmpty(g.instructionText))      { Sep(); sb.Append("\"instructionText\":").Append(JsonQuote(g.instructionText)); }
+            if (!string.IsNullOrEmpty(g.whyItMattersText))     { Sep(); sb.Append("\"whyItMattersText\":").Append(JsonQuote(g.whyItMattersText)); }
+            if (g.hintIds != null && g.hintIds.Length > 0)
+            {
+                Sep();
+                sb.Append("\"hintIds\":[");
+                for (int i = 0; i < g.hintIds.Length; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append(JsonQuote(g.hintIds[i] ?? string.Empty));
+                }
+                sb.Append("]");
+            }
+            if (!string.IsNullOrEmpty(g.contextualDiagramRef)) { Sep(); sb.Append("\"contextualDiagramRef\":").Append(JsonQuote(g.contextualDiagramRef)); }
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        /// <summary>Returns null when the payload is empty.</summary>
+        public static string BuildValidationJson(StepValidationPayload v)
+        {
+            if (IsEmpty(v)) return null;
+            var sb = new StringBuilder("{\"validationRuleIds\":[");
+            for (int i = 0; i < v.validationRuleIds.Length; i++)
+            {
+                if (i > 0) sb.Append(",");
+                sb.Append(JsonQuote(v.validationRuleIds[i] ?? string.Empty));
+            }
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>Returns null when the payload is empty.</summary>
+        public static string BuildFeedbackJson(StepFeedbackPayload f)
+        {
+            if (IsEmpty(f)) return null;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var sb = new StringBuilder("{");
+            bool first = true;
+            void Sep() { if (!first) sb.Append(","); first = false; }
+
+            if (f.effectTriggerIds != null && f.effectTriggerIds.Length > 0)
+            {
+                Sep();
+                sb.Append("\"effectTriggerIds\":[");
+                for (int i = 0; i < f.effectTriggerIds.Length; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append(JsonQuote(f.effectTriggerIds[i] ?? string.Empty));
+                }
+                sb.Append("]");
+            }
+            if (!string.IsNullOrEmpty(f.completionEffectColor))  { Sep(); sb.Append("\"completionEffectColor\":").Append(JsonQuote(f.completionEffectColor)); }
+            if (f.completionPulseScale != 0f)                    { Sep(); sb.Append("\"completionPulseScale\":").Append(f.completionPulseScale.ToString("0.####", inv)); }
+            if (!string.IsNullOrEmpty(f.completionParticleId))   { Sep(); sb.Append("\"completionParticleId\":").Append(JsonQuote(f.completionParticleId)); }
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        /// <summary>Returns null when the payload is empty.</summary>
+        public static string BuildReinforcementJson(StepReinforcementPayload r)
+        {
+            if (IsEmpty(r)) return null;
+            var sb = new StringBuilder("{");
+            bool first = true;
+            void Sep() { if (!first) sb.Append(","); first = false; }
+
+            if (!string.IsNullOrEmpty(r.milestoneMessage))    { Sep(); sb.Append("\"milestoneMessage\":").Append(JsonQuote(r.milestoneMessage)); }
+            if (!string.IsNullOrEmpty(r.consequenceText))     { Sep(); sb.Append("\"consequenceText\":").Append(JsonQuote(r.consequenceText)); }
+            if (!string.IsNullOrEmpty(r.safetyNote))          { Sep(); sb.Append("\"safetyNote\":").Append(JsonQuote(r.safetyNote)); }
+            if (!string.IsNullOrEmpty(r.counterfactualText))  { Sep(); sb.Append("\"counterfactualText\":").Append(JsonQuote(r.counterfactualText)); }
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Emits a single <see cref="HintDefinition"/> as a JSON object suitable
+        /// for inserting into a <c>"hints"</c> array. Empty/default fields are
+        /// omitted.
+        /// </summary>
+        public static string BuildHintJson(HintDefinition h)
+        {
+            if (h == null) return "{}";
+            var sb = new StringBuilder("{");
+            bool first = true;
+            void Sep() { if (!first) sb.Append(","); first = false; }
+
+            if (!string.IsNullOrEmpty(h.id))       { Sep(); sb.Append("\"id\":").Append(JsonQuote(h.id)); }
+            if (!string.IsNullOrEmpty(h.type))     { Sep(); sb.Append("\"type\":").Append(JsonQuote(h.type)); }
+            if (!string.IsNullOrEmpty(h.title))    { Sep(); sb.Append("\"title\":").Append(JsonQuote(h.title)); }
+            if (!string.IsNullOrEmpty(h.message))  { Sep(); sb.Append("\"message\":").Append(JsonQuote(h.message)); }
+            if (!string.IsNullOrEmpty(h.targetId)) { Sep(); sb.Append("\"targetId\":").Append(JsonQuote(h.targetId)); }
+            if (!string.IsNullOrEmpty(h.partId))   { Sep(); sb.Append("\"partId\":").Append(JsonQuote(h.partId)); }
+            if (!string.IsNullOrEmpty(h.toolId))   { Sep(); sb.Append("\"toolId\":").Append(JsonQuote(h.toolId)); }
+            if (!string.IsNullOrEmpty(h.priority)) { Sep(); sb.Append("\"priority\":").Append(JsonQuote(h.priority)); }
+            sb.Append("}");
+            return sb.ToString();
+        }
+
         /// <summary>
         /// Escapes a string for embedding in a JSON string literal. Handles
         /// quote, backslash, and the control-character set RFC 8259 requires.

@@ -6,6 +6,7 @@ using OSE.Interaction;
 using UnityEditor;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     /// <summary>
@@ -30,7 +31,7 @@ namespace OSE.Editor
             string root = Path.GetFullPath(AuthoringRoot);
             if (!Directory.Exists(root))
             {
-                Debug.LogWarning($"[Validator] Authoring root not found: {AuthoringRoot}");
+                OseLog.Warn($"[Validator] Authoring root not found: {AuthoringRoot}");
                 return;
             }
 
@@ -54,17 +55,17 @@ namespace OSE.Editor
 
             if (packageCount == 0)
             {
-                Debug.LogWarning("[Validator] No machine.json files found under " + AuthoringRoot);
+                OseLog.Warn("[Validator] No machine.json files found under " + AuthoringRoot);
                 return;
             }
 
             string summary = $"[Validator] Validated {packageCount} package(s): {totalErrors} error(s), {totalWarnings} warning(s).";
             if (totalErrors > 0)
-                Debug.LogError(summary);
+                OseLog.Error(summary);
             else if (totalWarnings > 0)
-                Debug.LogWarning(summary);
+                OseLog.Warn(summary);
             else
-                Debug.Log(summary + " All clean.");
+                OseLog.Info(summary + " All clean.");
         }
 
         private static void ValidatePackageAt(string jsonPath, string folderName, out int errors, out int warnings)
@@ -79,7 +80,7 @@ namespace OSE.Editor
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[Validator] [{folderName}] Failed to read file: {ex.Message}");
+                OseLog.Error($"[Validator] [{folderName}] Failed to read file: {ex.Message}");
                 errors = 1;
                 return;
             }
@@ -91,14 +92,14 @@ namespace OSE.Editor
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[Validator] [{folderName}] JSON parse error: {ex.Message}");
+                OseLog.Error($"[Validator] [{folderName}] JSON parse error: {ex.Message}");
                 errors = 1;
                 return;
             }
 
             if (pkg == null)
             {
-                Debug.LogError($"[Validator] [{folderName}] JSON parsed to null.");
+                OseLog.Error($"[Validator] [{folderName}] JSON parsed to null.");
                 errors = 1;
                 return;
             }
@@ -114,18 +115,18 @@ namespace OSE.Editor
                 string msg = $"[Validator] [{folderName}] {issue.Severity} at {issue.Path}: {issue.Message}";
                 if (issue.Severity == MachinePackageIssueSeverity.Error)
                 {
-                    Debug.LogError(msg);
+                    OseLog.Error(msg);
                     errors++;
                 }
                 else
                 {
-                    Debug.LogWarning(msg);
+                    OseLog.Warn(msg);
                     warnings++;
                 }
             }
 
             if (!result.HasErrors && !result.HasWarnings)
-                Debug.Log($"[Validator] [{folderName}] Valid — no issues found.");
+                OseLog.Info($"[Validator] [{folderName}] Valid — no issues found.");
         }
     }
 }

@@ -4,6 +4,7 @@ using OSE.Content.Loading;
 using UnityEditor;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     /// <summary>
@@ -43,7 +44,7 @@ namespace OSE.Editor
             string rootAbs = Path.GetFullPath(AuthoringRoot);
             if (!Directory.Exists(rootAbs))
             {
-                Debug.LogWarning($"[PersistBake] Authoring root not found: {AuthoringRoot}");
+                OseLog.Warn($"[PersistBake] Authoring root not found: {AuthoringRoot}");
                 return;
             }
 
@@ -62,9 +63,9 @@ namespace OSE.Editor
             }
 
             if (totalPackages == 0)
-                Debug.LogWarning($"[PersistBake] No packages found under {AuthoringRoot}.");
+                OseLog.Warn($"[PersistBake] No packages found under {AuthoringRoot}.");
             else
-                Debug.Log($"[PersistBake] Done. Packages: {totalPackages}, updated: {updated}, already in sync: {alreadyInSync}.");
+                OseLog.Info($"[PersistBake] Done. Packages: {totalPackages}, updated: {updated}, already in sync: {alreadyInSync}.");
 
             AssetDatabase.Refresh();
         }
@@ -79,7 +80,7 @@ namespace OSE.Editor
             MachinePackageDefinition pkg = PackageJsonUtils.LoadPackage(packageId);
             if (pkg == null)
             {
-                Debug.LogWarning($"[PersistBake] {packageId}: load failed, skipping.");
+                OseLog.Warn($"[PersistBake] {packageId}: load failed, skipping.");
                 return false;
             }
 
@@ -97,14 +98,14 @@ namespace OSE.Editor
             // produces — no rewrite needed.
             if (afterParts == beforeParts && afterTargets == beforeTargets)
             {
-                Debug.Log($"[PersistBake] {packageId}: in sync (parts={afterParts}, targets={afterTargets}).");
+                OseLog.Info($"[PersistBake] {packageId}: in sync (parts={afterParts}, targets={afterTargets}).");
                 return false;
             }
 
             string previewPath = ResolvePreviewConfigPath(packageId);
             if (string.IsNullOrEmpty(previewPath))
             {
-                Debug.LogWarning($"[PersistBake] {packageId}: cannot resolve preview_config.json path; skipping write.");
+                OseLog.Warn($"[PersistBake] {packageId}: cannot resolve preview_config.json path; skipping write.");
                 return false;
             }
 
@@ -116,7 +117,7 @@ namespace OSE.Editor
 
             PackageJsonUtils.WritePreviewConfig(previewPath, pkg.previewConfig);
 
-            Debug.Log($"[PersistBake] {packageId}: wrote preview_config.json — parts {beforeParts}→{afterParts}, targets {beforeTargets}→{afterTargets}.");
+            OseLog.Info($"[PersistBake] {packageId}: wrote preview_config.json — parts {beforeParts}→{afterParts}, targets {beforeTargets}→{afterTargets}.");
             return true;
         }
 

@@ -1,594 +1,1472 @@
 {
-  "schemaVersion": "1.0.0",
-  "packageVersion": "0.1.0",
-  "machine": {
-    "id": "onboarding_tutorial",
-    "name": "Onboarding Tutorial",
-    "displayName": "Welcome Tutorial",
-    "description": "A short guided tutorial that teaches navigation, selection, placement, hints, and step progression. Designed so a new user can complete it without prior knowledge.",
-    "difficulty": "beginner",
-    "estimatedBuildTimeMinutes": 3,
-    "learningObjectives": [
-      "Orient yourself in the assembly scene",
-      "Select and inspect a part to read its info",
-      "Equip and use a tool on a highlighted target",
-      "Drag or grab a part to place it at a target",
-      "Request and read a hint",
-      "Complete a multi-step assembly sequence"
-    ],
-    "recommendedMode": "tutorial",
-    "entryAssemblyIds": [
-      "assembly_onboarding"
-    ],
-    "introImageRef": "onboarding_tutorial/intro.png",
-    "prerequisiteNotes": [
-      "No prior knowledge is required."
-    ],
-    "sourceReferences": []
-  },
-  "assemblies": [
-    {
-      "id": "assembly_onboarding",
-      "name": "Onboarding Assembly",
-      "description": "Walks the user through every core interaction one step at a time.",
-      "machineId": "onboarding_tutorial",
-      "partGroupIds": [
-        "partGroup_training_parts"
-      ],
-      "stepIds": [
-        "step_select_inspect",
-        "step_drag_place_beam",
-        "step_equip_tape_measure",
-        "step_use_tape_measure",
-        "step_place_bracket"
-      ],
-      "learningFocus": "Core interactions: observe, select, use tools, place, hint, progression."
-    }
-  ],
-  "partGroups": [
-    {
-      "id": "partGroup_training_parts",
-      "name": "Training Parts",
-      "assemblyId": "assembly_onboarding",
-      "description": "Contains the two training parts used throughout the tutorial.",
-      "partIds": [
-        "training_beam",
-        "training_bracket"
-      ],
-      "stepIds": [
-        "step_select_inspect",
-        "step_drag_place_beam",
-        "step_equip_tape_measure",
-        "step_use_tape_measure",
-        "step_place_bracket"
-      ],
-      "milestoneMessage": "You completed the onboarding tutorial!"
-    }
-  ],
-  "parts": [
-    {
-      "id": "training_beam",
-      "name": "Training Beam",
-      "displayName": "Training Beam",
-      "category": "custom",
-      "material": "Painted steel box tubing",
-      "function": "A practice beam used to learn selection and placement.",
-      "structuralRole": "Training part",
-      "quantity": 1,
-      "assetRef": "training_beam.gltf",
-      "searchTerms": [
-        "training beam",
-        "tutorial beam",
-        "practice part"
-      ],
-      "allowPhysicalSubstitution": true,
-      "defaultOrientationHint": "Keep the beam parallel to the floor.",
-      "tags": [
-        "tutorial",
-        "onboarding"
-      ]
+    "schemaVersion": "1.0.0",
+    "packageVersion": "0.1.0",
+    "machine": {
+        "id": "onboarding_tutorial",
+        "name": "Onboarding Tutorial",
+        "displayName": "Welcome Tutorial",
+        "description": "A short guided tutorial that teaches navigation, selection, placement, hints, and step progression. Designed so a new user can complete it without prior knowledge.",
+        "difficulty": "beginner",
+        "estimatedBuildTimeMinutes": 3,
+        "learningObjectives": [
+            "Orient yourself in the assembly scene",
+            "Select and inspect a part to read its info",
+            "Equip and use a tool on a highlighted target",
+            "Drag or grab a part to place it at a target",
+            "Request and read a hint",
+            "Complete a multi-step assembly sequence"
+        ],
+        "recommendedMode": "tutorial",
+        "entryAssemblyIds": [
+            "assembly_onboarding"
+        ],
+        "prerequisiteNotes": [
+            "No prior knowledge is required."
+        ],
+        "sourceReferences": [],
+        "introImageRef": "onboarding_tutorial/intro.png"
     },
-    {
-      "id": "training_bracket",
-      "name": "Training Bracket",
-      "displayName": "Training Bracket",
-      "category": "bracket",
-      "material": "Steel",
-      "function": "A practice bracket used to learn hint usage and a second placement.",
-      "structuralRole": "Training part",
-      "quantity": 1,
-      "assetRef": "training_bracket.gltf",
-      "searchTerms": [
-        "training bracket",
-        "tutorial bracket",
-        "practice bracket"
-      ],
-      "allowPhysicalSubstitution": true,
-      "defaultOrientationHint": "Align the bracket face with the target marker.",
-      "tags": [
-        "tutorial",
-        "onboarding"
-      ]
-    }
-  ],
-  "tools": [
-    {
-      "id": "tool_tape_measure",
-      "name": "Tape Measure",
-      "category": "measurement",
-      "purpose": "Helps compare part size to target spacing.",
-      "usageNotes": "Observe the part dimensions before placing.",
-      "assetRef": "tool_tape_measure.gltf"
-    }
-  ],
-  "steps": [
-    {
-      "id": "step_select_inspect",
-      "name": "Select and inspect a part",
-      "assemblyId": "assembly_onboarding",
-      "partGroupId": "partGroup_training_parts",
-      "sequenceIndex": 1,
-      "instructionText": "Tap or click the orange beam on the left. Its name, material, and tool info will appear in the Part Info panel on the right. The tutorial moves on as soon as the part is selected.",
-      "whyItMattersText": "Inspecting parts before placement ensures you pick the right piece for the job.",
-      "requiredPartIds": [],
-      "optionalPartIds": [
-        "training_beam"
-      ],
-      "relevantToolIds": [
-        "tool_tape_measure"
-      ],
-      "targetIds": [],
-      "completionType": "placement",
-      "validationRuleIds": [],
-      "hintIds": [],
-      "effectTriggerIds": [],
-      "allowSkip": false,
-      "challengeFlags": {
-        "penalizeHintUsage": false,
-        "penalizeInvalidPlacement": false,
-        "stricterToleranceAvailable": false
-      },
-      "eventTags": [
-        "tutorial",
-        "select"
-      ]
-    },
-    {
-      "id": "step_drag_place_beam",
-      "name": "Drag the beam to its target",
-      "assemblyId": "assembly_onboarding",
-      "partGroupId": "partGroup_training_parts",
-      "sequenceIndex": 2,
-      "instructionText": "Drag or grab the orange beam and move it toward the transparent ghost shape in the center. When it is close enough it will snap into place automatically.",
-      "whyItMattersText": "Placing parts at target positions is the core assembly action.",
-      "requiredPartIds": [
-        "training_beam"
-      ],
-      "relevantToolIds": [],
-      "targetIds": [
-        "target_beam_slot"
-      ],
-      "completionType": "placement",
-      "validationRuleIds": [
-        "validation_beam_placement"
-      ],
-      "hintIds": [
-        "hint_beam_placement"
-      ],
-      "effectTriggerIds": [],
-      "allowSkip": false,
-      "challengeFlags": {
-        "penalizeHintUsage": false,
-        "penalizeInvalidPlacement": false,
-        "stricterToleranceAvailable": false
-      },
-      "eventTags": [
-        "tutorial",
-        "place"
-      ]
-    },
-    {
-      "id": "step_equip_tape_measure",
-      "name": "Equip the tape measure",
-      "assemblyId": "assembly_onboarding",
-      "partGroupId": "partGroup_training_parts",
-      "sequenceIndex": 3,
-      "instructionText": "Open Tools and select Tape Measure. The tutorial will continue automatically once it is equipped.",
-      "whyItMattersText": "Many blueprint steps require specific tools before you can continue.",
-      "requiredPartIds": [],
-      "optionalPartIds": [
-        "training_bracket"
-      ],
-      "relevantToolIds": [
-        "tool_tape_measure"
-      ],
-      "targetIds": [],
-      "completionType": "tool_action",
-      "validationRuleIds": [],
-      "hintIds": [
-        "hint_equip_tape_measure"
-      ],
-      "effectTriggerIds": [],
-      "requiredToolActions": [
+    "assemblies": [
         {
-          "id": "action_confirm_tape_measure_equipped",
-          "toolId": "tool_tape_measure",
-          "actionType": "measure",
-          "requiredCount": 1,
-          "successMessage": "Tape measure equipped.",
-          "failureMessage": "Equip Tape Measure from Tools."
+            "id": "assembly_onboarding",
+            "name": "Onboarding Assembly",
+            "description": "Walks the user through every core interaction one step at a time.",
+            "machineId": "onboarding_tutorial",
+            "partGroupIds": [
+                "partGroup_training_parts"
+            ],
+            "stepIds": [
+                "step_select_inspect",
+                "step_drag_place_beam",
+                "step_equip_tape_measure",
+                "step_use_tape_measure",
+                "step_place_bracket"
+            ],
+            "dependencyAssemblyIds": [],
+            "learningFocus": "Core interactions: observe, select, use tools, place, hint, progression.",
+            "memberAssemblyIds": []
         }
-      ],
-      "allowSkip": false,
-      "challengeFlags": {
-        "penalizeHintUsage": false,
-        "penalizeInvalidPlacement": false,
-        "stricterToleranceAvailable": false
-      },
-      "eventTags": [
-        "tutorial",
-        "tool",
-        "equip"
-      ]
-    },
-    {
-      "id": "step_use_tape_measure",
-      "name": "Use the tape measure tool",
-      "assemblyId": "assembly_onboarding",
-      "partGroupId": "partGroup_training_parts",
-      "sequenceIndex": 4,
-      "instructionText": "With Tape Measure equipped, find the floating pulsing orb above the bracket ghost target, move the tool cursor over it, then tap or click once to record a measurement pass.",
-      "whyItMattersText": "This teaches using tools on specific targets before placing the next part.",
-      "requiredPartIds": [],
-      "optionalPartIds": [
-        "training_bracket"
-      ],
-      "relevantToolIds": [
-        "tool_tape_measure"
-      ],
-      "targetIds": [
-        "target_bracket_slot"
-      ],
-      "completionType": "tool_action",
-      "validationRuleIds": [],
-      "hintIds": [
-        "hint_use_tape_measure"
-      ],
-      "effectTriggerIds": [],
-      "requiredToolActions": [
-        {
-          "id": "action_measure_bracket_target",
-          "toolId": "tool_tape_measure",
-          "actionType": "measure",
-          "targetId": "target_bracket_slot",
-          "requiredCount": 1,
-          "successMessage": "Measurement recorded on the bracket target.",
-          "failureMessage": "Equip the tape measure, then tap or click the pulsing marker at the bracket target."
-        }
-      ],
-      "allowSkip": false,
-      "challengeFlags": {
-        "penalizeHintUsage": false,
-        "penalizeInvalidPlacement": false,
-        "stricterToleranceAvailable": false
-      },
-      "eventTags": [
-        "tutorial",
-        "tool",
-        "measure"
-      ]
-    },
-    {
-      "id": "step_place_bracket",
-      "name": "Place the bracket",
-      "assemblyId": "assembly_onboarding",
-      "partGroupId": "partGroup_training_parts",
-      "sequenceIndex": 5,
-      "instructionText": "Now drag or grab the blue bracket and move it to its ghost target. Remember: each part only fits its own target — dropping the wrong part will flash red.",
-      "whyItMattersText": "Placing the correct part at the correct target is how every assembly step works.",
-      "requiredPartIds": [
-        "training_bracket"
-      ],
-      "relevantToolIds": [],
-      "targetIds": [
-        "target_bracket_slot"
-      ],
-      "completionType": "placement",
-      "validationRuleIds": [
-        "validation_bracket_placement"
-      ],
-      "hintIds": [
-        "hint_bracket_guidance"
-      ],
-      "effectTriggerIds": [],
-      "allowSkip": false,
-      "challengeFlags": {
-        "penalizeHintUsage": false,
-        "penalizeInvalidPlacement": false,
-        "stricterToleranceAvailable": false
-      },
-      "eventTags": [
-        "tutorial",
-        "place"
-      ]
-    }
-  ],
-  "validationRules": [
-    {
-      "id": "validation_beam_placement",
-      "type": "placement",
-      "targetId": "target_beam_slot",
-      "expectedPartId": "training_beam",
-      "positionToleranceMm": 50.0,
-      "rotationToleranceDeg": 30.0,
-      "failureMessage": "Move the beam closer to the ghost target.",
-      "correctionHintId": "hint_beam_placement"
-    },
-    {
-      "id": "validation_bracket_placement",
-      "type": "placement",
-      "targetId": "target_bracket_slot",
-      "expectedPartId": "training_bracket",
-      "positionToleranceMm": 50.0,
-      "rotationToleranceDeg": 30.0,
-      "failureMessage": "Move the bracket closer to its ghost target.",
-      "correctionHintId": "hint_bracket_guidance"
-    }
-  ],
-  "effects": [],
-  "hints": [
-    {
-      "id": "hint_equip_tape_measure",
-      "type": "tool_reminder",
-      "title": "Equip tape measure",
-      "message": "Open Tools and select Tape Measure to continue.",
-      "toolId": "tool_tape_measure",
-      "priority": "medium"
-    },
-    {
-      "id": "hint_use_tape_measure",
-      "type": "tool_reminder",
-      "title": "Use tape measure",
-      "message": "With Tape Measure equipped, tap or click the pulsing marker at the bracket target to record the measurement pass.",
-      "toolId": "tool_tape_measure",
-      "targetId": "target_bracket_slot",
-      "priority": "medium"
-    },
-    {
-      "id": "hint_beam_placement",
-      "type": "highlight",
-      "title": "Aim for the ghost",
-      "message": "Drag the beam toward the transparent shape in the center. Release when it turns green.",
-      "targetId": "target_beam_slot",
-      "partId": "training_beam",
-      "priority": "medium"
-    },
-    {
-      "id": "hint_bracket_guidance",
-      "type": "highlight",
-      "title": "Bracket target",
-      "message": "The bracket goes to the right-side ghost. Drag it close and release to snap it into place.",
-      "targetId": "target_bracket_slot",
-      "partId": "training_bracket",
-      "priority": "medium"
-    }
-  ],
-  "targets": [
-    {
-      "id": "target_beam_slot",
-      "name": "Beam Target",
-      "anchorRef": "anchors/tutorial/beam_slot",
-      "description": "Where the training beam should be placed.",
-      "associatedPartId": "training_beam",
-      "tags": [
-        "tutorial",
-        "onboarding"
-      ]
-    },
-    {
-      "id": "target_bracket_slot",
-      "name": "Bracket Target",
-      "anchorRef": "anchors/tutorial/bracket_slot",
-      "description": "Where the training bracket should be placed.",
-      "associatedPartId": "training_bracket",
-      "tags": [
-        "tutorial",
-        "onboarding"
-      ]
-    }
-  ],
-  "challengeConfig": {
-    "enabled": false,
-    "trackTime": true,
-    "trackRetries": false,
-    "trackHintUsage": false,
-    "leaderboardReady": false,
-    "strictValidationModeAvailable": false
-  },
-  "assetManifest": {
-    "modelRefs": [
-      "assets/parts/training_beam.gltf",
-      "assets/parts/training_bracket.gltf",
-      "assets/tools/tool_tape_measure.gltf"
     ],
-    "effectRefs": [],
-    "uiRefs": []
-  },
-  "previewConfig": {
-    "defaultAssemblyScaleMultiplier": 1.0,
-    "partPlacements": [
+    "partGroups": [
         {
-            "partId": "training_beam",
-            "startPosition": {
-                "x": -2.0,
-                "y": 0.55,
-                "z": 0.0
+            "id": "partGroup_training_parts",
+            "name": "Training Parts",
+            "assemblyId": "assembly_onboarding",
+            "description": "Contains the two training parts used throughout the tutorial.",
+            "partIds": [
+                "training_beam",
+                "training_bracket"
+            ],
+            "stepIds": [
+                "step_select_inspect",
+                "step_drag_place_beam",
+                "step_equip_tape_measure",
+                "step_use_tape_measure",
+                "step_place_bracket"
+            ],
+            "milestoneMessage": "You completed the onboarding tutorial!",
+            "isAggregate": false,
+            "memberPartGroupIds": [],
+            "animationCues": [],
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
+            }
+        }
+    ],
+    "partTemplates": [],
+    "parts": [
+        {
+            "id": "training_beam",
+            "name": "Training Beam",
+            "displayName": "Training Beam",
+            "category": "custom",
+            "material": "Painted steel box tubing",
+            "function": "A practice beam used to learn selection and placement.",
+            "structuralRole": "Training part",
+            "quantity": 1,
+            "assetRef": "training_beam.gltf",
+            "searchTerms": [
+                "training beam",
+                "tutorial beam",
+                "practice part"
+            ],
+            "allowPhysicalSubstitution": true,
+            "defaultOrientationHint": "Keep the beam parallel to the floor.",
+            "tags": [
+                "tutorial",
+                "onboarding"
+            ],
+            "partGroupIds": [],
+            "animationCues": [],
+            "templateId": "",
+            "stagingPose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "scale": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                }
             },
-            "startRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+            "grabConfig": {
+                "gripPoint": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "gripRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "handedness": "",
+                "poseHint": ""
             },
-            "startScale": {
-                "x": 1.2,
-                "y": 0.3,
-                "z": 0.4
-            },
-            "color": {
-                "r": 0.94,
-                "g": 0.55,
-                "b": 0.18,
-                "a": 1.0
-            },
-            "assembledPosition": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-            },
-            "assembledRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-            },
-            "assembledScale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-            },
-            "splinePath": {
-                "radius": 0.0,
-                "segments": 0,
-                "metallic": 0.0,
-                "smoothness": 0.0,
-                "knots": []
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
             }
         },
         {
-            "partId": "training_bracket",
-            "startPosition": {
-                "x": 2.0,
-                "y": 0.55,
-                "z": 0.0
+            "id": "training_bracket",
+            "name": "Training Bracket",
+            "displayName": "Training Bracket",
+            "category": "bracket",
+            "material": "Steel",
+            "function": "A practice bracket used to learn hint usage and a second placement.",
+            "structuralRole": "Training part",
+            "quantity": 1,
+            "assetRef": "training_bracket.gltf",
+            "searchTerms": [
+                "training bracket",
+                "tutorial bracket",
+                "practice bracket"
+            ],
+            "allowPhysicalSubstitution": true,
+            "defaultOrientationHint": "Align the bracket face with the target marker.",
+            "tags": [
+                "tutorial",
+                "onboarding"
+            ],
+            "partGroupIds": [],
+            "animationCues": [],
+            "templateId": "",
+            "stagingPose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "scale": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                }
             },
-            "startRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+            "grabConfig": {
+                "gripPoint": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "gripRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "handedness": "",
+                "poseHint": ""
             },
-            "startScale": {
-                "x": 0.4,
-                "y": 0.6,
-                "z": 0.4
-            },
-            "color": {
-                "r": 0.3,
-                "g": 0.55,
-                "b": 0.85,
-                "a": 1.0
-            },
-            "assembledPosition": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-            },
-            "assembledRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-            },
-            "assembledScale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-            },
-            "splinePath": {
-                "radius": 0.0,
-                "segments": 0,
-                "metallic": 0.0,
-                "smoothness": 0.0,
-                "knots": []
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
             }
         }
     ],
-    "targetPlacements": [
+    "tools": [
         {
+            "id": "tool_tape_measure",
+            "name": "Tape Measure",
+            "category": "measurement",
+            "purpose": "Helps compare part size to target spacing.",
+            "usageNotes": "Observe the part dimensions before placing.",
+            "safetyNotes": "",
+            "searchTerms": [],
+            "assetRef": "tool_tape_measure.gltf",
+            "animationCues": [],
+            "useOrientationOverride": false,
+            "orientationEuler": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scaleOverride": 0.0,
+            "persistent": false,
+            "toolPose": {
+                "gripPoint": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "gripRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "tipPoint": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "cursorOffset": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "cursorRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "handedness": "",
+                "poseHint": "",
+                "tipAxis": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "actionAxis": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }
+            },
+            "primaryActionType": ""
+        }
+    ],
+    "steps": [
+        {
+            "id": "step_select_inspect",
+            "name": "Select and inspect a part",
+            "assemblyId": "assembly_onboarding",
+            "partGroupId": "partGroup_training_parts",
+            "sequenceIndex": 1,
+            "instructionText": "Tap or click the orange beam on the left. Its name, material, and tool info will appear in the Part Info panel on the right. The tutorial moves on as soon as the part is selected.",
+            "whyItMattersText": "Inspecting parts before placement ensures you pick the right piece for the job.",
+            "requiredPartIds": [],
+            "requiredPartGroupId": "",
+            "optionalPartIds": [
+                "training_beam"
+            ],
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
+            },
+            "visualPartIds": [],
+            "relevantToolIds": [
+                "tool_tape_measure"
+            ],
+            "targetIds": [],
+            "completionType": "placement",
+            "family": "",
+            "profile": "",
+            "viewMode": "",
+            "validationRuleIds": [],
+            "hintIds": [],
+            "effectTriggerIds": [],
+            "requiredToolActions": [],
+            "removePersistentToolIds": [],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": false
+            },
+            "eventTags": [
+                "tutorial",
+                "select"
+            ],
+            "guidance": {
+                "instructionText": "",
+                "whyItMattersText": "",
+                "hintIds": [],
+                "contextualDiagramRef": ""
+            },
+            "validation": {
+                "validationRuleIds": []
+            },
+            "feedback": {
+                "effectTriggerIds": [],
+                "completionEffectColor": "",
+                "completionPulseScale": 0.0,
+                "completionParticleId": ""
+            },
+            "reinforcement": {
+                "milestoneMessage": "",
+                "consequenceText": "",
+                "safetyNote": "",
+                "counterfactualText": ""
+            },
+            "difficulty": {
+                "allowSkip": false,
+                "challengeFlags": {
+                    "penalizeHintUsage": false,
+                    "penalizeInvalidPlacement": false,
+                    "stricterToleranceAvailable": false
+                },
+                "timeLimitSeconds": 0.0,
+                "hintAvailability": "",
+                "gestureMode": ""
+            },
+            "measurement": {
+                "startAnchorTargetId": "",
+                "endAnchorTargetId": "",
+                "expectedValueMm": 0.0,
+                "toleranceMm": 0.0,
+                "displayUnit": ""
+            },
+            "gesture": {
+                "gestureType": "",
+                "targetAngleDegrees": 0.0,
+                "targetPullDistance": 0.0,
+                "holdDurationSeconds": 0.0,
+                "pathControlPointIds": [],
+                "showGestureGuide": true
+            },
+            "wireConnect": {
+                "wires": [],
+                "enforcePortOrder": false
+            },
+            "workingOrientation": {
+                "partGroupRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "partGroupPositionOffset": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "hint": "",
+                "partOverrides": []
+            },
+            "animationCues": {
+                "cues": [],
+                "previewDelaySeconds": 0.0
+            },
+            "particleEffects": {
+                "effects": []
+            },
+            "taskOrder": [],
+            "targetOrder": ""
+        },
+        {
+            "id": "step_drag_place_beam",
+            "name": "Drag the beam to its target",
+            "assemblyId": "assembly_onboarding",
+            "partGroupId": "partGroup_training_parts",
+            "sequenceIndex": 2,
+            "instructionText": "Drag or grab the orange beam and move it toward the transparent ghost shape in the center. When it is close enough it will snap into place automatically.",
+            "whyItMattersText": "Placing parts at target positions is the core assembly action.",
+            "requiredPartIds": [
+                "training_beam"
+            ],
+            "requiredPartGroupId": "",
+            "optionalPartIds": [],
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
+            },
+            "visualPartIds": [],
+            "relevantToolIds": [],
+            "targetIds": [
+                "target_beam_slot"
+            ],
+            "completionType": "placement",
+            "family": "",
+            "profile": "",
+            "viewMode": "",
+            "validationRuleIds": [
+                "validation_beam_placement"
+            ],
+            "hintIds": [
+                "hint_beam_placement"
+            ],
+            "effectTriggerIds": [],
+            "requiredToolActions": [],
+            "removePersistentToolIds": [],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": false
+            },
+            "eventTags": [
+                "tutorial",
+                "place"
+            ],
+            "guidance": {
+                "instructionText": "",
+                "whyItMattersText": "",
+                "hintIds": [],
+                "contextualDiagramRef": ""
+            },
+            "validation": {
+                "validationRuleIds": []
+            },
+            "feedback": {
+                "effectTriggerIds": [],
+                "completionEffectColor": "",
+                "completionPulseScale": 0.0,
+                "completionParticleId": ""
+            },
+            "reinforcement": {
+                "milestoneMessage": "",
+                "consequenceText": "",
+                "safetyNote": "",
+                "counterfactualText": ""
+            },
+            "difficulty": {
+                "allowSkip": false,
+                "challengeFlags": {
+                    "penalizeHintUsage": false,
+                    "penalizeInvalidPlacement": false,
+                    "stricterToleranceAvailable": false
+                },
+                "timeLimitSeconds": 0.0,
+                "hintAvailability": "",
+                "gestureMode": ""
+            },
+            "measurement": {
+                "startAnchorTargetId": "",
+                "endAnchorTargetId": "",
+                "expectedValueMm": 0.0,
+                "toleranceMm": 0.0,
+                "displayUnit": ""
+            },
+            "gesture": {
+                "gestureType": "",
+                "targetAngleDegrees": 0.0,
+                "targetPullDistance": 0.0,
+                "holdDurationSeconds": 0.0,
+                "pathControlPointIds": [],
+                "showGestureGuide": true
+            },
+            "wireConnect": {
+                "wires": [],
+                "enforcePortOrder": false
+            },
+            "workingOrientation": {
+                "partGroupRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "partGroupPositionOffset": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "hint": "",
+                "partOverrides": []
+            },
+            "animationCues": {
+                "cues": [],
+                "previewDelaySeconds": 0.0
+            },
+            "particleEffects": {
+                "effects": []
+            },
+            "taskOrder": [],
+            "targetOrder": ""
+        },
+        {
+            "id": "step_equip_tape_measure",
+            "name": "Equip the tape measure",
+            "assemblyId": "assembly_onboarding",
+            "partGroupId": "partGroup_training_parts",
+            "sequenceIndex": 3,
+            "instructionText": "Open Tools and select Tape Measure. The tutorial will continue automatically once it is equipped.",
+            "whyItMattersText": "Many blueprint steps require specific tools before you can continue.",
+            "requiredPartIds": [],
+            "requiredPartGroupId": "",
+            "optionalPartIds": [
+                "training_bracket"
+            ],
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
+            },
+            "visualPartIds": [],
+            "relevantToolIds": [
+                "tool_tape_measure"
+            ],
+            "targetIds": [],
+            "completionType": "tool_action",
+            "family": "",
+            "profile": "",
+            "viewMode": "",
+            "validationRuleIds": [],
+            "hintIds": [
+                "hint_equip_tape_measure"
+            ],
+            "effectTriggerIds": [],
+            "requiredToolActions": [
+                {
+                    "id": "action_confirm_tape_measure_equipped",
+                    "toolId": "tool_tape_measure",
+                    "actionType": "measure",
+                    "targetId": "",
+                    "requiredCount": 1,
+                    "successMessage": "Tape measure equipped.",
+                    "failureMessage": "Equip Tape Measure from Tools.",
+                    "interaction": {
+                        "archetype": "",
+                        "axis": {
+                            "space": "",
+                            "vec": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            }
+                        },
+                        "distance": 0.0,
+                        "totalRotationsDeg": 0.0,
+                        "rotationDegPerUnit": 0.0,
+                        "followPart": false,
+                        "easing": "",
+                        "toPose": ""
+                    },
+                    "previewConfig": {
+                        "duration": 0.0,
+                        "approachDuration": 0.0,
+                        "returnDuration": 0.0,
+                        "guidedDragScale": 0.0,
+                        "autoAssistDelay": 0.0,
+                        "autoAssistRate": 0.0,
+                        "framingDistance": 0.0,
+                        "workingDistance": 0.0,
+                        "approachTiltDegrees": 0.0,
+                        "weldArcSpawnThreshold": 0.0,
+                        "weldBeadSpawnThreshold": 0.0,
+                        "weldBeadWidth": 0.0,
+                        "weldBeadWindowStart": 0.0,
+                        "weldBeadWindowEnd": 0.0,
+                        "weldWobbleAmplitude": 0.0,
+                        "weldWobbleFrequency": 0.0,
+                        "weldBeadHotColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "weldBeadCoolColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "weldCoolerDuration": 0.0,
+                        "drillShakeFrequency": 0.0,
+                        "drillShakeAmplitude": 0.0,
+                        "drillRampUpEnd": 0.0,
+                        "drillRampDownStart": 0.0,
+                        "drillSpark1Threshold": 0.0,
+                        "drillSpark1Scale": 0.0,
+                        "drillSpark2Threshold": 0.0,
+                        "drillSpark2Scale": 0.0,
+                        "drillGlowIntensity": 0.0,
+                        "drillGlowColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "torqueTargetAngle": 0.0,
+                        "torqueGestureArc": 0.0,
+                        "torqueMinRadius": 0.0,
+                        "torqueDragFallbackScale": 0.0,
+                        "torqueSparkThreshold": 0.0,
+                        "torqueSparkScale": 0.0,
+                        "cutEmissionThreshold": 0.0,
+                        "cutGlowColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "cutSpark1Threshold": 0.0,
+                        "cutSpark1Scale": 0.0,
+                        "cutSpark2Threshold": 0.0,
+                        "cutSpark2Scale": 0.0,
+                        "cutLineSpawn": 0.0,
+                        "cutLineWindowEnd": 0.0,
+                        "cutVibrationWindowStart": 0.0,
+                        "cutVibrationWindowEnd": 0.0,
+                        "cutVibrationFrequency": 0.0,
+                        "cutVibrationAmplitude": 0.0,
+                        "cutLineColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "squareSettleDistance": 0.0,
+                        "squareSettleEnd": 0.0,
+                        "squareHoldEnd": 0.0,
+                        "squareGlowColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "squarePulseFrequency": 0.0
+                    }
+                }
+            ],
+            "removePersistentToolIds": [],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": false
+            },
+            "eventTags": [
+                "tutorial",
+                "tool",
+                "equip"
+            ],
+            "guidance": {
+                "instructionText": "",
+                "whyItMattersText": "",
+                "hintIds": [],
+                "contextualDiagramRef": ""
+            },
+            "validation": {
+                "validationRuleIds": []
+            },
+            "feedback": {
+                "effectTriggerIds": [],
+                "completionEffectColor": "",
+                "completionPulseScale": 0.0,
+                "completionParticleId": ""
+            },
+            "reinforcement": {
+                "milestoneMessage": "",
+                "consequenceText": "",
+                "safetyNote": "",
+                "counterfactualText": ""
+            },
+            "difficulty": {
+                "allowSkip": false,
+                "challengeFlags": {
+                    "penalizeHintUsage": false,
+                    "penalizeInvalidPlacement": false,
+                    "stricterToleranceAvailable": false
+                },
+                "timeLimitSeconds": 0.0,
+                "hintAvailability": "",
+                "gestureMode": ""
+            },
+            "measurement": {
+                "startAnchorTargetId": "",
+                "endAnchorTargetId": "",
+                "expectedValueMm": 0.0,
+                "toleranceMm": 0.0,
+                "displayUnit": ""
+            },
+            "gesture": {
+                "gestureType": "",
+                "targetAngleDegrees": 0.0,
+                "targetPullDistance": 0.0,
+                "holdDurationSeconds": 0.0,
+                "pathControlPointIds": [],
+                "showGestureGuide": true
+            },
+            "wireConnect": {
+                "wires": [],
+                "enforcePortOrder": false
+            },
+            "workingOrientation": {
+                "partGroupRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "partGroupPositionOffset": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "hint": "",
+                "partOverrides": []
+            },
+            "animationCues": {
+                "cues": [],
+                "previewDelaySeconds": 0.0
+            },
+            "particleEffects": {
+                "effects": []
+            },
+            "taskOrder": [],
+            "targetOrder": ""
+        },
+        {
+            "id": "step_use_tape_measure",
+            "name": "Use the tape measure tool",
+            "assemblyId": "assembly_onboarding",
+            "partGroupId": "partGroup_training_parts",
+            "sequenceIndex": 4,
+            "instructionText": "With Tape Measure equipped, find the floating pulsing orb above the bracket ghost target, move the tool cursor over it, then tap or click once to record a measurement pass.",
+            "whyItMattersText": "This teaches using tools on specific targets before placing the next part.",
+            "requiredPartIds": [],
+            "requiredPartGroupId": "",
+            "optionalPartIds": [
+                "training_bracket"
+            ],
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
+            },
+            "visualPartIds": [],
+            "relevantToolIds": [
+                "tool_tape_measure"
+            ],
+            "targetIds": [
+                "target_bracket_slot"
+            ],
+            "completionType": "tool_action",
+            "family": "",
+            "profile": "",
+            "viewMode": "",
+            "validationRuleIds": [],
+            "hintIds": [
+                "hint_use_tape_measure"
+            ],
+            "effectTriggerIds": [],
+            "requiredToolActions": [
+                {
+                    "id": "action_measure_bracket_target",
+                    "toolId": "tool_tape_measure",
+                    "actionType": "measure",
+                    "targetId": "target_bracket_slot",
+                    "requiredCount": 1,
+                    "successMessage": "Measurement recorded on the bracket target.",
+                    "failureMessage": "Equip the tape measure, then tap or click the pulsing marker at the bracket target.",
+                    "interaction": {
+                        "archetype": "",
+                        "axis": {
+                            "space": "",
+                            "vec": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            }
+                        },
+                        "distance": 0.0,
+                        "totalRotationsDeg": 0.0,
+                        "rotationDegPerUnit": 0.0,
+                        "followPart": false,
+                        "easing": "",
+                        "toPose": ""
+                    },
+                    "previewConfig": {
+                        "duration": 0.0,
+                        "approachDuration": 0.0,
+                        "returnDuration": 0.0,
+                        "guidedDragScale": 0.0,
+                        "autoAssistDelay": 0.0,
+                        "autoAssistRate": 0.0,
+                        "framingDistance": 0.0,
+                        "workingDistance": 0.0,
+                        "approachTiltDegrees": 0.0,
+                        "weldArcSpawnThreshold": 0.0,
+                        "weldBeadSpawnThreshold": 0.0,
+                        "weldBeadWidth": 0.0,
+                        "weldBeadWindowStart": 0.0,
+                        "weldBeadWindowEnd": 0.0,
+                        "weldWobbleAmplitude": 0.0,
+                        "weldWobbleFrequency": 0.0,
+                        "weldBeadHotColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "weldBeadCoolColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "weldCoolerDuration": 0.0,
+                        "drillShakeFrequency": 0.0,
+                        "drillShakeAmplitude": 0.0,
+                        "drillRampUpEnd": 0.0,
+                        "drillRampDownStart": 0.0,
+                        "drillSpark1Threshold": 0.0,
+                        "drillSpark1Scale": 0.0,
+                        "drillSpark2Threshold": 0.0,
+                        "drillSpark2Scale": 0.0,
+                        "drillGlowIntensity": 0.0,
+                        "drillGlowColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "torqueTargetAngle": 0.0,
+                        "torqueGestureArc": 0.0,
+                        "torqueMinRadius": 0.0,
+                        "torqueDragFallbackScale": 0.0,
+                        "torqueSparkThreshold": 0.0,
+                        "torqueSparkScale": 0.0,
+                        "cutEmissionThreshold": 0.0,
+                        "cutGlowColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "cutSpark1Threshold": 0.0,
+                        "cutSpark1Scale": 0.0,
+                        "cutSpark2Threshold": 0.0,
+                        "cutSpark2Scale": 0.0,
+                        "cutLineSpawn": 0.0,
+                        "cutLineWindowEnd": 0.0,
+                        "cutVibrationWindowStart": 0.0,
+                        "cutVibrationWindowEnd": 0.0,
+                        "cutVibrationFrequency": 0.0,
+                        "cutVibrationAmplitude": 0.0,
+                        "cutLineColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "squareSettleDistance": 0.0,
+                        "squareSettleEnd": 0.0,
+                        "squareHoldEnd": 0.0,
+                        "squareGlowColor": {
+                            "r": 0.0,
+                            "g": 0.0,
+                            "b": 0.0,
+                            "a": 0.0
+                        },
+                        "squarePulseFrequency": 0.0
+                    }
+                }
+            ],
+            "removePersistentToolIds": [],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": false
+            },
+            "eventTags": [
+                "tutorial",
+                "tool",
+                "measure"
+            ],
+            "guidance": {
+                "instructionText": "",
+                "whyItMattersText": "",
+                "hintIds": [],
+                "contextualDiagramRef": ""
+            },
+            "validation": {
+                "validationRuleIds": []
+            },
+            "feedback": {
+                "effectTriggerIds": [],
+                "completionEffectColor": "",
+                "completionPulseScale": 0.0,
+                "completionParticleId": ""
+            },
+            "reinforcement": {
+                "milestoneMessage": "",
+                "consequenceText": "",
+                "safetyNote": "",
+                "counterfactualText": ""
+            },
+            "difficulty": {
+                "allowSkip": false,
+                "challengeFlags": {
+                    "penalizeHintUsage": false,
+                    "penalizeInvalidPlacement": false,
+                    "stricterToleranceAvailable": false
+                },
+                "timeLimitSeconds": 0.0,
+                "hintAvailability": "",
+                "gestureMode": ""
+            },
+            "measurement": {
+                "startAnchorTargetId": "",
+                "endAnchorTargetId": "",
+                "expectedValueMm": 0.0,
+                "toleranceMm": 0.0,
+                "displayUnit": ""
+            },
+            "gesture": {
+                "gestureType": "",
+                "targetAngleDegrees": 0.0,
+                "targetPullDistance": 0.0,
+                "holdDurationSeconds": 0.0,
+                "pathControlPointIds": [],
+                "showGestureGuide": true
+            },
+            "wireConnect": {
+                "wires": [],
+                "enforcePortOrder": false
+            },
+            "workingOrientation": {
+                "partGroupRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "partGroupPositionOffset": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "hint": "",
+                "partOverrides": []
+            },
+            "animationCues": {
+                "cues": [],
+                "previewDelaySeconds": 0.0
+            },
+            "particleEffects": {
+                "effects": []
+            },
+            "taskOrder": [],
+            "targetOrder": ""
+        },
+        {
+            "id": "step_place_bracket",
+            "name": "Place the bracket",
+            "assemblyId": "assembly_onboarding",
+            "partGroupId": "partGroup_training_parts",
+            "sequenceIndex": 5,
+            "instructionText": "Now drag or grab the blue bracket and move it to its ghost target. Remember: each part only fits its own target — dropping the wrong part will flash red.",
+            "whyItMattersText": "Placing the correct part at the correct target is how every assembly step works.",
+            "requiredPartIds": [
+                "training_bracket"
+            ],
+            "requiredPartGroupId": "",
+            "optionalPartIds": [],
+            "prefabRef": {
+                "prefabId": "",
+                "instanceId": "",
+                "bindings": [],
+                "sourceMtime": ""
+            },
+            "visualPartIds": [],
+            "relevantToolIds": [],
+            "targetIds": [
+                "target_bracket_slot"
+            ],
+            "completionType": "placement",
+            "family": "",
+            "profile": "",
+            "viewMode": "",
+            "validationRuleIds": [
+                "validation_bracket_placement"
+            ],
+            "hintIds": [
+                "hint_bracket_guidance"
+            ],
+            "effectTriggerIds": [],
+            "requiredToolActions": [],
+            "removePersistentToolIds": [],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": false
+            },
+            "eventTags": [
+                "tutorial",
+                "place"
+            ],
+            "guidance": {
+                "instructionText": "",
+                "whyItMattersText": "",
+                "hintIds": [],
+                "contextualDiagramRef": ""
+            },
+            "validation": {
+                "validationRuleIds": []
+            },
+            "feedback": {
+                "effectTriggerIds": [],
+                "completionEffectColor": "",
+                "completionPulseScale": 0.0,
+                "completionParticleId": ""
+            },
+            "reinforcement": {
+                "milestoneMessage": "",
+                "consequenceText": "",
+                "safetyNote": "",
+                "counterfactualText": ""
+            },
+            "difficulty": {
+                "allowSkip": false,
+                "challengeFlags": {
+                    "penalizeHintUsage": false,
+                    "penalizeInvalidPlacement": false,
+                    "stricterToleranceAvailable": false
+                },
+                "timeLimitSeconds": 0.0,
+                "hintAvailability": "",
+                "gestureMode": ""
+            },
+            "measurement": {
+                "startAnchorTargetId": "",
+                "endAnchorTargetId": "",
+                "expectedValueMm": 0.0,
+                "toleranceMm": 0.0,
+                "displayUnit": ""
+            },
+            "gesture": {
+                "gestureType": "",
+                "targetAngleDegrees": 0.0,
+                "targetPullDistance": 0.0,
+                "holdDurationSeconds": 0.0,
+                "pathControlPointIds": [],
+                "showGestureGuide": true
+            },
+            "wireConnect": {
+                "wires": [],
+                "enforcePortOrder": false
+            },
+            "workingOrientation": {
+                "partGroupRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "partGroupPositionOffset": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "hint": "",
+                "partOverrides": []
+            },
+            "animationCues": {
+                "cues": [],
+                "previewDelaySeconds": 0.0
+            },
+            "particleEffects": {
+                "effects": []
+            },
+            "taskOrder": [],
+            "targetOrder": ""
+        }
+    ],
+    "prefabInstances": [],
+    "validationRules": [
+        {
+            "id": "validation_beam_placement",
+            "type": "placement",
             "targetId": "target_beam_slot",
-            "position": {
-                "x": -0.3,
-                "y": 0.04,
-                "z": 0.0
+            "expectedPartId": "training_beam",
+            "positionToleranceMm": 50.0,
+            "rotationToleranceDeg": 30.0,
+            "requiredStepIds": [],
+            "requiredPartIds": [],
+            "modeOverrides": {
+                "tutorialPositionToleranceMm": 0.0,
+                "tutorialRotationToleranceDeg": 0.0,
+                "guidedPositionToleranceMm": 0.0,
+                "guidedRotationToleranceDeg": 0.0,
+                "challengePositionToleranceMm": 0.0,
+                "challengeRotationToleranceDeg": 0.0
             },
-            "rotation": {
+            "failureMessage": "Move the beam closer to the ghost target.",
+            "correctionHintId": "hint_beam_placement"
+        },
+        {
+            "id": "validation_bracket_placement",
+            "type": "placement",
+            "targetId": "target_bracket_slot",
+            "expectedPartId": "training_bracket",
+            "positionToleranceMm": 50.0,
+            "rotationToleranceDeg": 30.0,
+            "requiredStepIds": [],
+            "requiredPartIds": [],
+            "modeOverrides": {
+                "tutorialPositionToleranceMm": 0.0,
+                "tutorialRotationToleranceDeg": 0.0,
+                "guidedPositionToleranceMm": 0.0,
+                "guidedRotationToleranceDeg": 0.0,
+                "challengePositionToleranceMm": 0.0,
+                "challengeRotationToleranceDeg": 0.0
+            },
+            "failureMessage": "Move the bracket closer to its ghost target.",
+            "correctionHintId": "hint_bracket_guidance"
+        }
+    ],
+    "effects": [],
+    "hints": [
+        {
+            "id": "hint_equip_tape_measure",
+            "type": "tool_reminder",
+            "title": "Equip tape measure",
+            "message": "Open Tools and select Tape Measure to continue.",
+            "targetId": "",
+            "partId": "",
+            "toolId": "tool_tape_measure",
+            "priority": "medium"
+        },
+        {
+            "id": "hint_use_tape_measure",
+            "type": "tool_reminder",
+            "title": "Use tape measure",
+            "message": "With Tape Measure equipped, tap or click the pulsing marker at the bracket target to record the measurement pass.",
+            "targetId": "target_bracket_slot",
+            "partId": "",
+            "toolId": "tool_tape_measure",
+            "priority": "medium"
+        },
+        {
+            "id": "hint_beam_placement",
+            "type": "highlight",
+            "title": "Aim for the ghost",
+            "message": "Drag the beam toward the transparent shape in the center. Release when it turns green.",
+            "targetId": "target_beam_slot",
+            "partId": "training_beam",
+            "toolId": "",
+            "priority": "medium"
+        },
+        {
+            "id": "hint_bracket_guidance",
+            "type": "highlight",
+            "title": "Bracket target",
+            "message": "The bracket goes to the right-side ghost. Drag it close and release to snap it into place.",
+            "targetId": "target_bracket_slot",
+            "partId": "training_bracket",
+            "toolId": "",
+            "priority": "medium"
+        }
+    ],
+    "targets": [
+        {
+            "id": "target_beam_slot",
+            "name": "Beam Target",
+            "anchorRef": "anchors/tutorial/beam_slot",
+            "description": "Where the training beam should be placed.",
+            "associatedPartId": "training_beam",
+            "associatedPartGroupId": "",
+            "tags": [
+                "tutorial",
+                "onboarding"
+            ],
+            "weldAxis": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "z": 0.0
             },
-            "scale": {
-                "x": 1.2,
-                "y": 0.04,
-                "z": 0.4
-            },
-            "color": {
-                "r": 0.2,
-                "g": 0.84,
-                "b": 0.58,
-                "a": 1.0
-            },
-            "portA": {
+            "weldLength": 0.0,
+            "useToolActionRotation": false,
+            "toolActionRotation": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
             },
-            "portB": {
+            "useLocalOffsetFromPart": false,
+            "localOffsetFromPart": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
             }
         },
         {
-            "targetId": "target_bracket_slot",
-            "position": {
-                "x": 0.8,
-                "y": 0.15,
-                "z": 0.4
-            },
-            "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-            },
-            "scale": {
-                "x": 0.4,
-                "y": 0.6,
-                "z": 0.4
-            },
-            "color": {
-                "r": 0.2,
-                "g": 0.84,
-                "b": 0.58,
-                "a": 1.0
-            },
-            "portA": {
+            "id": "target_bracket_slot",
+            "name": "Bracket Target",
+            "anchorRef": "anchors/tutorial/bracket_slot",
+            "description": "Where the training bracket should be placed.",
+            "associatedPartId": "training_bracket",
+            "associatedPartGroupId": "",
+            "tags": [
+                "tutorial",
+                "onboarding"
+            ],
+            "weldAxis": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
             },
-            "portB": {
+            "weldLength": 0.0,
+            "useToolActionRotation": false,
+            "toolActionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "useLocalOffsetFromPart": false,
+            "localOffsetFromPart": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
             }
         }
     ],
-    "partGroupPlacements": [],
-    "constrainedPartGroupFitPlacements": [],
-    "completedPartGroupParkingPlacements": [],
-    "integratedPartGroupPlacements": []
-}
+    "challengeConfig": {
+        "enabled": false,
+        "trackTime": true,
+        "trackRetries": false,
+        "trackHintUsage": false,
+        "leaderboardReady": false,
+        "strictValidationModeAvailable": false
+    },
+    "assetManifest": {
+        "modelRefs": [
+            "assets/parts/training_beam.gltf",
+            "assets/parts/training_bracket.gltf",
+            "assets/tools/tool_tape_measure.gltf"
+        ],
+        "textureRefs": [],
+        "effectRefs": [],
+        "uiRefs": [],
+        "nodes": []
+    },
+    "previewConfig": {
+        "defaultAssemblyScaleMultiplier": 1.0,
+        "targetRotationFormat": "",
+        "partPlacements": [
+            {
+                "partId": "training_beam",
+                "startPosition": {
+                    "x": -2.0,
+                    "y": 0.550000011920929,
+                    "z": 0.0
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.2000000476837159,
+                    "y": 0.30000001192092898,
+                    "z": 0.4000000059604645
+                },
+                "color": {
+                    "r": 0.9399999976158142,
+                    "g": 0.550000011920929,
+                    "b": 0.18000000715255738,
+                    "a": 1.0
+                },
+                "assembledPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "assembledRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "assembledScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "stepPoses": [],
+                "splinePath": {
+                    "radius": 0.0,
+                    "segments": 0,
+                    "metallic": 0.0,
+                    "smoothness": 0.0,
+                    "color": {
+                        "r": 0.0,
+                        "g": 0.0,
+                        "b": 0.0,
+                        "a": 0.0
+                    },
+                    "knots": []
+                }
+            },
+            {
+                "partId": "training_bracket",
+                "startPosition": {
+                    "x": 2.0,
+                    "y": 0.550000011920929,
+                    "z": 0.0
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.4000000059604645,
+                    "y": 0.6000000238418579,
+                    "z": 0.4000000059604645
+                },
+                "color": {
+                    "r": 0.30000001192092898,
+                    "g": 0.550000011920929,
+                    "b": 0.8500000238418579,
+                    "a": 1.0
+                },
+                "assembledPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "assembledRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "assembledScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "stepPoses": [],
+                "splinePath": {
+                    "radius": 0.0,
+                    "segments": 0,
+                    "metallic": 0.0,
+                    "smoothness": 0.0,
+                    "color": {
+                        "r": 0.0,
+                        "g": 0.0,
+                        "b": 0.0,
+                        "a": 0.0
+                    },
+                    "knots": []
+                }
+            }
+        ],
+        "targetPlacements": [
+            {
+                "targetId": "target_beam_slot",
+                "position": {
+                    "x": -0.30000001192092898,
+                    "y": 0.03999999910593033,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.2000000476837159,
+                    "y": 0.03999999910593033,
+                    "z": 0.4000000059604645
+                },
+                "color": {
+                    "r": 0.20000000298023225,
+                    "g": 0.8399999737739563,
+                    "b": 0.5799999833106995,
+                    "a": 1.0
+                },
+                "portA": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "portB": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }
+            },
+            {
+                "targetId": "target_bracket_slot",
+                "position": {
+                    "x": 0.800000011920929,
+                    "y": 0.15000000596046449,
+                    "z": 0.4000000059604645
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.4000000059604645,
+                    "y": 0.6000000238418579,
+                    "z": 0.4000000059604645
+                },
+                "color": {
+                    "r": 0.20000000298023225,
+                    "g": 0.8399999737739563,
+                    "b": 0.5799999833106995,
+                    "a": 1.0
+                },
+                "portA": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "portB": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }
+            }
+        ],
+        "partGroupPlacements": [],
+        "constrainedPartGroupFitPlacements": [],
+        "completedPartGroupParkingPlacements": [],
+        "integratedPartGroupPlacements": []
+    }
 }

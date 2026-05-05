@@ -21,6 +21,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
@@ -80,16 +81,16 @@ namespace OSE.Editor
         //
         // Cues are authored in the task sequence UI (this file) but physically
         // live on the host that owns them — part.animationCues for part scope,
-        // sub.animationCues for partGroup scope. Tool scope remains on
-        // step.animationCues.cues for now (ToolDefinition doesn't have a
-        // host-owned animationCues field yet). The storage struct lets every
-        // read/write path stay scope-agnostic.
+        // sub.animationCues for partGroup scope, tool.animationCues for tool
+        // scope. All three are host-owned; isHostOwned exists only as a
+        // legacy guard in case a non-host-backed scope is added in future.
+        // The storage struct lets every read/write path stay scope-agnostic.
         private readonly struct HostCueStorage
         {
             public readonly AnimationCueEntry[] cues;
             public readonly Action<AnimationCueEntry[]> setter;
             public readonly Action markDirty;
-            public readonly bool isHostOwned; // true for Part/Sub, false for Tool (legacy step)
+            public readonly bool isHostOwned; // true for Part/PartGroup/Tool
 
             public HostCueStorage(AnimationCueEntry[] cues,
                 Action<AnimationCueEntry[]> setter, Action markDirty, bool isHostOwned)
@@ -546,12 +547,12 @@ namespace OSE.Editor
                 {
                     if (isPreviewing)
                     {
-                        Debug.Log($"[TTAW] Stop preview (cue {cueIdx}).");
+                        OseLog.Info($"[TTAW] Stop preview (cue {cueIdx}).");
                         StopAllPreviews();
                     }
                     else
                     {
-                        Debug.Log($"[TTAW] Play preview: step='{step?.id}' scope={scope} host='{scopeKey}' cueIdx={cueIdx} type='{cue.type}'");
+                        OseLog.Info($"[TTAW] Play preview: step='{step?.id}' scope={scope} host='{scopeKey}' cueIdx={cueIdx} type='{cue.type}'");
                         // All three scopes are host-owned now — route them
                         // through the same host-aware preview so target
                         // resolution matches runtime.
@@ -646,7 +647,7 @@ namespace OSE.Editor
             var storage = GetHostCueStorage(step, scope, scopeKey);
             if (!storage.IsValid)
             {
-                Debug.LogWarning($"[TTAW] AddCueInPanel: no storage for {scope} '{scopeKey}'.");
+                OseLog.Warn($"[TTAW] AddCueInPanel: no storage for {scope} '{scopeKey}'.");
                 return;
             }
 

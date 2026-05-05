@@ -27,6 +27,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
@@ -71,7 +72,7 @@ namespace OSE.Editor
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[TTAW.Validation] Validator threw: {ex.Message}");
+                OseLog.Error($"[TTAW.Validation] Validator threw: {ex.Message}");
                 _validationIssues = Array.Empty<MachinePackageValidationIssue>();
             }
 

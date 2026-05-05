@@ -1053,7 +1053,7 @@ namespace OSE.Editor
             var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (pfb == null)
             {
-                Debug.LogWarning($"[GrabPoseEditor] Hand not found: {path}. Import XR Hands HandVisualizer sample.");
+                OseLog.Warn($"[GrabPoseEditor] Hand not found: {path}. Import XR Hands HandVisualizer sample.");
                 return;
             }
 
@@ -1171,7 +1171,7 @@ namespace OSE.Editor
                 {
                     File.Copy(_lastBackupPath, jsonPath, true);
                     AssetDatabase.Refresh();
-                    Debug.Log($"[GrabPoseEditor] Reverted to backup: {_lastBackupPath}");
+                    OseLog.Info($"[GrabPoseEditor] Reverted to backup: {_lastBackupPath}");
                     string saved = IsTool ? _tool?.id : _part?.id;
                     LoadPkg(_pkgId);
                     if (IsTool && _pkg.tools != null)
@@ -1251,7 +1251,7 @@ namespace OSE.Editor
                 if (pfb != null) path = prefixed;
             }
 
-            if (pfb == null) { Debug.LogWarning($"[GrabPoseEditor] Not found: {path}"); return; }
+            if (pfb == null) { OseLog.Warn($"[GrabPoseEditor] Not found: {path}"); return; }
 
             _model = Instantiate(pfb);
             _model.name = $"[GrabPosePreview] {itemId}";
@@ -1444,7 +1444,7 @@ namespace OSE.Editor
             _toolRotEuler = Vector3.zero;
             _toolPos = -(gripPt * _scale);
 
-            Debug.Log($"[GrabPoseEditor] PCA: grip={gripPt}" + (IsTool ? $" tip={_tip}" : ""));
+            OseLog.Info($"[GrabPoseEditor] PCA: grip={gripPt}" + (IsTool ? $" tip={_tip}" : ""));
             ApplyToolTransform();
             UpdateHandXform();
             UpdateFingerCurl();
@@ -1481,7 +1481,7 @@ namespace OSE.Editor
             string itemId = IsTool ? _tool?.id : _part?.id;
             if (string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(_pkgId)) return;
             string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
-            if (jsonPath == null) { Debug.LogError($"[GrabPoseEditor] machine.json not found for '{_pkgId}'"); return; }
+            if (jsonPath == null) { OseLog.Error($"[GrabPoseEditor] machine.json not found for '{_pkgId}'"); return; }
 
             string blockName = IsTool ? "toolPose" : "grabConfig";
             string poseJson = BuildPoseJson();
@@ -1492,13 +1492,13 @@ namespace OSE.Editor
             try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[GrabPoseEditor] machine.json is already invalid, aborting write.\n{ex.Message}");
+                OseLog.Error($"[GrabPoseEditor] machine.json is already invalid, aborting write.\n{ex.Message}");
                 return;
             }
 
             if (!TryInjectBlock(ref json, itemId, blockName, poseJson))
             {
-                Debug.LogError($"[GrabPoseEditor] Could not find '{itemId}' in {jsonPath}");
+                OseLog.Error($"[GrabPoseEditor] Could not find '{itemId}' in {jsonPath}");
                 return;
             }
 
@@ -1513,7 +1513,7 @@ namespace OSE.Editor
             try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[GrabPoseEditor] Write would produce invalid JSON, aborting.\n{ex.Message}");
+                OseLog.Error($"[GrabPoseEditor] Write would produce invalid JSON, aborting.\n{ex.Message}");
                 return;
             }
 
@@ -1527,7 +1527,7 @@ namespace OSE.Editor
 
             File.WriteAllText(jsonPath, json);
             AssetDatabase.Refresh();
-            Debug.Log($"[GrabPoseEditor] Wrote {blockName} for '{itemId}' (backup: {backupPath})");
+            OseLog.Info($"[GrabPoseEditor] Wrote {blockName} for '{itemId}' (backup: {backupPath})");
 
             // Reload the package definition so status display updates (tier info),
             // but do NOT re-pick the tool/part — that would destroy the model/hand
@@ -1638,7 +1638,7 @@ namespace OSE.Editor
 
             if (idPos < 0)
             {
-                Debug.LogWarning($"[GrabPoseEditor] TryInjectBlock: pattern not found for id='{id}'");
+                OseLog.Warn($"[GrabPoseEditor] TryInjectBlock: pattern not found for id='{id}'");
                 return false;
             }
 

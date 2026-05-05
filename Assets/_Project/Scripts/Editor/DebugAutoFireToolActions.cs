@@ -42,33 +42,33 @@ namespace OSE.Editor
         {
             if (!Application.isPlaying)
             {
-                Debug.LogWarning("[DebugAutoFire] Enter Play mode first — tool actions execute through the runtime.");
+                OseLog.Warn("[DebugAutoFire] Enter Play mode first — tool actions execute through the runtime.");
                 return;
             }
 
             if (_pending != null && _pending.Count > 0)
             {
-                Debug.LogWarning("[DebugAutoFire] A chain is already running. Cancel first via 'OSE/Debug/Cancel Auto-Fire'.");
+                OseLog.Warn("[DebugAutoFire] A chain is already running. Cancel first via 'OSE/Debug/Cancel Auto-Fire'.");
                 return;
             }
 
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session == null)
             {
-                Debug.LogWarning("[DebugAutoFire] No active IMachineSessionController. Make sure a session is running.");
+                OseLog.Warn("[DebugAutoFire] No active IMachineSessionController. Make sure a session is running.");
                 return;
             }
 
             var step = session.AssemblyController?.StepController?.CurrentStepDefinition;
             if (step == null)
             {
-                Debug.LogWarning("[DebugAutoFire] No active step.");
+                OseLog.Warn("[DebugAutoFire] No active step.");
                 return;
             }
 
             var actions = step.requiredToolActions;
             if (actions == null || actions.Length == 0)
             {
-                Debug.LogWarning($"[DebugAutoFire] Step '{step.id}' has no requiredToolActions.");
+                OseLog.Warn($"[DebugAutoFire] Step '{step.id}' has no requiredToolActions.");
                 return;
             }
 
@@ -79,7 +79,7 @@ namespace OSE.Editor
 
             if (_pending.Count == 0)
             {
-                Debug.LogWarning($"[DebugAutoFire] Step '{step.id}' has requiredToolActions but none have a targetId.");
+                OseLog.Warn($"[DebugAutoFire] Step '{step.id}' has requiredToolActions but none have a targetId.");
                 _pending = null;
                 return;
             }
@@ -92,7 +92,7 @@ namespace OSE.Editor
             RuntimeEventBus.Subscribe<ToolActionCompleted>(OnToolActionCompleted);
             EditorApplication.update += Tick;
 
-            Debug.Log($"[DebugAutoFire] Started chain on step '{step.id}': {_pending.Count} target(s), {delayMs}ms inter-action delay.");
+            OseLog.Info($"[DebugAutoFire] Started chain on step '{step.id}': {_pending.Count} target(s), {delayMs}ms inter-action delay.");
         }
 
         [MenuItem(MenuPath_Cancel, false, 201)]
@@ -100,7 +100,7 @@ namespace OSE.Editor
         {
             if (_pending == null)
             {
-                Debug.Log("[DebugAutoFire] No chain running.");
+                OseLog.Info("[DebugAutoFire] No chain running.");
                 return;
             }
             EndChain("canceled by menu");
@@ -138,12 +138,12 @@ namespace OSE.Editor
             bool ok = bridge.TryToolAction(targetId);
             if (!ok)
             {
-                Debug.LogWarning($"[DebugAutoFire] TryToolAction('{targetId}') returned false. Continuing to next.");
+                OseLog.Warn($"[DebugAutoFire] TryToolAction('{targetId}') returned false. Continuing to next.");
                 _nextFireAt = EditorApplication.timeSinceStartup + 0.05;
                 return;
             }
 
-            Debug.Log($"[DebugAutoFire] Fired '{targetId}'. Remaining: {_pending.Count}.");
+            OseLog.Info($"[DebugAutoFire] Fired '{targetId}'. Remaining: {_pending.Count}.");
             _waitingForCompleted = true;
         }
 
@@ -157,7 +157,7 @@ namespace OSE.Editor
 
         private static void EndChain(string reason)
         {
-            Debug.Log($"[DebugAutoFire] Chain ended ({reason}). Step was '{_stepId}'.");
+            OseLog.Info($"[DebugAutoFire] Chain ended ({reason}). Step was '{_stepId}'.");
             _pending = null;
             _stepId = null;
             _waitingForCompleted = false;

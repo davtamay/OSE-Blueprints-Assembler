@@ -9,6 +9,7 @@ using OSE.Content.Validation;
 using UnityEditor;
 using UnityEngine;
 
+using OSE.Core;
 namespace OSE.Editor
 {
     /// <summary>
@@ -52,7 +53,7 @@ namespace OSE.Editor
             if (disable)
             {
                 EditorPrefs.SetBool(BlockOnErrorPref, false);
-                UnityEngine.Debug.LogWarning("[OSE] Pre-play package validation disabled. Re-enable via OSE → Validate All Packages.");
+                OseLog.Warn("[OSE] Pre-play package validation disabled. Re-enable via OSE → Validate All Packages.");
             }
         }
 
@@ -74,11 +75,11 @@ namespace OSE.Editor
             EditorUtility.DisplayDialog(title, message, "OK");
 
             if (report.TotalErrors > 0)
-                UnityEngine.Debug.LogError($"[OSE] Package validation: {report.TotalErrors} error(s). See console for details.");
+                OseLog.Error($"[OSE] Package validation: {report.TotalErrors} error(s). See console for details.");
             else if (report.TotalWarnings > 0)
-                UnityEngine.Debug.LogWarning($"[OSE] Package validation: {report.TotalWarnings} warning(s).");
+                OseLog.Warn($"[OSE] Package validation: {report.TotalWarnings} warning(s).");
             else
-                UnityEngine.Debug.Log("[OSE] Package validation: all packages clean.");
+                OseLog.Info("[OSE] Package validation: all packages clean.");
         }
 
         // ── Core validation ──────────────────────────────────────────────────
@@ -126,9 +127,9 @@ namespace OSE.Editor
 
                     // Log all issues to console for easy navigation
                     foreach (var e in errors)
-                        UnityEngine.Debug.LogError($"[OSE][{packageId}] {e}");
+                        OseLog.Error($"[OSE][{packageId}] {e}");
                     foreach (var w in warnings)
-                        UnityEngine.Debug.LogWarning($"[OSE][{packageId}] {w}");
+                        OseLog.Warn($"[OSE][{packageId}] {w}");
                 }
                 catch (Exception ex)
                 {

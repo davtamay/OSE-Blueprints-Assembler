@@ -4016,7 +4016,7 @@
         "target_cube_square_check_front_left"
       ],
       "family": "Use",
-      "profile": "Measure",
+      "profile": "SquareCheck",
       "viewMode": "WorkZone",
       "hintIds": [
         "hint_cube_square_check_front_left"
@@ -4179,7 +4179,7 @@
         "target_cube_square_check_front_left"
       ],
       "family": "Use",
-      "profile": "Measure",
+      "profile": "SquareCheck",
       "viewMode": "WorkZone",
       "hintIds": [
         "hint_cube_square_check_front_left"
@@ -4227,7 +4227,7 @@
       ],
       "targetOrder": "sequential",
       "family": "Use",
-      "profile": "Measure",
+      "profile": "SquareCheck",
       "viewMode": "WorkZone",
       "hintIds": [
         "hint_cube_square_check_front_left"
