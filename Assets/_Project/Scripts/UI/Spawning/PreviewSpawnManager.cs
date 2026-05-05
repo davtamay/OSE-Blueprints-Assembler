@@ -498,9 +498,13 @@ namespace OSE.UI.Root
             // Editor EDIT mode (TTAW preview) uses sync AssetDatabase to skip
             // the placeholder dance — the authoring workflow renders real GLBs
             // immediately. Editor PLAY mode AND builds both go through the
-            // async path (cube placeholder + SwapInRealGhostAsync) so play
-            // mode behavior matches the build 1:1. The runtime never touches
-            // AssetDatabase; sync path is gated on !Application.isPlaying.
+            // async path: a primitive Cube placeholder holds the click collider
+            // and serves as a visual fallback for parts without a loadable GLB
+            // (frames). The cube's renderer is HIDDEN during the async load
+            // window so the user doesn't see a giant 1m block flash before
+            // the real ghost arrives. SwapInRealGhostAsync re-enables the
+            // renderer if the swap fails (frames stay as cubes); on success
+            // the cube is destroyed and the real GLB takes over.
             GameObject preview = null;
 #if UNITY_EDITOR
             if (!Application.isPlaying)
@@ -511,6 +515,15 @@ namespace OSE.UI.Root
                 preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 if (previewRoot != null)
                     preview.transform.SetParent(previewRoot, false);
+
+                // Hide the placeholder's renderer immediately so the cube
+                // doesn't flash before swap-in. Re-enabled by
+                // SwapInRealGhostAsync when the load fails (cube fallback).
+                if (Application.isPlaying)
+                {
+                    foreach (var r in preview.GetComponentsInChildren<Renderer>(true))
+                        r.enabled = false;
+                }
             }
 
             preview.name = $"Preview_{associatedPartId}";
@@ -596,11 +609,13 @@ namespace OSE.UI.Root
             catch (System.Exception ex)
             {
                 OseLog.Warn($"[PartInteraction] Ghost swap-in: LoadGhostAssetAsync threw for '{partId}' (ref='{assetRef}'): {ex.Message}");
+                ShowPlaceholderAsCubeFallback(placeholder);
                 return;
             }
             if (loaded == null)
             {
-                OseLog.VerboseInfo($"[PartInteraction] Ghost swap-in: no asset loaded for '{partId}' (ref='{assetRef}'). Keeping placeholder.");
+                OseLog.VerboseInfo($"[PartInteraction] Ghost swap-in: no asset loaded for '{partId}' (ref='{assetRef}'). Re-showing cube placeholder as fallback.");
+                ShowPlaceholderAsCubeFallback(placeholder);
                 return;
             }
 
@@ -686,6 +701,21 @@ namespace OSE.UI.Root
             UnityEngine.Object.Destroy(placeholder);
 
             OseLog.Info($"[PartInteraction] Ghost swapped to real GLB for '{partId}' at target '{targetId}'.");
+        }
+
+        /// <summary>
+        /// Re-enables the placeholder cube's renderer when the async swap-in
+        /// can't produce a real GLB (asset not resolvable, load threw, etc.).
+        /// Frames + parts that are intentionally rendered as primitives end up
+        /// here — the cube IS their visual, hidden during the load window
+        /// only as a courtesy to parts that DO have a GLB. Once we know the
+        /// swap won't happen, the cube needs to be visible.
+        /// </summary>
+        private static void ShowPlaceholderAsCubeFallback(GameObject placeholder)
+        {
+            if (placeholder == null) return;
+            foreach (var r in placeholder.GetComponentsInChildren<Renderer>(true))
+                r.enabled = true;
         }
 
         /// <summary>
@@ -805,8 +835,9 @@ namespace OSE.UI.Root
             if (previewScale.sqrMagnitude < 0.00001f) previewScale = Vector3.one;
 
             // Editor EDIT mode: sync AssetDatabase. Editor PLAY + build:
-            // cube placeholder, async swap-in below. See SpawnPreviewForTarget
-            // for rationale.
+            // cube placeholder with renderer hidden during async load,
+            // re-enabled if the swap fails (frame-as-cube fallback).
+            // See SpawnPreviewForTarget for full rationale.
             GameObject preview = null;
 #if UNITY_EDITOR
             if (!Application.isPlaying)
@@ -816,6 +847,11 @@ namespace OSE.UI.Root
             {
                 preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 if (previewRoot != null) preview.transform.SetParent(previewRoot, false);
+                if (Application.isPlaying)
+                {
+                    foreach (var r in preview.GetComponentsInChildren<Renderer>(true))
+                        r.enabled = false;
+                }
             }
 
             preview.name = $"Preview_{partId}";
