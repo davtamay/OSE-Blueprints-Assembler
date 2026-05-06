@@ -74,6 +74,7 @@ namespace OSE.Editor
             if (e.awaitCues)                           { Sep(); sb.Append("\"awaitCues\":true"); }
             if (!string.IsNullOrEmpty(e.unorderedSet)) { Sep(); sb.Append($"\"unorderedSet\":\"{e.unorderedSet}\""); }
             if (e.endTransform != null)                { Sep(); sb.Append($"\"endTransform\":{JsonUtility.ToJson(e.endTransform)}"); }
+            if (e.startTransform != null)              { Sep(); sb.Append($"\"startTransform\":{JsonUtility.ToJson(e.startTransform)}"); }
             sb.Append("}");
             return sb.ToString();
         }

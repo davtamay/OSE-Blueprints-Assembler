@@ -248,10 +248,13 @@ namespace OSE.Editor
                 Handles.color = ColSelected;
                 Handles.DrawWireDisc(worldPos, sv.camera.transform.forward, size * 1.6f);
 
-                // Visual hint when followPart authoring sync is active —
-                // tells the author that dragging the target will also move
-                // the part's end pose. Tiny label just above the wire disc.
-                if (IsActiveTaskFollowedInteraction())
+                bool startPillReadOnly = IsActiveStartPillReadOnly();
+
+                // Visual hint when followPart authoring sync is active and
+                // the handle is interactive — i.e. End pill, or Start pill
+                // with an authored override. Suppressed on read-only Start
+                // since dragging there is a no-op until the author opts in.
+                if (IsActiveTaskFollowedInteraction() && !startPillReadOnly)
                 {
                     var hintStyle = new GUIStyle(EditorStyles.miniLabel)
                     {
@@ -262,12 +265,26 @@ namespace OSE.Editor
                         "🔗 part follows", hintStyle);
                 }
 
+                if (startPillReadOnly)
+                {
+                    // Read-only Start pill: show a hint label so the author
+                    // knows where the override lives without offering a drag
+                    // surface that would silently auto-promote startTransform.
+                    var roStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal = { textColor = new Color(0.65f, 0.85f, 1f, 0.95f) },
+                        fontStyle = FontStyle.Italic,
+                    };
+                    Handles.Label(worldPos + sv.camera.transform.up * (size * 2.2f),
+                        "inherited start (read-only — click \"Author override\" to edit)", roStyle);
+                }
                 EditorGUI.BeginChangeCheck();
                 Quaternion handleRot = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
-                Vector3 newWorldPos = Handles.PositionHandle(worldPos, handleRot);
-                if (EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - worldPos).sqrMagnitude > 1e-10f)
+                Vector3 newWorldPos = startPillReadOnly
+                    ? worldPos
+                    : Handles.PositionHandle(worldPos, handleRot);
+                if (!startPillReadOnly && EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - worldPos).sqrMagnitude > 1e-10f)
                 {
-                    BeginEdit();
                     Vector3 newLocal = root.InverseTransformPoint(newWorldPos);
                     // Delta is computed against the displayed local (which may
                     // be the pill-overridden pose), not sel.position. Without
@@ -276,36 +293,48 @@ namespace OSE.Editor
                     // would suddenly snap to the pill pose, dirtying the
                     // authored target with the override offset.
                     Vector3 delta = newLocal - displayLocal;
-                    sel.position += delta;
-                    sel.isDirty  = true;
 
-                    if (_multiSelected.Count > 1)
+                    if (IsActiveStartPillFollowedOverride())
                     {
-                        foreach (int idx in _multiSelected)
-                        {
-                            if (idx == _selectedIdx) continue;
-                            if (idx < 0 || idx >= _targets.Length) continue;
-                            ref var t = ref _targets[idx];
-                            t.position += delta;
-                            t.isDirty = true;
-                        }
+                        // Start-pill on a tool×part interaction: route the
+                        // drag to entry.startTransform (the per-task override)
+                        // and snap the part. Do NOT touch sel.position or
+                        // entry.endTransform — target placement and end pose
+                        // are unrelated to the start-pose override.
+                        TryApplyStartOverridePositionDelta(delta);
                     }
-                    // followPart authoring sync — when on, also move the
-                    // part's end pose by the same delta so the bolt stays
-                    // glued to wherever the author drags the target.
-                    TryApplyTargetPositionDeltaToFollowedPart(delta);
+                    else
+                    {
+                        BeginEdit();
+                        sel.position += delta;
+                        sel.isDirty  = true;
+
+                        if (_multiSelected.Count > 1)
+                        {
+                            foreach (int idx in _multiSelected)
+                            {
+                                if (idx == _selectedIdx) continue;
+                                if (idx < 0 || idx >= _targets.Length) continue;
+                                ref var t = ref _targets[idx];
+                                t.position += delta;
+                                t.isDirty = true;
+                            }
+                        }
+                        // followPart authoring sync — when on, also move the
+                        // part's end pose by the same delta so the bolt stays
+                        // glued to wherever the author drags the target.
+                        TryApplyTargetPositionDeltaToFollowedPart(delta);
+                    }
                     Repaint();
                 }
 
-                if (sceneProfile.SceneRotationHandle)
+                if (sceneProfile.SceneRotationHandle && !startPillReadOnly)
                 {
                     EditorGUI.BeginChangeCheck();
                     Quaternion rotHandleOrientation = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
                     Quaternion newWorldRot = Handles.RotationHandle(rotHandleOrientation, worldPos);
                     if (EditorGUI.EndChangeCheck() && !poseCooldownActive && Quaternion.Angle(newWorldRot, rotHandleOrientation) > 0.01f)
                     {
-                        BeginEdit();
-
                         // Snapshot baselines on first frame of drag (for batch rotation)
                         if (!_rotDragActive)
                         {
@@ -323,23 +352,34 @@ namespace OSE.Editor
                         Quaternion worldDelta = newWorldRot * Quaternion.Inverse(_rotDragStartHandle);
                         Quaternion newLocalRot = Quaternion.Inverse(root.rotation) * (worldDelta * (root.rotation * _rotDragStartLocal));
                         Quaternion localDelta = newLocalRot * Quaternion.Inverse(_rotDragStartLocal);
-                        sel.rotation = newLocalRot;
-                        sel.isDirty  = true;
-                        if (_multiSelected.Count > 1)
+
+                        if (IsActiveStartPillFollowedOverride())
                         {
-                            foreach (int idx in _multiSelected)
-                            {
-                                if (idx == _selectedIdx) continue;
-                                ref var t = ref _targets[idx];
-                                Quaternion startRot = _rotDragStartMulti.TryGetValue(idx, out var sr) ? sr : t.rotation;
-                                t.rotation = localDelta * startRot;
-                                t.isDirty = true;
-                            }
+                            // Start-pill override path: rotate startTransform
+                            // and the part GO; leave sel.rotation alone.
+                            TryApplyStartOverrideRotationDelta(localDelta);
                         }
-                        // followPart authoring sync — rotation delta also
-                        // applied to the part's end pose so the part stays
-                        // oriented to wherever the author rotates the target.
-                        TryApplyTargetRotationDeltaToFollowedPart(localDelta);
+                        else
+                        {
+                            BeginEdit();
+                            sel.rotation = newLocalRot;
+                            sel.isDirty  = true;
+                            if (_multiSelected.Count > 1)
+                            {
+                                foreach (int idx in _multiSelected)
+                                {
+                                    if (idx == _selectedIdx) continue;
+                                    ref var t = ref _targets[idx];
+                                    Quaternion startRot = _rotDragStartMulti.TryGetValue(idx, out var sr) ? sr : t.rotation;
+                                    t.rotation = localDelta * startRot;
+                                    t.isDirty = true;
+                                }
+                            }
+                            // followPart authoring sync — rotation delta also
+                            // applied to the part's end pose so the part stays
+                            // oriented to wherever the author rotates the target.
+                            TryApplyTargetRotationDeltaToFollowedPart(localDelta);
+                        }
                         Repaint();
                     }
                     else if (_rotDragActive)

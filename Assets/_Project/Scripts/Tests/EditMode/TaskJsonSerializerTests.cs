@@ -169,6 +169,41 @@ namespace OSE.Tests.EditMode
                 "empty unorderedSet must be omitted");
             Assert.IsFalse(json.Contains("\"endTransform\""),
                 "null endTransform must be omitted");
+            Assert.IsFalse(json.Contains("\"startTransform\""),
+                "null startTransform must be omitted — opt-in field stays absent until authored");
+        }
+
+        [Test]
+        public void TaskOrderEntry_StartTransformOverride_RoundTrips()
+        {
+            // The per-task start-pose override is opt-in. When present it
+            // must round-trip through Build → FromJson with every component
+            // intact, so reverting (= setting null) and re-authoring stays
+            // a clean toggle.
+            var original = new TaskOrderEntry
+            {
+                kind = "toolAction",
+                id   = "action_with_start_override",
+                startTransform = new TaskEndTransform
+                {
+                    position = new SceneFloat3 { x = 0.5f, y = -0.25f, z = 1.75f },
+                    rotation = new SceneQuaternion { x = 0f, y = 0.7071f, z = 0f, w = 0.7071f },
+                    scale    = new SceneFloat3 { x = 1f, y = 1f, z = 1f }
+                }
+            };
+
+            string json = TaskJsonSerializer.BuildTaskOrderEntryJson(original);
+            Assert.IsTrue(json.Contains("\"startTransform\""),
+                "non-null startTransform must be emitted");
+
+            var roundTripped = JsonUtility.FromJson<TaskOrderEntry>(json);
+            Assert.IsNotNull(roundTripped.startTransform, "startTransform must survive round-trip");
+            Assert.AreEqual(original.startTransform.position.x, roundTripped.startTransform.position.x);
+            Assert.AreEqual(original.startTransform.position.y, roundTripped.startTransform.position.y);
+            Assert.AreEqual(original.startTransform.position.z, roundTripped.startTransform.position.z);
+            Assert.AreEqual(original.startTransform.rotation.y, roundTripped.startTransform.rotation.y);
+            Assert.AreEqual(original.startTransform.rotation.w, roundTripped.startTransform.rotation.w);
+            Assert.AreEqual(original.startTransform.scale.x,    roundTripped.startTransform.scale.x);
         }
 
         [Test]
@@ -189,6 +224,12 @@ namespace OSE.Tests.EditMode
                 awaitCues     = true,
                 unorderedSet  = "set",
                 endTransform  = new TaskEndTransform
+                {
+                    position = new SceneFloat3 { x = 1f },
+                    rotation = new SceneQuaternion { w = 1f },
+                    scale    = new SceneFloat3 { x = 1f, y = 1f, z = 1f }
+                },
+                startTransform = new TaskEndTransform
                 {
                     position = new SceneFloat3 { x = 1f },
                     rotation = new SceneQuaternion { w = 1f },

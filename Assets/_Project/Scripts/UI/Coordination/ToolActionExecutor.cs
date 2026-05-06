@@ -527,8 +527,35 @@ namespace OSE.UI.Root
                 return null;
             }
 
-            // Start pose: part's current local transform. Never authored — the pose
-            // chain derives start from whatever the previous task left the part at.
+            // Start pose: defaults to the part's current local transform —
+            // the chain-inherited pose left by the previous task. When the
+            // current task has authored an opt-in start override
+            // (entry.startTransform), snap the part to that pose first so
+            // the lerp begins from the override, not from inherited.
+            // entry.startTransform == null ⇒ identical to legacy behavior.
+            TaskEndTransform startOverride = TryResolveToolTaskStartTransform(stepCtrl.CurrentStepDefinition, targetId);
+            if (startOverride != null)
+            {
+                Transform pr = _ctx.Setup?.PreviewRoot;
+                Vector3 ovPos = new Vector3(startOverride.position.x, startOverride.position.y, startOverride.position.z);
+                Quaternion ovRot = startOverride.rotation.IsIdentity
+                    ? Quaternion.identity
+                    : new Quaternion(startOverride.rotation.x, startOverride.rotation.y, startOverride.rotation.z, startOverride.rotation.w);
+                if (pr != null)
+                {
+                    partGo.transform.position = pr.TransformPoint(ovPos);
+                    if (!startOverride.rotation.IsIdentity)
+                        partGo.transform.rotation = pr.rotation * ovRot;
+                }
+                else
+                {
+                    partGo.transform.localPosition = ovPos;
+                    if (!startOverride.rotation.IsIdentity)
+                        partGo.transform.localRotation = ovRot;
+                }
+                if (!(startOverride.scale.x == 0f && startOverride.scale.y == 0f && startOverride.scale.z == 0f))
+                    partGo.transform.localScale = new Vector3(startOverride.scale.x, startOverride.scale.y, startOverride.scale.z);
+            }
             Vector3 startPos = partGo.transform.localPosition;
             Quaternion startRot = partGo.transform.localRotation;
             Vector3 startScale = partGo.transform.localScale;
@@ -634,6 +661,32 @@ namespace OSE.UI.Root
             {
                 if (entry != null && entry.kind == "toolAction" && entry.id == actionId)
                     return entry.endTransform;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Mirror of <see cref="TryResolveToolTaskEndTransform"/> for the
+        /// per-task start-pose override. Returns <c>entry.startTransform</c>
+        /// when authored, otherwise <c>null</c> (= use chain-inherited /
+        /// live transform as the start pose).
+        /// </summary>
+        private static TaskEndTransform TryResolveToolTaskStartTransform(StepDefinition step, string targetId)
+        {
+            if (step?.requiredToolActions == null || step.taskOrder == null || string.IsNullOrEmpty(targetId))
+                return null;
+
+            string actionId = null;
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a != null && a.targetId == targetId) { actionId = a.id; break; }
+            }
+            if (string.IsNullOrEmpty(actionId)) return null;
+
+            foreach (var entry in step.taskOrder)
+            {
+                if (entry != null && entry.kind == "toolAction" && entry.id == actionId)
+                    return entry.startTransform;
             }
             return null;
         }

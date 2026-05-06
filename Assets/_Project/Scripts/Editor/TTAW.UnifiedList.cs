@@ -2321,6 +2321,29 @@ namespace OSE.Editor
                             menu.AddItem(new GUIContent(delLabel), false,
                                 () => RemoveTaskRowsAt(capturedDelStep, capturedOrder, capturedRowIdxs));
 
+                            // ── Revert this task — single-row only ───────────
+                            // Snapshot-based per-task revert. Only meaningful
+                            // for one row at a time (the dialog explains the
+                            // three cases — modified / removed / added since
+                            // save). Disabled when the row matches its
+                            // on-disk snapshot. Pose / target placement
+                            // edits stay on their per-row affordances —
+                            // matches RevertStepOnly's scope contract.
+                            if (capturedRowIdxs.Count == 1)
+                            {
+                                var revertEntry = order[capturedRowIdxs[0]];
+                                string revKind = revertEntry.kind;
+                                string revId   = revertEntry.id;
+                                string revStepId = step.id;
+                                bool taskDirty = IsTaskDirty(revStepId, revKind, revId);
+                                var revLabel = new GUIContent($"Revert task '{revId}' to last saved");
+                                if (taskDirty)
+                                    menu.AddItem(revLabel, false,
+                                        () => RevertTaskOnly(revStepId, revKind, revId));
+                                else
+                                    menu.AddDisabledItem(revLabel);
+                            }
+
                             // The remaining items are part-scoped (group ops).
                             // Bail out of the menu early if no part rows were
                             // selected — but still show Delete above.
@@ -2950,6 +2973,17 @@ namespace OSE.Editor
             RestoreLiveMeshToInheritedPose();
 
             _activeTaskKind = entry.kind;
+
+            // Eager pill identity for tool tasks: OnSceneGUI may paint before
+            // the inspector's DrawInteractionPosePillRow re-sets these IDs,
+            // and the tool preview / target dot rely on them to resolve
+            // pillPos. Without this pre-set, the tool falls back to end-aligned
+            // for one paint cycle on every task switch — visible flicker.
+            if (string.Equals(entry.kind, "toolAction", System.StringComparison.Ordinal))
+            {
+                _activePosePillStepId   = step?.id;
+                _activePosePillEntryRef = entry.id;
+            }
             _canvasSelectedSubId = null; // clear partGroup selection when a task is clicked
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5; // suppress false dirty from handle re-init after selection change
             switch (entry.kind)

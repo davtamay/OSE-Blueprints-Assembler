@@ -506,6 +506,27 @@ namespace OSE.Content
         public TaskEndTransform endTransform;
 
         /// <summary>
+        /// Optional per-task override for the part's start pose. When null
+        /// (default), the start is inherited from the upstream tool task's
+        /// <c>endTransform</c> for the same part (chain inheritance) — i.e.
+        /// today's behaviour, identical in editor and runtime. When non-null,
+        /// the runtime snaps the part to this pose at task entry before
+        /// lerping to <c>endTransform</c>, and the editor displays this pose
+        /// on the Start pose pill.
+        ///
+        /// <para>Authoring rule: this is the OPT-IN override. Setting it back
+        /// to null reverts to inherited — a true round-trip, since no other
+        /// system mutates this field implicitly.</para>
+        ///
+        /// <para>Same shape as <c>endTransform</c> so the editor and JSON
+        /// stay symmetric. Resolution must go through
+        /// <c>TryGetEffectiveStartTransform</c> in TTAW; never read this
+        /// field directly when computing "the start pose for task N" so
+        /// override-vs-inherited remains a single decision point.</para>
+        /// </summary>
+        public TaskEndTransform startTransform;
+
+        /// <summary>
         /// Optional authoring label marking this entry as a member of an
         /// unordered set — a contiguous span of tasks that open together and
         /// may be completed in any order. When null or empty, the entry is a

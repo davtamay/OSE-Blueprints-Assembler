@@ -179,7 +179,12 @@ namespace OSE.Editor
             // whole selection without unlock/relock churn.
             using (new EditorGUI.DisabledScope(taskIsLocked && !isMulti))
             {
-                if (GUILayout.Toggle(isStart, "Start",
+                bool startHasOverride = !isMulti && entry != null && entry.startTransform != null;
+                string startLabel = startHasOverride ? "● Start" : "Start";
+                if (GUILayout.Toggle(isStart, new GUIContent(startLabel,
+                        startHasOverride
+                            ? "Per-task start override is set on this task. Click ⟲ Revert to clear it."
+                            : "Inherited start pose (chain-derived from upstream tool task)."),
                         PoseToggleStyle(isStart, PoseAccentStart, EditorStyles.miniButtonLeft),
                         GUILayout.Height(18)))
                 {
@@ -263,17 +268,20 @@ namespace OSE.Editor
                 hint = "🔒 locked — pose persists across task switches";
             else if (isEnd)
                 hint = "(drag the gizmo to author endTransform)";
+            else if (!isMulti && entry != null && entry.startTransform != null)
+                hint = "● override (drag the gizmo to edit start pose)";
             else
-                hint = "(start is inherited — gizmo hidden)";
+                hint = "(start inherited — read-only; click Author override to edit)";
             EditorGUILayout.LabelField(hint, EditorStyles.miniLabel);
             EditorGUILayout.EndHorizontal();
 
-            // Inheritance banner: when on Start, surface the upstream step
-            // whose endTransform is being inherited as this task's start
-            // pose. Single-source-of-truth UX — author edits the source,
-            // never an "override start" field. Hidden in multi-select to
-            // keep that header focused on the bulk pill+lock controls.
-            if (!isMulti && _activePosePill == InteractionPosePill.Start)
+            // Inheritance banner: when on Start AND no override is set,
+            // surface the upstream step whose endTransform is inherited as
+            // this task's start pose. When an override IS set, the banner
+            // is suppressed — the inherited source isn't the active value
+            // anymore, so jumping to it would mislead the author.
+            if (!isMulti && _activePosePill == InteractionPosePill.Start
+                && (entry == null || entry.startTransform == null))
             {
                 if (TryFindInheritedStartSource(step, action, out string srcStepId, out string srcEntryId, out int srcSeq))
                     DrawInheritedStartBanner(srcStepId, srcEntryId, srcSeq);
@@ -352,11 +360,27 @@ namespace OSE.Editor
                 return true;
             }
 
-            // Start: chain-derived inherited pose (= upstream end).
-            var src = TryGetInheritedStartTransform(step, action);
-            if (src == null) return false;
-            pillPos = new Vector3(src.position.x, src.position.y, src.position.z);
-            return true;
+            // Start: per-task override if authored, else chain-derived
+            // inherited pose, else the part's staging placement (first
+            // instance — no upstream tool task has touched this part yet).
+            // Mirrors DrawInheritedStartReadOnly's fallback chain so dot,
+            // gizmo, and tool preview all resolve to the same pose for
+            // first-instance tool tasks instead of falling back to the
+            // end-aligned target marker.
+            var src = TryGetEffectiveStartTransform(step, action, entry, out _);
+            if (src != null)
+            {
+                pillPos = new Vector3(src.position.x, src.position.y, src.position.z);
+                return true;
+            }
+            string fallbackPartId = ResolvePartIdForTarget(action?.targetId);
+            var pp = !string.IsNullOrEmpty(fallbackPartId) ? FindPartPlacement(fallbackPartId) : null;
+            if (pp != null)
+            {
+                pillPos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -368,8 +392,58 @@ namespace OSE.Editor
         /// upstream task as the single source of truth.
         /// </summary>
         internal void DrawInheritedStartReadOnly(
-            StepDefinition step, ToolActionDefinition action, TaskOrderEntry _)
+            StepDefinition step, ToolActionDefinition action, TaskOrderEntry entry)
         {
+            // Override path: editable fields write to entry.startTransform.
+            // Author has opted in by dragging the gizmo or clicking
+            // "Author override" below.
+            if (entry != null && entry.startTransform != null)
+            {
+                var st = entry.startTransform;
+                EditorGUI.BeginChangeCheck();
+                Vector3 newPos = EditorGUILayout.Vector3Field("Position",
+                    new Vector3(st.position.x, st.position.y, st.position.z));
+                Quaternion currRot = st.rotation.IsIdentity
+                    ? Quaternion.identity
+                    : new Quaternion(st.rotation.x, st.rotation.y, st.rotation.z, st.rotation.w);
+                Vector3 newEuler = EditorGUILayout.Vector3Field("Rotation (Euler)", currRot.eulerAngles);
+                Vector3 currScale = (st.scale.x == 0f && st.scale.y == 0f && st.scale.z == 0f)
+                    ? Vector3.one
+                    : new Vector3(st.scale.x, st.scale.y, st.scale.z);
+                Vector3 newScale = EditorGUILayout.Vector3Field("Scale", currScale);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    st.position = new SceneFloat3 { x = newPos.x, y = newPos.y, z = newPos.z };
+                    Quaternion newRot = Quaternion.Euler(newEuler);
+                    st.rotation = new SceneQuaternion
+                        { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
+                    st.scale = new SceneFloat3 { x = newScale.x, y = newScale.y, z = newScale.z };
+                    _dirtyStepIds.Add(step.id);
+                    SyncLivePartToStartOverride(action, st);
+                    SceneView.RepaintAll();
+                }
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(
+                    "● Override — start authored on this task.",
+                    EditorStyles.miniLabel);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(
+                        new GUIContent("⟲ Revert to inherited",
+                            "Clear this task's start-pose override and fall back to the upstream task's endTransform (or the part's staging pose if no chain exists)."),
+                        EditorStyles.miniButton, GUILayout.Width(140), GUILayout.Height(18)))
+                {
+                    if (RevertActiveStartOverride())
+                    {
+                        SceneView.RepaintAll();
+                        Repaint();
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            // Inherited (read-only) path: show upstream end / staging pose.
             TaskEndTransform src = TryGetInheritedStartTransform(step, action);
             using (new EditorGUI.DisabledScope(true))
             {
@@ -410,9 +484,52 @@ namespace OSE.Editor
                     }
                 }
             }
+
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(
-                "Read-only — inherited from upstream. Use the banner's “→ Edit source” to change it.",
+                "Read-only — inherited from upstream. Click Author override to edit.",
                 EditorStyles.miniLabel);
+            GUILayout.FlexibleSpace();
+            // Author override button: only meaningful for followPart tool×part
+            // tasks where the override has runtime effect.
+            bool canOverride = entry != null
+                && action?.interaction != null
+                && action.interaction.followPart
+                && (action.interaction.archetype == "lerp"
+                    || action.interaction.archetype == "thread_in");
+            using (new EditorGUI.DisabledScope(!canOverride))
+            {
+                if (GUILayout.Button(
+                        new GUIContent("Author override",
+                            "Capture the current inherited start pose into this task's startTransform so it can be edited independently. Reverts cleanly via the ⟲ button."),
+                        EditorStyles.miniButton, GUILayout.Width(110), GUILayout.Height(18)))
+                {
+                    EnsureStartOverride(step, action, entry);
+                    _dirtyStepIds.Add(step.id);
+                    SyncLivePartToStartOverride(action, entry.startTransform);
+                    SceneView.RepaintAll();
+                    Repaint();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>Snaps the live part GO to the override pose so author
+        /// sees the authored value reflected in scene immediately. No-op if
+        /// the part isn't spawned.</summary>
+        private void SyncLivePartToStartOverride(ToolActionDefinition action, TaskEndTransform st)
+        {
+            if (action == null || st == null) return;
+            string partId = ResolvePartIdForTarget(action.targetId);
+            if (string.IsNullOrEmpty(partId)) return;
+            var partGo = FindLivePartGO(partId);
+            if (partGo == null) return;
+            partGo.transform.localPosition = new Vector3(st.position.x, st.position.y, st.position.z);
+            partGo.transform.localRotation = st.rotation.IsIdentity
+                ? Quaternion.identity
+                : new Quaternion(st.rotation.x, st.rotation.y, st.rotation.z, st.rotation.w);
+            if (!(st.scale.x == 0f && st.scale.y == 0f && st.scale.z == 0f))
+                partGo.transform.localScale = new Vector3(st.scale.x, st.scale.y, st.scale.z);
         }
 
         /// <summary>
@@ -431,6 +548,26 @@ namespace OSE.Editor
                 if (e != null && e.id == srcEntryId && e.endTransform != null) return e.endTransform;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Single source of truth for "what is the start pose of this task".
+        /// Prefers the per-task <c>entry.startTransform</c> override when
+        /// non-null; otherwise falls back to chain-inherited upstream end.
+        /// Every reader of "start pose for task N" must go through here so
+        /// override-vs-inherited stays one decision point.
+        /// </summary>
+        internal TaskEndTransform TryGetEffectiveStartTransform(
+            StepDefinition step, ToolActionDefinition action, TaskOrderEntry entry,
+            out bool isOverride)
+        {
+            isOverride = false;
+            if (entry != null && entry.startTransform != null)
+            {
+                isOverride = true;
+                return entry.startTransform;
+            }
+            return TryGetInheritedStartTransform(step, action);
         }
 
         private bool TryFindInheritedStartSource(
@@ -784,6 +921,354 @@ namespace OSE.Editor
             }
         }
 
+        // ── Start-pill override authoring (opt-in per-task start pose) ───────
+        //
+        // When the user has the Start pose pill active on a tool×part
+        // interaction (followPart=true, archetype=lerp/thread_in), dragging
+        // the gizmo writes to entry.startTransform — the per-task override —
+        // instead of corrupting endTransform. Auto-promotes startTransform
+        // from the inherited pose on the first drag so the dot/gizmo math
+        // self-corrects (displayLocal now tracks the same field we mutate).
+
+        /// <summary>True when pill=Start AND the active task is a followed
+        /// tool×part interaction AND the per-task override has already been
+        /// authored (entry.startTransform != null). Drag handlers gate on
+        /// this so Start-pill is read-only by default — the user opts in
+        /// via the inspector's "Author override" button, then drag becomes
+        /// active and writes to the existing override field.</summary>
+        internal bool IsActiveStartPillFollowedOverride()
+        {
+            if (_activePosePill != InteractionPosePill.Start) return false;
+            if (!IsActiveTaskFollowedInteraction()) return false;
+            // Override must exist before drag can edit it. Without this gate,
+            // EnsureStartOverride would auto-promote on every accidental drag,
+            // silently creating overrides the author didn't ask for.
+            var step = FindStep(_activePosePillStepId);
+            if (step?.taskOrder == null) return false;
+            foreach (var e in step.taskOrder)
+            {
+                if (e != null && e.kind == "toolAction" && e.id == _activePosePillEntryRef)
+                    return e.startTransform != null;
+            }
+            return false;
+        }
+
+        /// <summary>True when pill=Start on a followed tool×part interaction
+        /// with NO override authored yet. SceneView uses this to suppress
+        /// the drag gizmo so Start-pill stays read-only — the only opt-in
+        /// path is the inspector's "Author override" button.</summary>
+        internal bool IsActiveStartPillReadOnly()
+        {
+            if (_activePosePill != InteractionPosePill.Start) return false;
+            if (!IsActiveTaskFollowedInteraction()) return false;
+            var step = FindStep(_activePosePillStepId);
+            if (step?.taskOrder == null) return true;
+            foreach (var e in step.taskOrder)
+            {
+                if (e != null && e.kind == "toolAction" && e.id == _activePosePillEntryRef)
+                    return e.startTransform == null;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Position-handle drag entry point for the Start-pill override.
+        /// Mirrors <see cref="TryApplyTargetPositionDeltaToFollowedPart"/> but
+        /// writes <c>entry.startTransform</c> instead of <c>endTransform</c>,
+        /// and does NOT mutate the target's <c>sel.position</c> — the target
+        /// placement is unrelated to the part's start pose.
+        /// </summary>
+        internal bool TryApplyStartOverridePositionDelta(Vector3 deltaLocal)
+        {
+            if (_multiSelected.Count > 1 && _activeTaskKind == "toolAction")
+            {
+                StepDefinition activeStep = FindStep(_activePosePillStepId);
+                if (activeStep?.requiredToolActions == null || activeStep.taskOrder == null || _targets == null)
+                    return false;
+                bool any = false;
+                foreach (int idx in _multiSelected)
+                {
+                    if (idx < 0 || idx >= _targets.Length) continue;
+                    if (TryResolveFollowedInteractionForTargetIdx(activeStep, idx,
+                            out ToolActionDefinition a, out TaskOrderEntry e))
+                    {
+                        ApplyPositionDeltaToStartOverrideAndPart(activeStep, a, e, deltaLocal);
+                        any = true;
+                    }
+                }
+                return any;
+            }
+
+            if (TryResolveActiveFollowedInteraction(
+                out StepDefinition step, out ToolActionDefinition action,
+                out TaskOrderEntry entry))
+            {
+                ApplyPositionDeltaToStartOverrideAndPart(step, action, entry, deltaLocal);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Rotation-handle counterpart of
+        /// <see cref="TryApplyStartOverridePositionDelta"/>.</summary>
+        internal bool TryApplyStartOverrideRotationDelta(Quaternion localDelta)
+        {
+            if (_multiSelected.Count > 1 && _activeTaskKind == "toolAction")
+            {
+                StepDefinition activeStep = FindStep(_activePosePillStepId);
+                if (activeStep?.requiredToolActions == null || activeStep.taskOrder == null || _targets == null)
+                    return false;
+                bool any = false;
+                foreach (int idx in _multiSelected)
+                {
+                    if (idx < 0 || idx >= _targets.Length) continue;
+                    if (TryResolveFollowedInteractionForTargetIdx(activeStep, idx,
+                            out ToolActionDefinition a, out TaskOrderEntry e))
+                    {
+                        ApplyRotationDeltaToStartOverrideAndPart(activeStep, a, e, localDelta);
+                        any = true;
+                    }
+                }
+                return any;
+            }
+
+            if (TryResolveActiveFollowedInteraction(
+                out StepDefinition step, out ToolActionDefinition action,
+                out TaskOrderEntry entry))
+            {
+                ApplyRotationDeltaToStartOverrideAndPart(step, action, entry, localDelta);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Auto-promotes <c>entry.startTransform</c> from inherited if null,
+        /// otherwise returns the existing override. Captures position +
+        /// rotation + scale so the override is a complete pose from frame 1.
+        /// </summary>
+        private TaskEndTransform EnsureStartOverride(
+            StepDefinition step, ToolActionDefinition action, TaskOrderEntry entry)
+        {
+            if (entry.startTransform != null) return entry.startTransform;
+
+            // Capture the current effective start (= inherited) so the first
+            // drag-frame's delta is applied on top of where the part already
+            // visually was — no jump.
+            var src = TryGetEffectiveStartTransform(step, action, entry, out _);
+            var t = new TaskEndTransform();
+            if (src != null)
+            {
+                t.position = new SceneFloat3 { x = src.position.x, y = src.position.y, z = src.position.z };
+                t.rotation = src.rotation.IsIdentity
+                    ? new SceneQuaternion { x = 0f, y = 0f, z = 0f, w = 1f }
+                    : new SceneQuaternion { x = src.rotation.x, y = src.rotation.y, z = src.rotation.z, w = src.rotation.w };
+                t.scale = (src.scale.x == 0f && src.scale.y == 0f && src.scale.z == 0f)
+                    ? new SceneFloat3 { x = 1f, y = 1f, z = 1f }
+                    : new SceneFloat3 { x = src.scale.x, y = src.scale.y, z = src.scale.z };
+            }
+            else
+            {
+                // No upstream — fall back to the part's current live transform
+                // so the override starts from where the bolt is right now.
+                string partId = ResolvePartIdForTarget(action?.targetId);
+                var partGo = !string.IsNullOrEmpty(partId) ? FindLivePartGO(partId) : null;
+                if (partGo != null)
+                {
+                    var lp = partGo.transform.localPosition;
+                    var lr = partGo.transform.localRotation;
+                    var ls = partGo.transform.localScale;
+                    t.position = new SceneFloat3 { x = lp.x, y = lp.y, z = lp.z };
+                    t.rotation = new SceneQuaternion { x = lr.x, y = lr.y, z = lr.z, w = lr.w };
+                    t.scale    = new SceneFloat3 { x = ls.x, y = ls.y, z = ls.z };
+                }
+                else
+                {
+                    t.rotation = new SceneQuaternion { x = 0f, y = 0f, z = 0f, w = 1f };
+                    t.scale    = new SceneFloat3 { x = 1f, y = 1f, z = 1f };
+                }
+            }
+            entry.startTransform = t;
+            return t;
+        }
+
+        private void ApplyPositionDeltaToStartOverrideAndPart(
+            StepDefinition step, ToolActionDefinition action, TaskOrderEntry entry, Vector3 deltaLocal)
+        {
+            var st = EnsureStartOverride(step, action, entry);
+            st.position = new SceneFloat3
+            {
+                x = st.position.x + deltaLocal.x,
+                y = st.position.y + deltaLocal.y,
+                z = st.position.z + deltaLocal.z,
+            };
+            _dirtyStepIds.Add(step.id);
+
+            string partId = ResolvePartIdForTarget(action?.targetId);
+            if (!string.IsNullOrEmpty(partId))
+            {
+                var partGo = FindLivePartGO(partId);
+                if (partGo != null)
+                    partGo.transform.localPosition += deltaLocal;
+            }
+        }
+
+        private void ApplyRotationDeltaToStartOverrideAndPart(
+            StepDefinition step, ToolActionDefinition action, TaskOrderEntry entry, Quaternion localDelta)
+        {
+            var st = EnsureStartOverride(step, action, entry);
+            Quaternion currRot = st.rotation.IsIdentity
+                ? Quaternion.identity
+                : new Quaternion(st.rotation.x, st.rotation.y, st.rotation.z, st.rotation.w);
+            Quaternion newRot = localDelta * currRot;
+            st.rotation = new SceneQuaternion
+                { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
+            _dirtyStepIds.Add(step.id);
+
+            string partId = ResolvePartIdForTarget(action?.targetId);
+            if (!string.IsNullOrEmpty(partId))
+            {
+                var partGo = FindLivePartGO(partId);
+                if (partGo != null)
+                    partGo.transform.localRotation = localDelta * partGo.transform.localRotation;
+            }
+        }
+
+        /// <summary>
+        /// Clears <c>entry.startTransform</c> on the active task (revert to
+        /// inherited). Snaps the live part GO back to inherited so the
+        /// author sees the revert. Marks the step dirty for save. Called
+        /// from the inspector's "⟲ Revert to inherited" button.
+        /// </summary>
+        internal bool RevertActiveStartOverride()
+        {
+            if (string.IsNullOrEmpty(_activePosePillStepId)
+                || string.IsNullOrEmpty(_activePosePillEntryRef)) return false;
+
+            var step = FindStep(_activePosePillStepId);
+            if (step?.taskOrder == null || step.requiredToolActions == null) return false;
+
+            TaskOrderEntry entry = null;
+            foreach (var e in step.taskOrder)
+            {
+                if (e != null && e.kind == "toolAction" && e.id == _activePosePillEntryRef)
+                { entry = e; break; }
+            }
+            if (entry == null || entry.startTransform == null) return false;
+
+            ToolActionDefinition action = null;
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a != null && a.id == entry.id) { action = a; break; }
+            }
+
+            entry.startTransform = null;
+            _dirtyStepIds.Add(step.id);
+
+            // Snap the live part back to inherited so the revert is visible.
+            if (action != null)
+            {
+                var inherited = TryGetInheritedStartTransform(step, action);
+                string partId = ResolvePartIdForTarget(action.targetId);
+                var partGo = !string.IsNullOrEmpty(partId) ? FindLivePartGO(partId) : null;
+                if (partGo != null && inherited != null)
+                {
+                    partGo.transform.localPosition = new Vector3(
+                        inherited.position.x, inherited.position.y, inherited.position.z);
+                    partGo.transform.localRotation = inherited.rotation.IsIdentity
+                        ? Quaternion.identity
+                        : new Quaternion(inherited.rotation.x, inherited.rotation.y,
+                                         inherited.rotation.z, inherited.rotation.w);
+                    if (!(inherited.scale.x == 0f && inherited.scale.y == 0f && inherited.scale.z == 0f))
+                    {
+                        partGo.transform.localScale = new Vector3(
+                            inherited.scale.x, inherited.scale.y, inherited.scale.z);
+                    }
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Sweep: clears <c>startTransform</c> on every <c>TaskOrderEntry</c>
+        /// in the loaded package and marks each affected step dirty. Used to
+        /// undo accidental auto-promotions from earlier drag-without-gate
+        /// behavior, and as a "back to all-inherited defaults" reset.
+        /// Returns the number of entries cleared.
+        /// </summary>
+        internal int RevertAllStartOverridesInPackage()
+        {
+            if (_pkg?.steps == null) return 0;
+            int cleared = 0;
+            foreach (var s in _pkg.steps)
+            {
+                if (s?.taskOrder == null) continue;
+                bool stepTouched = false;
+                foreach (var e in s.taskOrder)
+                {
+                    if (e == null || e.startTransform == null) continue;
+                    e.startTransform = null;
+                    cleared++;
+                    stepTouched = true;
+                }
+                if (stepTouched) _dirtyStepIds.Add(s.id);
+            }
+            if (cleared > 0)
+            {
+                // Re-apply inherited start to the active part so the scene
+                // reflects the revert immediately on the currently-selected
+                // task. Other steps will sync on next navigation.
+                if (!string.IsNullOrEmpty(_activePosePillStepId)
+                    && !string.IsNullOrEmpty(_activePosePillEntryRef))
+                {
+                    var step = FindStep(_activePosePillStepId);
+                    if (step?.requiredToolActions != null && step.taskOrder != null)
+                    {
+                        TaskOrderEntry entry = null;
+                        foreach (var e in step.taskOrder)
+                        {
+                            if (e != null && e.kind == "toolAction" && e.id == _activePosePillEntryRef)
+                            { entry = e; break; }
+                        }
+                        ToolActionDefinition action = null;
+                        if (entry != null)
+                        {
+                            foreach (var a in step.requiredToolActions)
+                            {
+                                if (a != null && a.id == entry.id) { action = a; break; }
+                            }
+                        }
+                        if (action != null) SnapPartToPill(action, entry);
+                    }
+                }
+                Repaint();
+                SceneView.RepaintAll();
+            }
+            return cleared;
+        }
+
+        [UnityEditor.MenuItem("OSE/Tools/Revert All Start-Pose Overrides (Active TTAW)", priority = 700)]
+        private static void Menu_RevertAllStartOverrides()
+        {
+            var win = UnityEditor.EditorWindow.GetWindow<ToolTargetAuthoringWindow>(
+                utility: false, title: null, focus: false);
+            if (win == null)
+            {
+                UnityEditor.EditorUtility.DisplayDialog(
+                    "Revert Start Overrides",
+                    "Open the Tool Target Authoring Window first — the sweep operates on the loaded package.",
+                    "OK");
+                return;
+            }
+            int n = win.RevertAllStartOverridesInPackage();
+            UnityEditor.EditorUtility.DisplayDialog(
+                "Revert Start Overrides",
+                n == 0
+                    ? "No overrides to revert — every tool task already inherits its start pose."
+                    : $"Cleared {n} start-pose override(s). Steps marked dirty — save TTAW to persist.",
+                "OK");
+        }
+
         /// <summary>
         /// Resolves a multi-selected target index back to its tool action +
         /// task order entry, but only when the action has a followPart
@@ -949,7 +1434,13 @@ namespace OSE.Editor
 
             if (_activePosePill == InteractionPosePill.Start)
             {
-                if (_inheritedStartCache.TryGetValue(entry.id, out var s))
+                // Override wins over inherited-start cache so toggling to
+                // Start visualizes the authored override pose.
+                if (entry.startTransform != null)
+                {
+                    ApplyEndTransformToPartViaWorld(partGo.transform, entry.startTransform);
+                }
+                else if (_inheritedStartCache.TryGetValue(entry.id, out var s))
                 {
                     partGo.transform.localPosition = s.Pos;
                     partGo.transform.localRotation = s.Rot;
