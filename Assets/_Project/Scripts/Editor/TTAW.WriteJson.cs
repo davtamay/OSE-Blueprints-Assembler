@@ -1152,6 +1152,10 @@ namespace OSE.Editor
             }
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5;
 
+            // Re-snapshot every step now that disk and memory match — this is
+            // the new revert baseline for the next round of edits.
+            SnapshotAllStepsForRevert();
+
             // StreamingAssets sync is NOT needed on every save — the editor
             // reads authoring JSON directly, and PackageSyncPreprocessor syncs
             // automatically before every build via IPreprocessBuildWithReport.

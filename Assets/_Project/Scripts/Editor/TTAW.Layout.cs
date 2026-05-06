@@ -3348,7 +3348,7 @@ namespace OSE.Editor
             if (removed == 0) return;
 
             pc.integratedPartGroupPlacements = kept.ToArray();
-            _dirtyPartGroupIds.Add(subId);
+            MarkPartGroupDirty(subId);
             // Also mark any step that referenced this group for re-serialisation.
             if (_pkg?.steps != null)
             {

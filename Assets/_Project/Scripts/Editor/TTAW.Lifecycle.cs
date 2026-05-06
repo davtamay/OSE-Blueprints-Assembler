@@ -39,6 +39,165 @@ namespace OSE.Editor
 
         private bool _pendingLoadRetry;
 
+        // Fresh-load grace flag. Set true at the end of LoadPkg; the first
+        // SpawnerPartsReady that fires after a load runs the clean-state
+        // assertion a second time (covers writes from ApplySpawnerStepPositions
+        // / SyncAllPartMeshesToActivePose). Cleared after that one tick so
+        // subsequent spawn cycles (which legitimately follow author edits) do
+        // not swallow real dirty bits.
+        private bool _expectCleanAfterFirstSpawn;
+
+        // Deadline for the post-load OnGUI clean-state sweep. Set to
+        // (timeSinceStartup + LoadCleanWatchSeconds) at the end of LoadPkg;
+        // every editor tick before the deadline runs AssertCleanAfterLoad.
+        // The window covers first-paint EndChangeCheck misfires that no other
+        // hook is positioned to catch. Short on purpose: only the very first
+        // paints after a load can be phantom-dirty (the author hasn't had time
+        // to interact yet), so a 0.75s sweep is plenty without risking
+        // swallowing genuine edits.
+        private double _loadCleanWatchUntil;
+        private const double LoadCleanWatchSeconds = 0.75;
+
+        /// <summary>
+        /// Single chokepoint for marking a partGroup dirty. Kept as a method
+        /// (rather than direct <c>_dirtyPartGroupIds.Add</c>) so future
+        /// diagnostics or invariant checks have one place to hook. The
+        /// per-paint corruption bug found via stack-trace logging on
+        /// 2026-05-05 was driving every group dirty 60×/sec — keeping the
+        /// wrapper means any regression of that pattern can be re-instrumented
+        /// in seconds.
+        /// </summary>
+        private bool MarkPartGroupDirty(string id) => _dirtyPartGroupIds.Add(id);
+
+        /// <summary>
+        /// Returns true iff <paramref name="stepId"/> has unsaved changes in
+        /// either the step body (<see cref="_dirtyStepIds"/>) or its task
+        /// sequence (<see cref="_dirtyTaskOrderStepIds"/>). Single source of
+        /// truth so the navigator dot, the toolbar pill, and the right-click
+        /// "Revert this step" gate all agree.
+        /// </summary>
+        internal bool IsStepDirty(string stepId)
+        {
+            if (string.IsNullOrEmpty(stepId)) return false;
+            return _dirtyStepIds.Contains(stepId)
+                || _dirtyTaskOrderStepIds.Contains(stepId);
+        }
+
+        /// <summary>
+        /// Captures the current <c>JsonUtility.ToJson</c> form of every step
+        /// into <see cref="_stepDiskSnapshots"/>. Called at the end of
+        /// <c>LoadPkg</c> and after every successful <c>WriteJson</c> — those
+        /// are the two moments where in-memory state is known to match disk.
+        /// "Revert this step" deserializes from this snapshot instead of
+        /// re-parsing the assembly file, which keeps the operation cheap and
+        /// avoids re-reading split-layout files for one row revert.
+        /// </summary>
+        private void SnapshotAllStepsForRevert()
+        {
+            _stepDiskSnapshots.Clear();
+            if (_pkg?.steps == null) return;
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null || string.IsNullOrEmpty(s.id)) continue;
+                _stepDiskSnapshots[s.id] = JsonUtility.ToJson(s);
+            }
+        }
+
+        /// <summary>
+        /// Discards in-memory edits to a single step, restoring its body to
+        /// the snapshot taken at LoadPkg / last WriteJson. Pose authoring
+        /// (stepPose entries on parts) and target placement edits live on
+        /// their own per-row isDirty flags and are not reverted here — those
+        /// have their own row-level affordances. Confirmation dialog gates
+        /// the destructive action; cancelling is a no-op.
+        /// </summary>
+        private void RevertStepOnly(string stepId)
+        {
+            if (string.IsNullOrEmpty(stepId) || _pkg?.steps == null) return;
+            if (!IsStepDirty(stepId))
+            {
+                ShowNotification(new GUIContent($"'{stepId}' has no unsaved changes"));
+                return;
+            }
+            if (!_stepDiskSnapshots.TryGetValue(stepId, out var json) || string.IsNullOrEmpty(json))
+            {
+                OseLog.Warn($"[TTAW.RevertStepOnly] No snapshot for '{stepId}' — was the step added since the last save? Use 'Revert all changes' instead.");
+                EditorUtility.DisplayDialog(
+                    "Cannot revert this step",
+                    $"No saved snapshot exists for '{stepId}' — it was likely added since the last save.\n\nUse File → Revert all changes to discard the new step entirely.",
+                    "OK");
+                return;
+            }
+            if (!EditorUtility.DisplayDialog(
+                    "Revert step?",
+                    $"Discard unsaved changes on step '{stepId}' and restore its body to the last saved state?\n\nNote: pose and target placement edits on this step are tracked separately and will not be reverted here.",
+                    "Revert step",
+                    "Cancel"))
+                return;
+
+            int idx = -1;
+            for (int i = 0; i < _pkg.steps.Length; i++)
+                if (_pkg.steps[i] != null && string.Equals(_pkg.steps[i].id, stepId, StringComparison.Ordinal))
+                { idx = i; break; }
+            if (idx < 0) return;
+
+            try
+            {
+                var fresh = JsonUtility.FromJson<StepDefinition>(json);
+                if (fresh == null) throw new Exception("FromJson returned null");
+                _pkg.steps[idx] = fresh;
+            }
+            catch (Exception e)
+            {
+                OseLog.Error($"[TTAW.RevertStepOnly] Failed to deserialize snapshot for '{stepId}': {e.Message}");
+                return;
+            }
+
+            _dirtyStepIds.Remove(stepId);
+            _dirtyTaskOrderStepIds.Remove(stepId);
+            InvalidateTaskOrderCache();
+            BuildStepOptions();
+            BuildPartList();
+            BuildTargetList();
+            RespawnScene();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+            ShowNotification(new GUIContent($"Reverted '{stepId}'"));
+        }
+
+        /// <summary>
+        /// Fires when ANYTHING in the Unity Hierarchy panel changes — including
+        /// our own spawn/parent/destroy operations. Gated against the
+        /// load-clean watch window so spawner-driven reparenting (which moves
+        /// parts under Group_* roots after LoadPkg) doesn't trip the author-
+        /// rearranged-parts detector. Also gated against in-flight reparenting
+        /// inside our own code via <see cref="_suppressHierarchyPoll"/>.
+        /// </summary>
+        private bool _suppressHierarchyPoll;
+
+        private void OnHierarchyChanged()
+        {
+            if (_pkg == null) return;
+            if (_suppressHierarchyPoll) return;
+            // During the load-clean window the spawner is still parenting
+            // parts under group roots — this isn't an author rearrangement.
+            if (_loadCleanWatchUntil > 0) return;
+            PollHierarchyGroupChanges();
+        }
+
+        private void TickLoadCleanWatch()
+        {
+            // The watch flag is now ONLY a gate for OnHierarchyChanged so
+            // spawner-driven reparenting doesn't trip the author-rearranged
+            // detector. The per-tick AssertCleanAfterLoad call was removed —
+            // it was scrubbing legitimate author edits that landed within
+            // 0.75s of a RespawnScene (every field commit triggers a respawn).
+            if (_loadCleanWatchUntil > 0
+                && EditorApplication.timeSinceStartup >= _loadCleanWatchUntil)
+                _loadCleanWatchUntil = 0;
+        }
+
         private void OnEnable()
         {
             OseLog.VerboseInfo($"[TTAW.Lifecycle] OnEnable — _pkgId='{_pkgId ?? "<null>"}' _selectedIdx={_selectedIdx} _showToolPreview={_showToolPreview}");
@@ -66,6 +225,8 @@ namespace OSE.Editor
             SceneView.duringSceneGui += OnSceneGUI;
             SessionDriver.EditModeStepChanged += OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            EditorApplication.update += TickLoadCleanWatch;
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
             RuntimeEventBus.Subscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
             // Play → TTAW step sync. The runtime publishes StepActivated when
             // the trainee navigates (toolbar, in-app input field, auto-advance
@@ -125,6 +286,8 @@ namespace OSE.Editor
             SceneView.duringSceneGui -= OnSceneGUI;
             SessionDriver.EditModeStepChanged -= OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.update -= TickLoadCleanWatch;
+            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
             RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
             RuntimeEventBus.Unsubscribe<StepActivated>(OnRuntimeStepActivated);
             // Destroy scene objects but do NOT reset serialized state (_selectedIdx,
@@ -272,6 +435,17 @@ namespace OSE.Editor
             {
                 RefreshToolPreview(ref _targets[_selectedIdx]);
             }
+
+            // Second half of the fresh-load invariant. ApplySpawnerStepPositions
+            // / SyncAllPartMeshesToActivePose / RefreshToolPreview run above —
+            // any of them stamping dirty bits would be a load-time bug. Only
+            // checked on the first spawn after LoadPkg so genuine post-edit
+            // spawn cycles aren't swallowed.
+            if (_expectCleanAfterFirstSpawn)
+            {
+                _expectCleanAfterFirstSpawn = false;
+                AssertCleanAfterLoad("OnSpawnerPartsReady");
+            }
         }
 
         private void OnSessionDriverStepChanged(int sequenceIndex)
@@ -410,8 +584,51 @@ namespace OSE.Editor
             _dirtyTaskOrderStepIds.Clear();
             _dirtyPartAssetRefIds.Clear();
             _dirtyPartGroupIds.Clear();
+            _dirtyPartIds.Clear();
             _dirtyHintIds.Clear();
+            _dirtyPrefabInstanceIds.Clear();
             _newHintDefs.Clear();
+        }
+
+        /// <summary>
+        /// Fresh-load invariant: after LoadPkg returns and after the first
+        /// SpawnerPartsReady refresh, every dirty set must be empty. The author
+        /// hasn't touched anything yet, so any bit in there came from a load-
+        /// time mutator that forgot its <c>markDirty:false</c> contract — that
+        /// would silently overwrite disk on the next save. We log the leak
+        /// (set name + ids, capped) so the offending call site can be tracked
+        /// down, then clear so the toolbar doesn't lie to the author.
+        /// </summary>
+        private void AssertCleanAfterLoad(string phase)
+        {
+            int leaked = _dirtyStepIds.Count + _dirtyToolIds.Count
+                       + _dirtyTaskOrderStepIds.Count + _dirtyPartAssetRefIds.Count
+                       + _dirtyPartGroupIds.Count + _dirtyPartIds.Count
+                       + _dirtyHintIds.Count + _dirtyPrefabInstanceIds.Count;
+            if (leaked == 0) return;
+
+            string Sample(HashSet<string> s) =>
+                s.Count == 0 ? "" : "[" + string.Join(",", s.Take(8)) + (s.Count > 8 ? ",…" : "") + "]";
+
+            OseLog.Warn(
+                $"[TTAW.{phase}] {leaked} dirty entries leaked during load — clearing. " +
+                $"steps={_dirtyStepIds.Count}{Sample(_dirtyStepIds)} " +
+                $"tools={_dirtyToolIds.Count}{Sample(_dirtyToolIds)} " +
+                $"taskOrder={_dirtyTaskOrderStepIds.Count}{Sample(_dirtyTaskOrderStepIds)} " +
+                $"partAssetRefs={_dirtyPartAssetRefIds.Count}{Sample(_dirtyPartAssetRefIds)} " +
+                $"partGroups={_dirtyPartGroupIds.Count}{Sample(_dirtyPartGroupIds)} " +
+                $"parts={_dirtyPartIds.Count}{Sample(_dirtyPartIds)} " +
+                $"hints={_dirtyHintIds.Count}{Sample(_dirtyHintIds)} " +
+                $"prefabInstances={_dirtyPrefabInstanceIds.Count}{Sample(_dirtyPrefabInstanceIds)}");
+
+            _dirtyStepIds.Clear();
+            _dirtyToolIds.Clear();
+            _dirtyTaskOrderStepIds.Clear();
+            _dirtyPartAssetRefIds.Clear();
+            _dirtyPartGroupIds.Clear();
+            _dirtyPartIds.Clear();
+            _dirtyHintIds.Clear();
+            _dirtyPrefabInstanceIds.Clear();
         }
     }
 }

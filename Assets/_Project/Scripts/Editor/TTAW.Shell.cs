@@ -451,12 +451,24 @@ namespace OSE.Editor
             if (_toolbarStepTitleLabel.text != title)
                 _toolbarStepTitleLabel.text = title;
 
-            // Dirty indicator — sum across every dirty set the editor tracks
+            // Dirty indicator — sum across every dirty channel the editor
+            // tracks. Per-part / per-target isDirty flags drive the inline
+            // row icons; including them here keeps the toolbar pill and the
+            // row icons in lockstep (otherwise the author sees an unsaved
+            // dot on a row but no top-bar count, and "Write to JSON" looks
+            // like a no-op). The CountDirty*ForAutoSave helpers in
+            // TTAW.Layout.cs are the same source the auto-save debounce
+            // reads, so the two badges agree by construction.
             int dirtyCount = (_dirtyToolIds?.Count          ?? 0)
                            + (_dirtyStepIds?.Count          ?? 0)
                            + (_dirtyTaskOrderStepIds?.Count ?? 0)
                            + (_dirtyPartAssetRefIds?.Count  ?? 0)
-                           + (_dirtyPartGroupIds?.Count   ?? 0);
+                           + (_dirtyPartGroupIds?.Count     ?? 0)
+                           + (_dirtyPartIds?.Count          ?? 0)
+                           + (_dirtyHintIds?.Count          ?? 0)
+                           + (_dirtyPrefabInstanceIds?.Count ?? 0)
+                           + CountDirtyPartsForAutoSave()
+                           + CountDirtyTargetsForAutoSave();
             string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
             if (_toolbarDirtyLabel.text != dirtyText)
                 _toolbarDirtyLabel.text = dirtyText;

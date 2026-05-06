@@ -415,12 +415,13 @@ namespace OSE.Editor
                 label.style.color = isLinkedStep
                     ? new Color(0.35f, 0.78f, 1.0f)
                     : new Color(0.78f, 0.78f, 0.78f);
-                bool isDirty = !string.IsNullOrEmpty(item.Id)
-                               && _dirtyStepIds != null
-                               && _dirtyStepIds.Contains(item.Id);
+                bool isDirty = IsStepDirty(item.Id);
                 dot.style.backgroundColor = isDirty
                     ? new StyleColor(new Color(0.95f, 0.65f, 0.15f))
                     : new StyleColor(StyleKeyword.None);
+                dot.tooltip = isDirty
+                    ? "Unsaved changes — right-click the row to revert this step."
+                    : null;
             }
         }
 
@@ -823,6 +824,20 @@ namespace OSE.Editor
                     EditorGUIUtility.systemCopyBuffer = capturedId;
                     ShowNotification(new GUIContent($"Copied: {capturedId}"));
                 });
+
+                evt.menu.AppendSeparator("");
+
+                // "Revert unsaved changes" — disabled when the step is clean,
+                // so the menu stays self-explanatory ("you can't revert what
+                // isn't dirty"). Snapshot-based; only restores the step body
+                // (instructionText, hints, taskOrder, family/profile,
+                // requiredPartIds). Pose / target placement edits live on
+                // their own per-row isDirty flags and aren't reverted here.
+                bool stepIsDirty = IsStepDirty(capturedId);
+                evt.menu.AppendAction(
+                    "Revert unsaved changes on this step",
+                    _ => RevertStepOnly(capturedId),
+                    stepIsDirty ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
                 evt.menu.AppendSeparator("");
 

@@ -281,6 +281,15 @@ namespace OSE.Editor
 
         // Dirty tracking for taskOrder writes
         private readonly HashSet<string> _dirtyTaskOrderStepIds = new HashSet<string>(StringComparer.Ordinal);
+
+        // Per-step JSON snapshot taken at LoadPkg + after each WriteJson, so
+        // "Revert this step" can deserialize the saved StepDefinition without
+        // re-reading the whole assembly file. Covers step body fields
+        // (instructionText, hints, taskOrder, family/profile, requiredPartIds,
+        // etc.) — does NOT cover stepPoses on parts or targetPlacements,
+        // which are tracked via per-row isDirty flags and revert separately.
+        private readonly Dictionary<string, string> _stepDiskSnapshots
+            = new Dictionary<string, string>(StringComparer.Ordinal);
         // Cached derived task order for the currently selected step
         private List<TaskOrderEntry> _cachedTaskOrder;
         private string               _cachedTaskOrderForStepId;

@@ -623,7 +623,7 @@ namespace OSE.Editor
                 ApplyPositionToGroup(ref g, newPos);
                 ApplyRotationToGroup(ref g, Quaternion.Euler(newEuler));
                 g.isDirty = true;
-                _dirtyPartGroupIds.Add(g.def.id);
+                MarkPartGroupDirty(g.def.id);
                 SyncAllGroupRootsToActivePose();
                 SceneView.RepaintAll();
             }

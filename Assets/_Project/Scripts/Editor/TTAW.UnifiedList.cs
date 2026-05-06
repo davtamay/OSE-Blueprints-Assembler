@@ -2384,7 +2384,7 @@ namespace OSE.Editor
                                             if (added > 0)
                                             {
                                                 capturedSub.partIds = currentSet.ToArray();
-                                                _dirtyPartGroupIds.Add(capturedSub.id);
+                                                MarkPartGroupDirty(capturedSub.id);
                                                 ShowNotification(new GUIContent(
                                                     $"Added {added} part(s) to {capturedSub.GetDisplayName()}"));
                                                 Repaint();

@@ -99,6 +99,19 @@ namespace OSE.Editor
             // so authors see the current health snapshot the moment the window
             // opens. (Phase 6 — see TTAW.Validation.cs.)
             RunValidation();
+
+            // Fresh-load invariant: nothing should be dirty yet. If anything
+            // is, a load-time mutator forgot its markDirty:false contract.
+            // Log + clear so the toolbar doesn't show phantom "● 40 unsaved"
+            // before the author has touched anything. See AssertCleanAfterLoad.
+            AssertCleanAfterLoad("LoadPkg");
+            _expectCleanAfterFirstSpawn = true;
+            _loadCleanWatchUntil = EditorApplication.timeSinceStartup + LoadCleanWatchSeconds;
+
+            // Capture per-step JSON snapshots so right-click → "Revert this
+            // step" can restore one row to the saved state without reloading
+            // the whole package. See RevertStepOnly.
+            SnapshotAllStepsForRevert();
         }
 
         private void BuildStepOptions()
@@ -446,6 +459,12 @@ namespace OSE.Editor
             // every part to the editor's authored pose, overriding whatever
             // step the trainee is actually on. Authoring is inert during Play.
             if (Application.isPlaying) return;
+
+            // Re-arm the load-clean window. Respawn reparents parts (under
+            // Group_* roots, then back to PreviewRoot for hidden steps, etc.)
+            // — every reparent fires hierarchyChanged. The handler must skip
+            // those because they're our own scene mutations, not author edits.
+            _loadCleanWatchUntil = EditorApplication.timeSinceStartup + LoadCleanWatchSeconds;
 
             if (_pkg?.previewConfig?.partPlacements == null) return;
 

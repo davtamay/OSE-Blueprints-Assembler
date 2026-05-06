@@ -83,9 +83,14 @@ namespace OSE.Editor
                 // / effect origin in-scene instead of typing numbers.
                 DrawCuePivotGizmos();
 
-                // Detect if the author rearranged parts between group roots in the
-                // Hierarchy and update partIds[] accordingly.
-                PollHierarchyGroupChanges();
+                // Hierarchy-rearrangement detection is event-driven via
+                // EditorApplication.hierarchyChanged → MarkHierarchyDirty,
+                // not paint-driven. Polling here ran ~60×/sec and silently
+                // mass-rewrote partGroup.partIds[] on every repaint while
+                // parts were transiently parented to PreviewRoot (post-spawn,
+                // post-step-switch), producing phantom "● 32 unsaved" on
+                // open and "● 34 unsaved" per step switch — and silently
+                // corrupting authored membership on save.
 
                 // Phase A: pose-pill end-transform gizmo for the active
                 // tool×part interaction task. Renders only when the End pill
@@ -616,7 +621,7 @@ namespace OSE.Editor
                     Quaternion localRot = root != null ? Quaternion.Inverse(root.rotation) * newRot : newRot;
                     ApplyRotationToGroup(ref _groups[_selectedGroupIdx], localRot);
                     _groups[_selectedGroupIdx].isDirty = true;
-                    _dirtyPartGroupIds.Add(subId);
+                    MarkPartGroupDirty(subId);
                 }
                 else
                 {
@@ -644,7 +649,7 @@ namespace OSE.Editor
                     Vector3 localPos = root != null ? root.InverseTransformPoint(newWorldPos) : newWorldPos;
                     ApplyPositionToGroup(ref _groups[_selectedGroupIdx], localPos);
                     _groups[_selectedGroupIdx].isDirty = true;
-                    _dirtyPartGroupIds.Add(subId);
+                    MarkPartGroupDirty(subId);
                 }
                 else
                 {
@@ -729,6 +734,28 @@ namespace OSE.Editor
         /// </summary>
         private void PollHierarchyGroupChanges()
         {
+            // DISABLED 2026-05-05. This method's intent — auto-detect when an
+            // author drags parts between Group_* roots in the Unity Hierarchy
+            // and reflect that into partGroup.partIds — is sound, but it cannot
+            // distinguish author drags from our own reparenting (RespawnScene,
+            // EnsureAllPartGroupRoots, ResetAllGroupRootsToOriginPreservingChildren,
+            // and the spawner). Both manifest as EditorApplication.hierarchyChanged
+            // events with no provenance. Without that distinction, every step
+            // switch fired this method while parts were transiently under
+            // PreviewRoot (Group_* re-parenting hadn't completed yet), and the
+            // method silently stripped authored membership from every group.
+            //
+            // Group membership is authored via the TTAW PartGroup inspector
+            // (add/remove buttons, drag-drop into the group's parts list, +Add
+            // from Selection). Those paths mark dirty correctly. The "drag in
+            // Unity Hierarchy" affordance is recoverable later if we route every
+            // internal reparent through a single suppression flag, but that's a
+            // larger architectural change — not worth shipping a corrupting
+            // poller while waiting.
+            //
+            // See feedback_no_per_paint_pollers_mutating_authored_data.md.
+            return;
+#pragma warning disable CS0162 // unreachable code — kept for future re-enable
             if (_partGroupRootGOs == null || _partGroupRootGOs.Count == 0 || _pkg == null)
                 return;
 
@@ -782,7 +809,7 @@ namespace OSE.Editor
                     if (list.Remove(partId))
                     {
                         oldSub.partIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-                        _dirtyPartGroupIds.Add(oldSub.id);
+                        MarkPartGroupDirty(oldSub.id);
                     }
                 }
 
@@ -795,13 +822,14 @@ namespace OSE.Editor
                     if (set.Add(partId))
                     {
                         newSub.partIds = set.ToArray();
-                        _dirtyPartGroupIds.Add(newSub.id);
+                        MarkPartGroupDirty(newSub.id);
                     }
                 }
 
                 if (!string.IsNullOrEmpty(currentParentSubId) || !string.IsNullOrEmpty(authoredSubId))
                     Repaint();
             }
+#pragma warning restore CS0162
         }
 
         private void HandleClickToSnap()

@@ -127,7 +127,7 @@ namespace OSE.Editor
                     return new HostCueStorage(
                         cues: captured.animationCues,
                         setter: arr => captured.animationCues = arr,
-                        markDirty: () => _dirtyPartGroupIds.Add(captured.id),
+                        markDirty: () => MarkPartGroupDirty(captured.id),
                         isHostOwned: true);
                 }
                 case CueScope.Tool:

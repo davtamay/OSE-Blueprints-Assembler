@@ -245,7 +245,7 @@ namespace OSE.Editor
             if (EditorGUI.EndChangeCheck() && newName != sub.name)
             {
                 sub.name = newName;
-                _dirtyPartGroupIds.Add(sub.id);
+                MarkPartGroupDirty(sub.id);
             }
 
             // ── Description ───────────────────────────────────────────────────
@@ -254,7 +254,7 @@ namespace OSE.Editor
             if (EditorGUI.EndChangeCheck() && newDesc != sub.description)
             {
                 sub.description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
-                _dirtyPartGroupIds.Add(sub.id);
+                MarkPartGroupDirty(sub.id);
             }
 
             // ── Parts in this group — collapsible foldout ───────────────────
@@ -309,7 +309,7 @@ namespace OSE.Editor
                 var list = new List<string>(sub.partIds);
                 list.RemoveAt(removePartIdx);
                 sub.partIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-                _dirtyPartGroupIds.Add(sub.id);
+                MarkPartGroupDirty(sub.id);
             }
 
             // + Add part picker + Add from Selection + drop zone
@@ -336,7 +336,7 @@ namespace OSE.Editor
                     {
                         var list = new List<string>(sub.partIds ?? Array.Empty<string>()) { candidates[_subAddPartIdx] };
                         sub.partIds = list.ToArray();
-                        _dirtyPartGroupIds.Add(sub.id);
+                        MarkPartGroupDirty(sub.id);
                         _subAddPartIdx = 0;
                     }
                     EditorGUILayout.EndHorizontal();
@@ -366,7 +366,7 @@ namespace OSE.Editor
                     if (added > 0)
                     {
                         sub.partIds = currentSet.ToArray();
-                        _dirtyPartGroupIds.Add(sub.id);
+                        MarkPartGroupDirty(sub.id);
                         ShowNotification(new GUIContent($"Added {added} part(s) from selection"));
                     }
                     else
@@ -421,7 +421,7 @@ namespace OSE.Editor
                     if (added > 0)
                     {
                         sub.partIds = currentSet.ToArray();
-                        _dirtyPartGroupIds.Add(sub.id);
+                        MarkPartGroupDirty(sub.id);
                         ShowNotification(new GUIContent($"Added {added} part(s)"));
                     }
                     ev.Use();
@@ -463,7 +463,7 @@ namespace OSE.Editor
                 var list = new List<string>(sub.stepIds);
                 list.RemoveAt(removeStepIdx);
                 sub.stepIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-                _dirtyPartGroupIds.Add(sub.id);
+                MarkPartGroupDirty(sub.id);
             }
 
             // + Add step picker
@@ -497,7 +497,7 @@ namespace OSE.Editor
                     {
                         var list = new List<string>(sub.stepIds ?? Array.Empty<string>()) { candidates[_subAddStepIdx].id };
                         sub.stepIds = list.ToArray();
-                        _dirtyPartGroupIds.Add(sub.id);
+                        MarkPartGroupDirty(sub.id);
                         _subAddStepIdx = 0;
                     }
                     EditorGUILayout.EndHorizontal();
@@ -1214,7 +1214,7 @@ namespace OSE.Editor
 
                         if (partsAdded + groupsAdded > 0)
                         {
-                            _dirtyPartGroupIds.Add(selectedSub.id);
+                            MarkPartGroupDirty(selectedSub.id);
                             string gLabel = groupsAdded > 0 ? $"{groupsAdded} [G] group(s)" : "";
                             string pLabel = partsAdded  > 0 ? $"{partsAdded} part(s)"      : "";
                             string joined = string.Join(" + ", new[] { pLabel, gLabel }.Where(s => !string.IsNullOrEmpty(s)));
@@ -1306,7 +1306,7 @@ namespace OSE.Editor
                 if (added > 0)
                 {
                     sub.partIds = currentSet.ToArray();
-                    _dirtyPartGroupIds.Add(sub.id);
+                    MarkPartGroupDirty(sub.id);
                     ShowNotification(new GUIContent($"Added {added} part{(added == 1 ? "" : "s")} to group"));
                 }
                 else
