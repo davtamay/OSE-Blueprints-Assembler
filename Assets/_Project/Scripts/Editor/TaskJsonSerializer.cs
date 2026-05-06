@@ -74,9 +74,29 @@ namespace OSE.Editor
             if (e.awaitCues)                           { Sep(); sb.Append("\"awaitCues\":true"); }
             if (!string.IsNullOrEmpty(e.unorderedSet)) { Sep(); sb.Append($"\"unorderedSet\":\"{e.unorderedSet}\""); }
             if (e.endTransform != null)                { Sep(); sb.Append($"\"endTransform\":{JsonUtility.ToJson(e.endTransform)}"); }
-            if (e.startTransform != null)              { Sep(); sb.Append($"\"startTransform\":{JsonUtility.ToJson(e.startTransform)}"); }
+            // Skip startTransform when null OR when it looks like a
+            // JsonUtility-default-inflated empty payload (rotation 0,0,0,0
+            // is an invalid quaternion — no real authored override would
+            // produce that). Belt-and-suspenders: covers the case where a
+            // prior save round-tripped through JsonUtility and surfaced an
+            // empty TaskEndTransform that the author never opted in to.
+            if (e.startTransform != null && !IsDefaultInflatedTaskEndTransform(e.startTransform))
+            { Sep(); sb.Append($"\"startTransform\":{JsonUtility.ToJson(e.startTransform)}"); }
             sb.Append("}");
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// True when the payload is the default-zero shape JsonUtility
+        /// produces for missing nested objects (rotation w=0 is the tell —
+        /// every authored rotation has a unit-magnitude quaternion).
+        /// </summary>
+        public static bool IsDefaultInflatedTaskEndTransform(TaskEndTransform t)
+        {
+            if (t == null) return true;
+            return t.position.x == 0f && t.position.y == 0f && t.position.z == 0f
+                && t.rotation.x == 0f && t.rotation.y == 0f && t.rotation.z == 0f && t.rotation.w == 0f
+                && t.scale.x == 0f && t.scale.y == 0f && t.scale.z == 0f;
         }
 
         // ── Step text payloads ─────────────────────────────────────────────

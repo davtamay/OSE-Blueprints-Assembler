@@ -58,6 +58,7 @@ namespace OSE.Content.Loading
             // authored intent for all three subsystems (the step-263
             // phantom-orientation bug). Caught by `EditorRuntimeIsolationTests`.
             DropEmptyStepPayloads(package);
+            DropEmptyTaskOrderTransformPayloads(package);
 
             // Expand Step Configuration Prefab instances into virtual steps
             // BEFORE every downstream pass so template inheritance, parent-id
@@ -70,6 +71,7 @@ namespace OSE.Content.Loading
             // noise on workingOrientation / animationCues / particleEffects.
             // Idempotent for the authored steps already cleaned above.
             DropEmptyStepPayloads(package);
+            DropEmptyTaskOrderTransformPayloads(package);
 
             InferAggregateFlag(package);
             InflatePartTemplates(package);
@@ -184,6 +186,55 @@ namespace OSE.Content.Loading
 
             if (droppedOrient + droppedCues + droppedParticles + droppedPrefabRef > 0)
                 OseLog.Info($"[Normalizer.DropEmptyStepPayloads] '{package.packageId}': dropped {droppedOrient} workingOrientation, {droppedCues} animationCues, {droppedParticles} particleEffects, {droppedPrefabRef} prefabRef phantom payloads (JsonUtility default-instance noise).");
+        }
+
+        /// <summary>
+        /// Companion to <see cref="DropEmptyStepPayloads"/> for the
+        /// <see cref="TaskOrderEntry.startTransform"/> /
+        /// <see cref="TaskOrderEntry.endTransform"/> reference fields. JsonUtility
+        /// inflates absent reference fields to default instances on every load,
+        /// which the inspector + runtime both read as "this task has an authored
+        /// inline pose" — flipping read-only Start fields to editable, and
+        /// causing the runtime to snap the part to (0,0,0,0,0,0,0,0). The tell
+        /// is rotation w == 0, an invalid quaternion no real authored value
+        /// produces (the identity quaternion has w == 1). Strip back to null
+        /// so the opt-in invariant holds: null ≡ inherited / no authored end.
+        /// </summary>
+        public static void DropEmptyTaskOrderTransformPayloads(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+            int droppedStart = 0;
+            int droppedEnd   = 0;
+            foreach (var step in package.steps)
+            {
+                if (step?.taskOrder == null) continue;
+                foreach (var entry in step.taskOrder)
+                {
+                    if (entry == null) continue;
+                    if (entry.startTransform != null
+                        && IsDefaultInflatedTaskEndTransform(entry.startTransform))
+                    {
+                        entry.startTransform = null;
+                        droppedStart++;
+                    }
+                    if (entry.endTransform != null
+                        && IsDefaultInflatedTaskEndTransform(entry.endTransform))
+                    {
+                        entry.endTransform = null;
+                        droppedEnd++;
+                    }
+                }
+            }
+            if (droppedStart + droppedEnd > 0)
+                OseLog.Info($"[Normalizer.DropEmptyTaskOrderTransformPayloads] '{package.packageId}': dropped {droppedStart} startTransform, {droppedEnd} endTransform phantom payloads.");
+        }
+
+        private static bool IsDefaultInflatedTaskEndTransform(TaskEndTransform t)
+        {
+            if (t == null) return true;
+            return t.position.x == 0f && t.position.y == 0f && t.position.z == 0f
+                && t.rotation.x == 0f && t.rotation.y == 0f && t.rotation.z == 0f && t.rotation.w == 0f
+                && t.scale.x == 0f && t.scale.y == 0f && t.scale.z == 0f;
         }
 
         /// <summary>
