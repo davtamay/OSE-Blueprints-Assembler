@@ -754,35 +754,21 @@ def _walk_substitute(node, str_subs, parts_remap, origin_delta):
     if isinstance(node, dict):
         out = {}
         for k, v in node.items():
-            # Detect "position" dicts with x/y/z floats and translate.
-            if k in ("position",) and isinstance(v, dict) and {"x", "y", "z"} <= set(v.keys()):
-                out[k] = {
-                    "x": _round4(v["x"] + origin_delta["x"]),
-                    "y": _round4(v["y"] + origin_delta["y"]),
-                    "z": _round4(v["z"] + origin_delta["z"]),
-                }
-                continue
-            # Translate fromPose/toPose.position similarly.
-            if k in ("fromPose", "toPose") and isinstance(v, dict) and isinstance(v.get("position"), dict):
-                pos = v["position"]
-                v = dict(v)
-                v["position"] = {
-                    "x": _round4(pos.get("x", 0) + origin_delta["x"]),
-                    "y": _round4(pos.get("y", 0) + origin_delta["y"]),
-                    "z": _round4(pos.get("z", 0) + origin_delta["z"]),
-                }
-                # Continue recursing to apply other substitutions in nested fields.
-            # endTransform.position translate too.
-            if k == "endTransform" and isinstance(v, dict) and isinstance(v.get("position"), dict):
-                pos = v["position"]
-                # Only translate if position is non-zero (zero endTransform is a sentinel).
-                if any(abs(pos.get(ax, 0.0)) > 1e-6 for ax in ("x", "y", "z")):
-                    v = dict(v)
-                    v["position"] = {
-                        "x": _round4(pos.get("x", 0) + origin_delta["x"]),
-                        "y": _round4(pos.get("y", 0) + origin_delta["y"]),
-                        "z": _round4(pos.get("z", 0) + origin_delta["z"]),
+            # Translate any "position" {x,y,z} dict — UNLESS all axes are ~0
+            # (zero is a sentinel: cue fromPose/toPose with rotation-only
+            # animations, and zero-endTransform taskOrder entries). Recursion
+            # naturally finds nested positions inside fromPose/toPose/
+            # endTransform/stagingPose without double-translating.
+            if k in ("position", "startPosition", "assembledPosition") and isinstance(v, dict) and {"x", "y", "z"} <= set(v.keys()):
+                if any(abs(v.get(ax, 0.0)) > 1e-6 for ax in ("x", "y", "z")):
+                    out[k] = {
+                        "x": _round4(v.get("x", 0.0) + origin_delta["x"]),
+                        "y": _round4(v.get("y", 0.0) + origin_delta["y"]),
+                        "z": _round4(v.get("z", 0.0) + origin_delta["z"]),
                     }
+                else:
+                    out[k] = dict(v)
+                continue
             # partId rewrite — fields whose values are partIds.
             if k in ("partId", "associatedPartId", "anchorRef", "id") and isinstance(v, str):
                 if v in parts_remap:
@@ -878,6 +864,32 @@ def build_clone_apply_plan(target_yaml_path, package_root):
     cloned_partgroup_cues = [_walk_substitute(c, str_subs, parts_remap, origin_delta)
                              for c in (src_partgroup.get("animationCues") or [])]
 
+    # ── Net-new parts: for any target partId in parts_remap that doesn't
+    # exist on disk, clone the source part with substitutions + position
+    # translation. Skip target ids that already exist (merge-by-id, never
+    # overwrite — preserves rich metadata per saved memory).
+    net_new_parts = []
+    net_new_preview_placements = []
+    for src_pid, tgt_pid in parts_remap.items():
+        # Net-new part check (skip if part already on disk).
+        if tgt_pid not in catalog["parts"]:
+            if src_pid not in catalog["parts"]:
+                raise ValueError(f"Source part {src_pid} not in catalog — can't clone {tgt_pid}")
+            _src_file, src_part = catalog["parts"][src_pid]
+            cloned_part = _walk_substitute(src_part, str_subs, parts_remap, origin_delta)
+            cloned_part["id"] = tgt_pid
+            net_new_parts.append(cloned_part)
+        # Independent: is the preview_config placement missing for this target?
+        # If yes and source has one, clone it. This catches the case where
+        # the part was inserted by a prior run but preview_config was not
+        # updated — runtime would fall back to stagingPose identity rotation.
+        if tgt_pid not in catalog["previewPlacements"]:
+            src_pl = catalog["previewPlacements"].get(src_pid)
+            if src_pl is not None:
+                cloned_pl = _walk_substitute(src_pl, str_subs, parts_remap, origin_delta)
+                cloned_pl["partId"] = tgt_pid
+                net_new_preview_placements.append(cloned_pl)
+
     # Compute the seqIndex shift: how many net new steps does target gain?
     # target's existing step IDs in this prefix range are the steps to remove.
     existing_target_step_ids = []
@@ -906,6 +918,7 @@ def build_clone_apply_plan(target_yaml_path, package_root):
             "cloned_step_count": len(cloned_steps),
             "cloned_target_count": len(cloned_targets),
             "cloned_partgroup_cues_count": len(cloned_partgroup_cues),
+            "net_new_parts_count": len(net_new_parts),
             "existing_target_step_count": len(existing_target_step_ids),
             "net_step_delta": net_step_delta,
             "seqIndex_shift_threshold": shift_threshold,
@@ -941,6 +954,13 @@ def build_clone_apply_plan(target_yaml_path, package_root):
                 "target_file": f"{package_root}/assemblies/assembly_d3d_batch_carriage_build.json",
             },
             {
+                "op": "insert_net_new_parts",
+                "count": len(net_new_parts),
+                "ids": [p["id"] for p in net_new_parts],
+                "target_file": f"{package_root}/assemblies/{ctx.get('parts_assembly_file', 'assembly_d3d_batch_carriage_build.json')}",
+                "rationale": "Synthesize from source canonical with substitutions + origin translation. Skips target ids already on disk (merge-by-id).",
+            },
+            {
                 "op": "update_rollups",
                 "assembly_id": "assembly_d3d_batch_carriage_build",
                 "new_step_ids": [s["id"] for s in cloned_steps],
@@ -952,11 +972,26 @@ def build_clone_apply_plan(target_yaml_path, package_root):
             "steps":   cloned_steps,
             "targets": cloned_targets,
             "partGroup_animationCues": cloned_partgroup_cues,
+            "net_new_parts": net_new_parts,
+            "net_new_preview_placements": net_new_preview_placements,
+            # Preserve source's stepIds ORDER (c1 quirk: shake/rod-slide
+            # come before close_halves in the listing despite being later
+            # in seqIndex). Unity uses this list order for flow dispatch in
+            # some paths — diverging from it causes cues to fire in a
+            # different sequence and the partGroup transform ends in a
+            # different state by the tighten step.
             "partGroup_stepIds": [
-                "step_batch_carriage_layout",
-                "step_batch_carriage_clean_holes",
-                "step_batch_carriage_qc_plastic",
-            ] + [s["id"] for s in cloned_steps],
+                _walk_substitute(sid, str_subs, parts_remap, origin_delta)
+                for sid in (src_partgroup.get("stepIds") or [])
+            ],
+            # Same for the assembly.stepIds replacement order: source order
+            # of cloned step ids only (preserve insertion position relative
+            # to surrounding ids in _rewrite_step_ids).
+            "cloned_step_ids_in_source_order": [
+                _walk_substitute(sid, str_subs, parts_remap, origin_delta)
+                for sid in (src_partgroup.get("stepIds") or [])
+                if sid.startswith(f"step_{src_prefix}_")
+            ],
         },
     }
     return plan
@@ -1003,7 +1038,10 @@ def apply_clone_plan(target_yaml_path, package_root):
     d = json.loads(build_fp.read_text(encoding="utf-8"))
 
     remove_ids = set(plan["operations"][0]["ids"])
-    new_step_ids = [s["id"] for s in cloned["steps"]]
+    # Preserve source's listing order (c1 quirk where shake/rod-slide
+    # appear before close_halves). Falls back to seq order if source
+    # didn't supply a stepIds order.
+    new_step_ids = cloned.get("cloned_step_ids_in_source_order") or [s["id"] for s in cloned["steps"]]
 
     # 2: remove old c2 step blocks; insert cloned at the same logical position
     d["steps"] = [s for s in (d.get("steps") or []) if s.get("id") not in remove_ids]
@@ -1023,6 +1061,61 @@ def apply_clone_plan(target_yaml_path, package_root):
     for t in cloned["targets"]:
         if t["id"] not in existing_target_ids:
             d.setdefault("targets", []).append(t)
+
+    # 4b: insert net-new parts into parts_assembly_file (often this same file
+    # for c3/c4; per-rail bench file for c1/c2). Skip ids already present.
+    instance = load_instantiation(target_yaml_path)
+    ctx_options = (instance.get("options") or {})
+    parts_file = ctx_options.get("parts_assembly_file") or "assembly_d3d_batch_carriage_build.json"
+    parts_fp = asm_dir / parts_file
+    new_parts = cloned.get("net_new_parts") or []
+    if new_parts:
+        if str(parts_fp) == str(build_fp):
+            # Same file — mutate the in-memory dict we're already writing
+            existing_part_ids = {p["id"] for p in d.get("parts") or []}
+            for p in new_parts:
+                if p["id"] not in existing_part_ids:
+                    d.setdefault("parts", []).append(p)
+        else:
+            # Different file — load, append, write back
+            pd = json.loads(parts_fp.read_text(encoding="utf-8"))
+            existing_part_ids = {p["id"] for p in pd.get("parts") or []}
+            for p in new_parts:
+                if p["id"] not in existing_part_ids:
+                    pd.setdefault("parts", []).append(p)
+            parts_fp.write_text(json.dumps(pd, indent=2, ensure_ascii=False), encoding="utf-8")
+            if str(parts_fp) not in files_changed:
+                files_changed.append(str(parts_fp))
+
+    # 4b2: preview_config.partPlacements for net-new parts — preserves the
+    # canonical assembledRotation (-0.7071,0,0,0.7071 for bolts) so the
+    # tool action target aligns correctly. Without this, c3/c4 bolts fall
+    # back to stagingPose identity rotation and the drill comes in sideways.
+    new_placements = cloned.get("net_new_preview_placements") or []
+    if new_placements:
+        preview_fp = Path(package_root) / "preview_config.json"
+        pc = json.loads(preview_fp.read_text(encoding="utf-8"))
+        plist = pc.setdefault("previewConfig", {}).setdefault("partPlacements", [])
+        existing_pl_ids = {pl["partId"] for pl in plist}
+        for pl in new_placements:
+            if pl["partId"] not in existing_pl_ids:
+                plist.append(pl)
+        preview_fp.write_text(json.dumps(pc, indent=2, ensure_ascii=False), encoding="utf-8")
+        if str(preview_fp) not in files_changed:
+            files_changed.append(str(preview_fp))
+
+    # 4c: rollup partIds — extend partGroup_carriage_batch_all.partIds
+    # with any net-new partId not already present (preserve order, no dupes).
+    if new_parts:
+        for g in d.get("partGroups") or []:
+            if g.get("id") == "partGroup_carriage_batch_all":
+                pids = g.setdefault("partIds", [])
+                pid_set = set(pids)
+                for p in new_parts:
+                    if p["id"] not in pid_set:
+                        pids.append(p["id"])
+                        pid_set.add(p["id"])
+                break
 
     # 5: rollups — assembly.stepIds + partGroup_carriage_batch_all.stepIds
     # Replace removed IDs in-place with cloned ones; keep ordering.

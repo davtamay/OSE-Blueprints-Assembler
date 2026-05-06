@@ -606,7 +606,7 @@ namespace OSE.Editor
             // the unsaved editor values so changes are visible immediately.
             //   Tier 1: explicit cursorRotation (_cursorRot field)
             //   Tier 2: Inverse(gripRotation) — derived from _toolRotEuler
-            //   Tier 3+: fall through to resolver for orientationEuler / auto-detect
+            //   Tier 3: fall through to resolver for auto-detect
             Quaternion previewRot;
             if (_cursorRot.sqrMagnitude > 0.001f)
                 previewRot = Quaternion.Euler(_cursorRot);
@@ -1194,7 +1194,7 @@ namespace OSE.Editor
         {
             string tier;
             if (IsTool && _tool != null)
-                tier = _tool.HasToolPose ? "Tier 1 (toolPose)" : _tool.HasOrientationOverride ? "Tier 2 (orientationEuler)" : "Tier 3 (auto-detect)";
+                tier = _tool.HasToolPose ? "Tier 1 (toolPose)" : "Tier 2 (auto-detect)";
             else if (!IsTool && _part != null)
                 tier = _part.HasGrabConfig ? "Authored (grabConfig)" : "None (default)";
             else return;
@@ -1317,8 +1317,6 @@ namespace OSE.Editor
             else
             {
                 ResetFields();
-                if (t.HasOrientationOverride)
-                    _cursorRot = t.orientationEuler;
             }
 
             // Reverse-derive tool transform from authored grip data.

@@ -4,10 +4,9 @@ using UnityEngine;
 namespace OSE.Interaction
 {
     /// <summary>
-    /// Single entry point for resolving tool spatial data using a three-tier fallback:
+    /// Single entry point for resolving tool spatial data:
     ///   Tier 1: <see cref="ToolPoseConfig"/> (authored or auto-detected)
-    ///   Tier 2: Legacy <c>orientationEuler</c> override
-    ///   Tier 3: <see cref="ComputeUprightCorrection"/> (vertex-based shaft detection)
+    ///   Tier 2: <see cref="ComputeUprightCorrection"/> (vertex-based shaft detection)
     /// </summary>
     public static class ToolPoseResolver
     {
@@ -15,8 +14,7 @@ namespace OSE.Interaction
         /// Resolves the preview cursor rotation for the desktop camera-parented preview.
         /// Tier 1: toolPose.cursorRotation (explicit cursor orientation)
         /// Tier 2: toolPose.gripRotation (natural "held" orientation from Grab Pose Editor)
-        /// Tier 3: orientationEuler legacy override
-        /// Tier 4: automatic vertex-based detection
+        /// Tier 3: automatic vertex-based detection
         /// </summary>
         public static Quaternion ResolvePreviewRotation(ToolDefinition tool, GameObject preview)
         {
@@ -31,11 +29,7 @@ namespace OSE.Interaction
             if (tool.HasToolPose && tool.toolPose.HasGripRotation)
                 return Quaternion.Inverse(tool.toolPose.GetGripRotation());
 
-            // Tier 3: orientationEuler legacy override
-            if (tool.HasOrientationOverride)
-                return Quaternion.Euler(tool.orientationEuler);
-
-            // Tier 4: automatic vertex-based detection
+            // Tier 3: automatic vertex-based detection
             return ComputeUprightCorrection(preview) * Quaternion.Euler(0f, 180f, 180f);
         }
 

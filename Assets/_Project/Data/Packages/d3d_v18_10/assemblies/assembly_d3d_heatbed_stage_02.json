@@ -447,7 +447,7 @@
       "id": "step_mount_bed_guide_rods",
       "name": "Mount the bed guide rods through the Z carriages",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "sequenceIndex": 283,
+      "sequenceIndex": 289,
       "instructionText": "Thread two nuts onto each bed guide rod. Slide each rod through the matching hole in the Z-front carriage and the Z-back carriage. Push rod ends flush with the outer edges of both carriages.",
       "hintIds": [
         "hint_mount_bed_guide_rods"
@@ -491,7 +491,7 @@
       "id": "step_place_bed_raisers",
       "name": "Thread the bed raiser standoffs onto the guide rods",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "sequenceIndex": 284,
+      "sequenceIndex": 290,
       "instructionText": "Thread three bed raiser standoffs onto each of the two guide rods. Space them evenly. The raisers create the flat support surface that the heated bed rests on and maintain the correct bed height above the carriages.",
       "hintIds": [
         "hint_place_bed_raisers"
@@ -554,7 +554,7 @@
       "id": "step_check_bed_platform_alignment",
       "name": "Check bed platform alignment and rod seating",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "sequenceIndex": 285,
+      "sequenceIndex": 291,
       "instructionText": "Verify: rod ends are flush with idler outer edges; two nuts per rod; bolts tightened without deforming plastic; platform does not rock laterally when pressed.",
       "targetIds": [
         "target_bed_platform_qc"
@@ -571,7 +571,7 @@
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "instructionText": "Position the Y-axis bed guide rods connecting the front and back Z carriages. These rods enable the bed platform to travel smoothly along the Y axis.",
       "family": "Place",
-      "sequenceIndex": 286,
+      "sequenceIndex": 292,
       "hintIds": [
         "hint_y_bed_rods"
       ],

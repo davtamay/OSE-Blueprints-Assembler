@@ -228,12 +228,6 @@
             "searchTerms": [],
             "assetRef": "tool_tape_measure.gltf",
             "animationCues": [],
-            "useOrientationOverride": false,
-            "orientationEuler": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-            },
             "scaleOverride": 0.0,
             "persistent": false,
             "toolPose": {
@@ -993,7 +987,7 @@
             "assemblyId": "assembly_onboarding",
             "partGroupId": "partGroup_training_parts",
             "sequenceIndex": 5,
-            "instructionText": "Now drag or grab the blue bracket and move it to its ghost target. Remember: each part only fits its own target — dropping the wrong part will flash red.",
+            "instructionText": "Now drag or grab the blue bracket and move it to its ghost target. Remember: each part only fits its own target \u2014 dropping the wrong part will flash red.",
             "whyItMattersText": "Placing the correct part at the correct target is how every assembly step works.",
             "requiredPartIds": [
                 "training_bracket"
@@ -1295,14 +1289,14 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 1.2000000476837159,
-                    "y": 0.30000001192092898,
+                    "x": 1.2000000476837158,
+                    "y": 0.30000001192092896,
                     "z": 0.4000000059604645
                 },
                 "color": {
                     "r": 0.9399999976158142,
                     "g": 0.550000011920929,
-                    "b": 0.18000000715255738,
+                    "b": 0.18000000715255737,
                     "a": 1.0
                 },
                 "assembledPosition": {
@@ -1355,7 +1349,7 @@
                     "z": 0.4000000059604645
                 },
                 "color": {
-                    "r": 0.30000001192092898,
+                    "r": 0.30000001192092896,
                     "g": 0.550000011920929,
                     "b": 0.8500000238418579,
                     "a": 1.0
@@ -1396,7 +1390,7 @@
             {
                 "targetId": "target_beam_slot",
                 "position": {
-                    "x": -0.30000001192092898,
+                    "x": -0.30000001192092896,
                     "y": 0.03999999910593033,
                     "z": 0.0
                 },
@@ -1407,12 +1401,12 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 1.2000000476837159,
+                    "x": 1.2000000476837158,
                     "y": 0.03999999910593033,
                     "z": 0.4000000059604645
                 },
                 "color": {
-                    "r": 0.20000000298023225,
+                    "r": 0.20000000298023224,
                     "g": 0.8399999737739563,
                     "b": 0.5799999833106995,
                     "a": 1.0
@@ -1432,7 +1426,7 @@
                 "targetId": "target_bracket_slot",
                 "position": {
                     "x": 0.800000011920929,
-                    "y": 0.15000000596046449,
+                    "y": 0.15000000596046448,
                     "z": 0.4000000059604645
                 },
                 "rotation": {
@@ -1447,7 +1441,7 @@
                     "z": 0.4000000059604645
                 },
                 "color": {
-                    "r": 0.20000000298023225,
+                    "r": 0.20000000298023224,
                     "g": 0.8399999737739563,
                     "b": 0.5799999833106995,
                     "a": 1.0

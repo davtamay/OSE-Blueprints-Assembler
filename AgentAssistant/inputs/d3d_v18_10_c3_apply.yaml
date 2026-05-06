@@ -1,0 +1,68 @@
+# Sub-slice D apply input — c3 (Z-Back) clone-from-c1.
+# Net-new: 12 hardware parts (4 bearings + 4 bolts + 4 nuts), 4 targets,
+# 3 extra steps (place_bolts/hand_tighten/drill_tighten), 3 extra cues.
+# Origin delta from c1: (+0.0056, 0, +0.1544)
+# Net seqIndex shift: +3 for seq >= 71 (existing c3 4-step block at 67-70).
+prefab: BatchCarriageUnit
+clone_from:
+  prefix:        batch_c1
+  target_prefix: c1
+  partgroup_id:  partGroup_carriage_y_left
+  origin:        { x: 0.3728, y: 0.55, z: 0.0 }
+  rail:          y_left
+  extra_subs:
+    "Carriage 1": "Carriage 3"
+    "Y-Left":     "Z-Back"
+    "y_left":     "z_back"
+    "for step 58": "for step 72"
+    "for step 59": "for step 73"
+    "1 of 4 complete": "3 of 4 complete"
+    "1 of 4":          "3 of 4"
+
+start_seq: 67
+options:
+  prefix:         batch_c3
+  target_prefix:  c3
+  rail:           z_back
+  rail_label:     "Z-Back"
+  partgroup_id:   partGroup_carriage_z_back
+  partgroup_name: "Carriage 3 (Z-Back)"
+  origin_x:       0.3784
+  origin_y:       0.55
+  origin_z:       0.1544
+  start_seq:      67
+  parts_assembly_file: "assembly_d3d_batch_carriage_build.json"
+
+parts:
+  half_a: z_back_carriage_half_a
+  half_b: z_back_carriage_half_b
+  bearings:
+    - z_back_lm8uu_a
+    - z_back_lm8uu_b
+    - z_back_lm8uu_c
+    - z_back_lm8uu_d
+  bolt_top_a: z_back_m6x18_a
+  bolt_top_b: z_back_m6x18_b
+  bolt_bot_a: z_back_m6x30_a
+  bolt_bot_b: z_back_m6x30_b
+  nuts:
+    - z_back_m6_nut_a
+    - z_back_m6_nut_b
+    - z_back_m6_nut_c
+    - z_back_m6_nut_d
+
+parts_remap:
+  y_left_carriage_half_a:   z_back_carriage_half_a
+  y_left_carriage_half_b:   z_back_carriage_half_b
+  y_left_lm8uu_a:           z_back_lm8uu_a
+  y_left_lm8uu_b:           z_back_lm8uu_b
+  y_left_lm8uu_c:           z_back_lm8uu_c
+  y_left_lm8uu_d:           z_back_lm8uu_d
+  y_left_m6x18_a:           z_back_m6x18_a
+  y_left_carriage_m6x18_b:  z_back_m6x18_b
+  y_left_m6x30_a:           z_back_m6x30_a
+  y_left_m6x30_b:           z_back_m6x30_b
+  y_left_m6_nut_a:          z_back_m6_nut_a
+  y_left_m6_nut_b:          z_back_m6_nut_b
+  y_left_m6_nut_c:          z_back_m6_nut_c
+  y_left_m6_nut_d:          z_back_m6_nut_d

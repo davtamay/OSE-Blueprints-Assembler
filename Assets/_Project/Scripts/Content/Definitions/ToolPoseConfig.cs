@@ -18,8 +18,7 @@ namespace OSE.Content
         /// <summary>Local offset from mesh origin to center of hand grip.</summary>
         public SceneFloat3 gripPoint;
 
-        /// <summary>Euler correction from mesh-local to "held naturally" orientation.
-        /// Replaces the legacy <c>orientationEuler</c> field on ToolDefinition.</summary>
+        /// <summary>Euler correction from mesh-local to "held naturally" orientation.</summary>
         public SceneFloat3 gripRotation;
 
         /// <summary>Local offset from mesh origin to the business end
@@ -32,9 +31,14 @@ namespace OSE.Content
         public SceneFloat3 cursorOffset;
 
         /// <summary>Euler rotation for the desktop/mobile cursor preview.
-        /// When authored (non-zero), this overrides both <c>orientationEuler</c>
-        /// and the auto-detect fallback. (0,0,0) = model's native orientation.</summary>
+        /// Gated by <see cref="useCursorRotation"/> — when that flag is on, this value
+        /// (including (0,0,0)) is applied and auto-detect is suppressed.</summary>
         public SceneFloat3 cursorRotation;
+
+        /// <summary>When true, <see cref="cursorRotation"/> is applied verbatim and
+        /// the vertex-based auto-detect fallback is skipped. Lets authors force
+        /// identity ((0,0,0)) without falling through to auto-detect.</summary>
+        public bool useCursorRotation;
 
         /// <summary>"right", "left", or "either" — preferred hand for XR grab.</summary>
         public string handedness;
@@ -71,7 +75,8 @@ namespace OSE.Content
             cursorOffset.x != 0f || cursorOffset.y != 0f || cursorOffset.z != 0f;
 
         public bool HasCursorRotation =>
-            cursorRotation.x != 0f || cursorRotation.y != 0f || cursorRotation.z != 0f;
+            useCursorRotation
+            || cursorRotation.x != 0f || cursorRotation.y != 0f || cursorRotation.z != 0f;
 
         public bool HasTipAxis =>
             tipAxis.x != 0f || tipAxis.y != 0f || tipAxis.z != 0f;

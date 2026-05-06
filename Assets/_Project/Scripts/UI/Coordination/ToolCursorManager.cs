@@ -218,7 +218,7 @@ namespace OSE.UI.Root
 
             _toolPreviewUpCorrection = ToolPoseResolver.ResolvePreviewRotation(tool, _toolPreviewIndicator);
             _gripOffset = ToolPoseResolver.ResolveCursorOffset(tool);
-            OseLog.Info($"[ToolPreview] tool={activeToolId} hasToolPose={tool.HasToolPose} hasOrientationOverride={tool.HasOrientationOverride} -> quat={_toolPreviewUpCorrection} gripOffset={_gripOffset}");
+            OseLog.Info($"[ToolPreview] tool={activeToolId} hasToolPose={tool.HasToolPose} -> quat={_toolPreviewUpCorrection} gripOffset={_gripOffset}");
 
             foreach (Collider col in _toolPreviewIndicator.GetComponentsInChildren<Collider>(true))
                 UnityEngine.Object.Destroy(col);

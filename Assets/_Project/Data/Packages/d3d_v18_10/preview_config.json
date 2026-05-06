@@ -1,5 +1,5 @@
 {
-  "previewConfig": {
+    "previewConfig": {
     "defaultAssemblyScaleMultiplier": 2.0,
     "targetRotationFormat": "mesh",
     "partPlacements": [
@@ -7343,7 +7343,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": -0.82,
+                "x": 1.12,
                 "y": 0.55,
                 "z": 0.0
             },
@@ -7358,30 +7358,7 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_carriage_layout",
-                    "label": "__notask_auto",
-                    "position": {
-                        "x": 0.8228,
-                        "y": 0.55,
-                        "z": -1.3411e-7
-                    },
-                    "rotation": {
-                        "x": 0.5,
-                        "y": 0.5,
-                        "z": -0.5,
-                        "w": -0.5
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "step_batch_carriage_layout",
-                    "propagateThroughStep": "step_batch_c2_place_bearings"
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 8,
@@ -8301,14 +8278,14 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 1.294,
+                "x": 0.5199,
                 "y": 0.55,
-                "z": 0.0
+                "z": 0.1544
             },
             "assembledRotation": {
                 "x": -0.5,
-                "y": 0.5,
-                "z": -0.5,
+                "y": -0.5,
+                "z": 0.5,
                 "w": 0.5
             },
             "assembledScale": {
@@ -8316,30 +8293,7 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_carriage_layout",
-                    "label": "__notask_auto",
-                    "position": {
-                        "x": 0.3784,
-                        "y": 0.55,
-                        "z": 0.1544
-                    },
-                    "rotation": {
-                        "x": -0.5,
-                        "y": 0.5,
-                        "z": -0.5,
-                        "w": 0.5
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "step_batch_carriage_layout",
-                    "propagateThroughStep": "step_batch_c2_tighten"
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -8379,45 +8333,22 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 1.374,
+                "x": 0.8256,
                 "y": 0.55,
-                "z": 0.0
+                "z": 0.1544
             },
             "assembledRotation": {
-                "x": 0.0,
-                "y": 0.7071,
-                "z": -0.7071,
-                "w": 0.0
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
             },
             "assembledScale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_carriage_layout",
-                    "label": "__notask_auto",
-                    "position": {
-                        "x": 0.5199,
-                        "y": 0.55,
-                        "z": 0.1544
-                    },
-                    "rotation": {
-                        "x": 0.5,
-                        "y": 0.5,
-                        "z": -0.5,
-                        "w": -0.5
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "step_batch_carriage_layout",
-                    "propagateThroughStep": "step_batch_c3_place_bearings"
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -8457,14 +8388,14 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 1.454,
+                "x": 0.8236,
                 "y": 0.55,
-                "z": 0.0
+                "z": 0.1544
             },
             "assembledRotation": {
                 "x": -0.5,
-                "y": 0.5,
-                "z": -0.5,
+                "y": -0.5,
+                "z": 0.5,
                 "w": 0.5
             },
             "assembledScale": {
@@ -8472,30 +8403,7 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_carriage_layout",
-                    "label": "__notask_auto",
-                    "position": {
-                        "x": 0.6736,
-                        "y": 0.55,
-                        "z": 0.1544
-                    },
-                    "rotation": {
-                        "x": -0.5,
-                        "y": 0.5,
-                        "z": -0.5,
-                        "w": 0.5
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "step_batch_carriage_layout",
-                    "propagateThroughStep": "step_batch_c3_bolt"
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -8535,45 +8443,22 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 1.534,
+                "x": 1.1208,
                 "y": 0.55,
-                "z": 0.0
+                "z": 0.1544
             },
             "assembledRotation": {
-                "x": 0.0,
-                "y": 0.7071,
-                "z": -0.7071,
-                "w": 0.0
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
             },
             "assembledScale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_carriage_layout",
-                    "label": "__notask_auto",
-                    "position": {
-                        "x": 0.8214,
-                        "y": 0.55,
-                        "z": 0.1544
-                    },
-                    "rotation": {
-                        "x": 0.5,
-                        "y": 0.5,
-                        "z": -0.5,
-                        "w": -0.5
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "step_batch_carriage_layout",
-                    "propagateThroughStep": "step_batch_c4_place_bearings"
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -8721,6 +8606,1326 @@
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_lm8uu_a",
+            "startPosition": {
+                "x": 0.5874,
+                "y": 0.56,
+                "z": 0.1694
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.507,
+                "y": 0.5511,
+                "z": 0.1824
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_lm8uu_b",
+            "startPosition": {
+                "x": 0.6134,
+                "y": 0.56,
+                "z": 0.1694
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.533,
+                "y": 0.5511,
+                "z": 0.1824
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_lm8uu_c",
+            "startPosition": {
+                "x": 0.5874,
+                "y": 0.56,
+                "z": 0.1394
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.507,
+                "y": 0.5511,
+                "z": 0.1265
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_lm8uu_d",
+            "startPosition": {
+                "x": 0.6134,
+                "y": 0.56,
+                "z": 0.1394
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.533,
+                "y": 0.5511,
+                "z": 0.1265
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6x18_a",
+            "startPosition": {
+                "x": 0.5912,
+                "y": 0.5479,
+                "z": 0.108
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5436,
+                "y": 0.576,
+                "z": 0.1702
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6x18_b",
+            "startPosition": {
+                "x": 0.5912,
+                "y": 0.5479,
+                "z": 0.072
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5436,
+                "y": 0.576,
+                "z": 0.1399
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6x30_a",
+            "startPosition": {
+                "x": 0.6112,
+                "y": 0.5479,
+                "z": 0.108
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.8,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5133,
+                "y": 0.576,
+                "z": 0.1694
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6x30_b",
+            "startPosition": {
+                "x": 0.6112,
+                "y": 0.5479,
+                "z": 0.072
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.8,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5133,
+                "y": 0.576,
+                "z": 0.1395
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6_nut_a",
+            "startPosition": {
+                "x": 0.5929,
+                "y": 0.55,
+                "z": 0.1724
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5415,
+                "y": 0.5349,
+                "z": 0.1724
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6_nut_b",
+            "startPosition": {
+                "x": 0.5929,
+                "y": 0.55,
+                "z": 0.1364
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5415,
+                "y": 0.5354,
+                "z": 0.1364
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6_nut_c",
+            "startPosition": {
+                "x": 0.6129,
+                "y": 0.55,
+                "z": 0.1724
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5155,
+                "y": 0.5354,
+                "z": 0.1724
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_back_m6_nut_d",
+            "startPosition": {
+                "x": 0.6129,
+                "y": 0.55,
+                "z": 0.1364
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.8,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.5155,
+                "y": 0.5354,
+                "z": 0.1364
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_lm8uu_a",
+            "startPosition": {
+                "x": 0.8826,
+                "y": 0.56,
+                "z": 0.1694
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8103,
+                "y": 0.5511,
+                "z": 0.1824
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_lm8uu_b",
+            "startPosition": {
+                "x": 0.9086,
+                "y": 0.56,
+                "z": 0.1694
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8363,
+                "y": 0.5511,
+                "z": 0.1824
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_lm8uu_c",
+            "startPosition": {
+                "x": 0.8826,
+                "y": 0.56,
+                "z": 0.1394
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8103,
+                "y": 0.5511,
+                "z": 0.1265
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_lm8uu_d",
+            "startPosition": {
+                "x": 0.9086,
+                "y": 0.56,
+                "z": 0.1394
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8363,
+                "y": 0.5511,
+                "z": 0.1265
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6x18_a",
+            "startPosition": {
+                "x": 0.8864,
+                "y": 0.5479,
+                "z": 0.108
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8388,
+                "y": 0.576,
+                "z": 0.1702
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6x18_b",
+            "startPosition": {
+                "x": 0.8864,
+                "y": 0.5479,
+                "z": 0.072
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8388,
+                "y": 0.576,
+                "z": 0.1399
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6x30_a",
+            "startPosition": {
+                "x": 0.9064,
+                "y": 0.5479,
+                "z": 0.108
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.8,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8085,
+                "y": 0.576,
+                "z": 0.1694
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6x30_b",
+            "startPosition": {
+                "x": 0.9064,
+                "y": 0.5479,
+                "z": 0.072
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.8,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8085,
+                "y": 0.576,
+                "z": 0.1395
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6_nut_a",
+            "startPosition": {
+                "x": 0.8881,
+                "y": 0.55,
+                "z": 0.1724
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8367,
+                "y": 0.5349,
+                "z": 0.1724
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6_nut_b",
+            "startPosition": {
+                "x": 0.8881,
+                "y": 0.55,
+                "z": 0.1364
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8367,
+                "y": 0.5354,
+                "z": 0.1364
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6_nut_c",
+            "startPosition": {
+                "x": 0.9081,
+                "y": 0.55,
+                "z": 0.1724
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8107,
+                "y": 0.5354,
+                "z": 0.1724
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "z_front_m6_nut_d",
+            "startPosition": {
+                "x": 0.9081,
+                "y": 0.55,
+                "z": 0.1364
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.8,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.8107,
+                "y": 0.5354,
+                "z": 0.1364
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
                 "metallic": 0.0,
                 "smoothness": 0.0,
                 "color": {
@@ -17483,6 +18688,426 @@
                 "y": 0.0,
                 "z": 0.0
             }
+        },
+        {
+            "targetId": "target_c2_bolt_tighten_a",
+            "position": {
+                "x": 0.838,
+                "y": 0.576,
+                "z": 0.0158
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c2_bolt_tighten_b",
+            "position": {
+                "x": 0.838,
+                "y": 0.576,
+                "z": -0.0145
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c2_bolt_tighten_c",
+            "position": {
+                "x": 0.8077,
+                "y": 0.576,
+                "z": 0.015
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c2_bolt_tighten_d",
+            "position": {
+                "x": 0.8077,
+                "y": 0.576,
+                "z": -0.0149
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c3_bolt_tighten_a",
+            "position": {
+                "x": 0.5436,
+                "y": 0.576,
+                "z": 0.1702
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c3_bolt_tighten_b",
+            "position": {
+                "x": 0.5436,
+                "y": 0.576,
+                "z": 0.1399
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c3_bolt_tighten_c",
+            "position": {
+                "x": 0.5133,
+                "y": 0.576,
+                "z": 0.1694
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c3_bolt_tighten_d",
+            "position": {
+                "x": 0.5133,
+                "y": 0.576,
+                "z": 0.1395
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c4_bolt_tighten_a",
+            "position": {
+                "x": 0.8388,
+                "y": 0.576,
+                "z": 0.1702
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c4_bolt_tighten_b",
+            "position": {
+                "x": 0.8388,
+                "y": 0.576,
+                "z": 0.1399
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c4_bolt_tighten_c",
+            "position": {
+                "x": 0.8085,
+                "y": 0.576,
+                "z": 0.1694
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c4_bolt_tighten_d",
+            "position": {
+                "x": 0.8085,
+                "y": 0.576,
+                "z": 0.1395
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
         }
     ],
     "partGroupPlacements": [
@@ -18562,7 +20187,52 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": []
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c3_rod_slide_test",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_z_back cue=poseTransition[1])",
+                    "position": {
+                        "x": 1.0761,
+                        "y": 0.0254,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.7071,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c3_hand_tighten",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_z_back cue=poseTransition[3])",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": -1
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ]
         },
         {
             "partGroupId": "partGroup_carriage_z_front",
@@ -18614,7 +20284,52 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": []
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c4_rod_slide_test",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_z_front cue=poseTransition[1])",
+                    "position": {
+                        "x": 1.3737,
+                        "y": -0.2723,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.7071,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c4_hand_tighten",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_z_front cue=poseTransition[3])",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": -1
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ]
         },
         {
             "partGroupId": "partGroup_cable_routing",
@@ -20745,990 +22460,990 @@
         }
     ]
 },
-  "partPlacements": [
-    {
-      "partId": "d3d_frame_bottom_top_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": 0.495
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": 0.1524
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_bottom_bottom_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": 0.395
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": -0.1524
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_bottom_left_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": 0.345
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.1524,
-        "y": 0.5516,
-        "z": 0.0
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_bottom_right_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": 0.445
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.1524,
-        "y": 0.5516,
-        "z": 0.0
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_top_top_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": 0.495
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": 0.0024
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_top_bottom_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": 0.395
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": -0.3024
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_top_left_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": 0.345
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.1524,
-        "y": 0.5516,
-        "z": -0.15
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_top_right_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": 0.445
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.1524,
-        "y": 0.5516,
-        "z": -0.15
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_left_top_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": 0.075
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.38,
-        "y": 0.5516,
-        "z": 0.2274
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_left_bottom_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": -0.025
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.38,
-        "y": 0.5516,
-        "z": -0.0774
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_left_left_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": -0.075
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.5324,
-        "y": 0.5516,
-        "z": 0.075
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_left_right_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": 0.025
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.2276,
-        "y": 0.5516,
-        "z": 0.075
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_right_top_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": 0.075
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.38,
-        "y": 0.5516,
-        "z": 0.2274
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_right_bottom_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": -0.025
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.38,
-        "y": 0.5516,
-        "z": -0.0774
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_right_left_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": -0.075
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.2276,
-        "y": 0.5516,
-        "z": 0.075
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_right_right_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": 0.025
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.5324,
-        "y": 0.5516,
-        "z": 0.075
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_front_top_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": -0.345
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": 0.4974
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_front_bottom_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": -0.445
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": 0.1926
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_front_left_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": -0.495
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.1524,
-        "y": 0.5516,
-        "z": 0.345
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_front_right_bar",
-      "startPosition": {
-        "x": -1.0,
-        "y": 0.5516,
-        "z": -0.395
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.1524,
-        "y": 0.5516,
-        "z": 0.345
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_rear_top_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": -0.345
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": -0.0426
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_rear_bottom_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": -0.445
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.0,
-        "y": 0.5516,
-        "z": -0.3474
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_rear_left_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": -0.495
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": -0.1524,
-        "y": 0.5516,
-        "z": -0.195
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    },
-    {
-      "partId": "d3d_frame_rear_right_bar",
-      "startPosition": {
-        "x": 1.0,
-        "y": 0.5516,
-        "z": -0.395
-      },
-      "startRotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 1.0
-      },
-      "startScale": {
-        "x": 0.3048,
-        "y": 0.0032,
-        "z": 0.0254
-      },
-      "assembledPosition": {
-        "x": 0.1524,
-        "y": 0.5516,
-        "z": -0.195
-      },
-      "assembledRotation": {
-        "x": 0,
-        "y": 0.7071,
-        "z": 0,
-        "w": 0.7071
-      },
-      "assembledScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "color": {
-        "r": 0.4,
-        "g": 0.8,
-        "b": 1.0,
-        "a": 0.3
-      }
-    }
-  ]
+    "partPlacements": [
+        {
+            "partId": "d3d_frame_bottom_top_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": 0.495
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": 0.1524
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_bottom_bottom_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": 0.395
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": -0.1524
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_bottom_left_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": 0.345
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.1524,
+                "y": 0.5516,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_bottom_right_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": 0.445
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.1524,
+                "y": 0.5516,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_top_top_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": 0.495
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": 0.0024
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_top_bottom_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": 0.395
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": -0.3024
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_top_left_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": 0.345
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.1524,
+                "y": 0.5516,
+                "z": -0.15
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_top_right_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": 0.445
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.1524,
+                "y": 0.5516,
+                "z": -0.15
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_left_top_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": 0.075
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.38,
+                "y": 0.5516,
+                "z": 0.2274
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_left_bottom_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": -0.025
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.38,
+                "y": 0.5516,
+                "z": -0.0774
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_left_left_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": -0.075
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.5324,
+                "y": 0.5516,
+                "z": 0.075
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_left_right_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": 0.025
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.2276,
+                "y": 0.5516,
+                "z": 0.075
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_right_top_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": 0.075
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.38,
+                "y": 0.5516,
+                "z": 0.2274
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_right_bottom_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": -0.025
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.38,
+                "y": 0.5516,
+                "z": -0.0774
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_right_left_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": -0.075
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.2276,
+                "y": 0.5516,
+                "z": 0.075
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_right_right_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": 0.025
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.5324,
+                "y": 0.5516,
+                "z": 0.075
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_front_top_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": -0.345
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": 0.4974
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_front_bottom_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": -0.445
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": 0.1926
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_front_left_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": -0.495
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.1524,
+                "y": 0.5516,
+                "z": 0.345
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_front_right_bar",
+            "startPosition": {
+                "x": -1.0,
+                "y": 0.5516,
+                "z": -0.395
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.1524,
+                "y": 0.5516,
+                "z": 0.345
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_rear_top_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": -0.345
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": -0.0426
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_rear_bottom_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": -0.445
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.5516,
+                "z": -0.3474
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_rear_left_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": -0.495
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": -0.1524,
+                "y": 0.5516,
+                "z": -0.195
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        },
+        {
+            "partId": "d3d_frame_rear_right_bar",
+            "startPosition": {
+                "x": 1.0,
+                "y": 0.5516,
+                "z": -0.395
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.3048,
+                "y": 0.0032,
+                "z": 0.0254
+            },
+            "assembledPosition": {
+                "x": 0.1524,
+                "y": 0.5516,
+                "z": -0.195
+            },
+            "assembledRotation": {
+                "x": 0,
+                "y": 0.7071,
+                "z": 0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "color": {
+                "r": 0.4,
+                "g": 0.8,
+                "b": 1.0,
+                "a": 0.3
+            }
+        }
+    ]
 }

@@ -1,17 +1,14 @@
 // TTAW.ToolActionConfig.cs — Consolidated "Tool Action Config" authoring section.
 // ──────────────────────────────────────────────────────────────────────────────
-// Renders four collapsible subsections for a selected tool-action task:
-//   • TOOL           — orientationEuler, scaleOverride, persistent, primaryActionType
-//   • TOOL POSE      — gripPoint, tipPoint, actionAxis, handedness, poseHint, cursorOffset
-//   • PROFILE        — read-only snapshot of FramingDistance/WorkingDistance/ApproachTiltDegrees/PreviewStyle
-//   • PREVIEW OVRRDE — ToolActionPreviewConfig fields, filtered by step.profile
+// Renders three collapsible subsections for a selected tool-action task:
+//   • TARGET          — position/rotation/scale/weldAxis/weldLength/rotation lock
+//   • PROFILE         — read-only snapshot of FramingDistance/WorkingDistance/ApproachTiltDegrees/PreviewStyle
+//   • PREVIEW OVRRDE  — ToolActionPreviewConfig fields, filtered by step.profile
 //
-// The TARGET subsection (position/rotation/scale/weldAxis/weldLength/rotation
-// lock) is still rendered by the existing DrawDetailPanel above this block
-// — no change to target authoring today. Over time the target fields can
-// migrate into a "TARGET" foldout here to fully consolidate.
+// Per-tool authoring (grip/tip/cursor/handedness/scaleOverride/persistent/etc.)
+// lives in the dedicated Grab Pose Editor window — not here. Step authoring
+// only edits step-level data.
 
-using System;
 using OSE.Content;
 using OSE.Interaction;
 using UnityEditor;
@@ -23,13 +20,8 @@ namespace OSE.Editor
     {
         // Persistent foldout state per subsection.
         [SerializeField] private bool _cfgTargetFoldout      = true;
-        [SerializeField] private bool _cfgToolFoldout        = false;
-        [SerializeField] private bool _cfgToolPoseFoldout    = false;
         [SerializeField] private bool _cfgProfileFoldout     = false;
         [SerializeField] private bool _cfgOverridesFoldout   = true;
-
-        private static readonly string[] _handednessOptions = { "", "right", "left", "either" };
-        private static readonly string[] _poseHintOptions   = { "", "power_grip", "pinch", "precision", "two_hand" };
 
         /// <summary>
         /// Draws the consolidated Target / Tool / Tool Pose / Profile /
@@ -47,19 +39,7 @@ namespace OSE.Editor
             };
             EditorGUILayout.LabelField("TOOL ACTION CONFIG", headerStyle);
 
-            // Locate the tool definition for the action so we can edit tool-
-            // level fields inline (matches what ToolPoseGizmoEditor exposes
-            // in its own window).
-            ToolDefinition toolDef = null;
-            if (!string.IsNullOrEmpty(action.toolId) && _pkg?.tools != null)
-            {
-                foreach (var td in _pkg.tools)
-                    if (td != null && td.id == action.toolId) { toolDef = td; break; }
-            }
-
             DrawTargetSection(action);
-            DrawToolSection(toolDef);
-            DrawToolPoseSection(toolDef);
             DrawProfileSection(step);
             DrawPreviewOverridesSection(step, action);
         }
@@ -178,112 +158,6 @@ namespace OSE.Editor
                     t.isDirty = true;
                     EndEdit();
                 }
-            }
-
-            EditorGUI.indentLevel--;
-        }
-
-        // ── TOOL ─────────────────────────────────────────────────────────
-
-        private void DrawToolSection(ToolDefinition tool)
-        {
-            _cfgToolFoldout = EditorGUILayout.Foldout(_cfgToolFoldout, "TOOL", true, EditorStyles.foldoutHeader);
-            if (!_cfgToolFoldout) return;
-            EditorGUI.indentLevel++;
-
-            if (tool == null)
-            {
-                EditorGUILayout.HelpBox("No tool mapped to this action.", MessageType.Info);
-                EditorGUI.indentLevel--;
-                return;
-            }
-
-            EditorGUI.BeginChangeCheck();
-
-            bool useOri = EditorGUILayout.Toggle(new GUIContent("Use Orientation Override",
-                "When on, the tool preview uses authored Euler angles instead of auto-detected upright."),
-                tool.useOrientationOverride);
-            Vector3 euler = EditorGUILayout.Vector3Field(new GUIContent("Orientation (Euler °)",
-                "Pitch / yaw / roll applied when Use Orientation Override is on."),
-                tool.orientationEuler);
-            float scaleOv = EditorGUILayout.FloatField(new GUIContent("Scale Override (× cursor)",
-                "0 or 1 = no override. Higher = larger cursor preview for this tool."),
-                tool.scaleOverride);
-            bool persist = EditorGUILayout.Toggle(new GUIContent("Persistent (stays after use)",
-                "Clamps, fixtures, vises stay on the workpiece after action completes."),
-                tool.persistent);
-            string primaryAction = EditorGUILayout.TextField(new GUIContent("Primary Action Type",
-                "Default actionType inherited by new tool-target tasks using this tool."),
-                tool.primaryActionType ?? "");
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                tool.useOrientationOverride = useOri;
-                tool.orientationEuler       = euler;
-                tool.scaleOverride          = scaleOv;
-                tool.persistent             = persist;
-                tool.primaryActionType      = string.IsNullOrEmpty(primaryAction) ? null : primaryAction;
-                _dirtyToolIds.Add(tool.id);
-            }
-
-            EditorGUI.indentLevel--;
-        }
-
-        // ── TOOL POSE ─────────────────────────────────────────────────────
-
-        private void DrawToolPoseSection(ToolDefinition tool)
-        {
-            _cfgToolPoseFoldout = EditorGUILayout.Foldout(_cfgToolPoseFoldout, "TOOL POSE", true, EditorStyles.foldoutHeader);
-            if (!_cfgToolPoseFoldout) return;
-            EditorGUI.indentLevel++;
-
-            if (tool == null)
-            {
-                EditorGUILayout.HelpBox("No tool mapped to this action.", MessageType.Info);
-                EditorGUI.indentLevel--;
-                return;
-            }
-
-            // Initialise ToolPoseConfig lazily so authors can start authoring
-            // without having to open the separate Grab Pose Editor first.
-            if (tool.toolPose == null) tool.toolPose = new ToolPoseConfig();
-            var pose = tool.toolPose;
-
-            EditorGUILayout.HelpBox(
-                "Grip / tip / action-axis live here and round-trip with the Grab Pose Editor window. " +
-                "Visual gizmos for these points still live in that editor.",
-                MessageType.None);
-
-            EditorGUI.BeginChangeCheck();
-
-            Vector3 grip = EditorGUILayout.Vector3Field("Grip Point (local)", ToVector3(pose.gripPoint));
-            Vector3 gripRot = EditorGUILayout.Vector3Field("Grip Rotation (Euler °)", ToVector3(pose.gripRotation));
-            Vector3 tip = EditorGUILayout.Vector3Field("Tip Point (local)", ToVector3(pose.tipPoint));
-            Vector3 tipAxis = EditorGUILayout.Vector3Field("Tip Axis (local)", ToVector3(pose.tipAxis));
-            Vector3 actionAxis = EditorGUILayout.Vector3Field(new GUIContent("Action Axis (local)",
-                "Direction the tool travels during the action. Torque uses this as rotation axis."),
-                ToVector3(pose.actionAxis));
-            Vector3 cursorOff = EditorGUILayout.Vector3Field("Cursor Offset (from grip)", ToVector3(pose.cursorOffset));
-            Vector3 cursorRot = EditorGUILayout.Vector3Field("Cursor Rotation (Euler °)", ToVector3(pose.cursorRotation));
-
-            int handIdx = Mathf.Max(0, Array.IndexOf(_handednessOptions, pose.handedness ?? ""));
-            int newHandIdx = EditorGUILayout.Popup("Handedness", handIdx, _handednessOptions);
-
-            int hintIdx = Mathf.Max(0, Array.IndexOf(_poseHintOptions, pose.poseHint ?? ""));
-            int newHintIdx = EditorGUILayout.Popup("Pose Hint", hintIdx, _poseHintOptions);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                pose.gripPoint      = FromVector3(grip);
-                pose.gripRotation   = FromVector3(gripRot);
-                pose.tipPoint       = FromVector3(tip);
-                pose.tipAxis        = FromVector3(tipAxis);
-                pose.actionAxis     = FromVector3(actionAxis);
-                pose.cursorOffset   = FromVector3(cursorOff);
-                pose.cursorRotation = FromVector3(cursorRot);
-                pose.handedness     = _handednessOptions[newHandIdx];
-                pose.poseHint       = _poseHintOptions[newHintIdx];
-                _dirtyToolIds.Add(tool.id);
             }
 
             EditorGUI.indentLevel--;

@@ -125,7 +125,7 @@
       "id": "step_mount_control_panel",
       "name": "Mount the control panel enclosure to the frame",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 288,
+      "sequenceIndex": 294,
       "instructionText": "Align the control panel enclosure to the front-left face of the frame. Press the mounting tabs flush against the frame bars.",
       "hintIds": [
         "hint_mount_control_panel"
@@ -162,7 +162,7 @@
       "id": "step_install_ramps_board",
       "name": "Install the RAMPS 1.4 board in the control panel",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 289,
+      "sequenceIndex": 295,
       "instructionText": "Seat the RAMPS 1.4 board into the control panel. USB port and power terminals face outward. Press firmly until the board sits level.",
       "hintIds": [
         "hint_install_ramps_board"
@@ -199,7 +199,7 @@
       "id": "step_secure_control_panel",
       "name": "Secure the control panel with M3 screws",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 290,
+      "sequenceIndex": 296,
       "instructionText": "Thread M3 screws through the panel mounting tabs. Snug finger-tight, then a quarter-turn â€” do not overtighten plastic tabs.",
       "targetIds": [
         "target_control_panel_fastener"
@@ -225,7 +225,7 @@
       "id": "step_connect_psu_12v",
       "name": "Connect +12V power wire from PSU to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 291,
+      "sequenceIndex": 297,
       "instructionText": "Connect the red +12V wire from the PSU V+ output to the V+ screw terminal on the RAMPS board. Click the red port sphere, then the RAMPS terminal sphere.",
       "targetIds": [
         "target_wire_psu_12v"
@@ -271,7 +271,7 @@
       "id": "step_connect_psu_gnd",
       "name": "Connect GND wire from PSU to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 292,
+      "sequenceIndex": 298,
       "instructionText": "Connect the black GND wire from the PSU GND output to the GND screw terminal on the RAMPS board. Polarity matters â€” do not swap with the +12V terminal.",
       "targetIds": [
         "target_wire_psu_gnd"
@@ -317,7 +317,7 @@
       "id": "step_connect_psu_atx_enable",
       "name": "Short ATX PS_ON to GND (enable jumper)",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 293,
+      "sequenceIndex": 299,
       "instructionText": "Connect a short wire from the ATX PS_ON pin (green, pin 16) to a GND pin to force the PSU on. Without this jumper the printer will not power up.",
       "targetIds": [
         "target_wire_psu_enable"
@@ -363,7 +363,7 @@
       "id": "step_verify_psu_connections",
       "name": "Verify all PSU connections to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 294,
+      "sequenceIndex": 300,
       "instructionText": "Check all three PSU connections: V+ (red wire), GND (black wire), and the PS_ON enable jumper. Gently tug each â€” a properly seated terminal will not pull free.",
       "targetIds": [
         "target_psu_connections_verify"
@@ -377,7 +377,7 @@
       "id": "step_connect_x_motor",
       "name": "Connect X-axis stepper motor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 295,
+      "sequenceIndex": 301,
       "instructionText": "Plug the X-axis stepper motor 4-pin dupont connector into the X-motor header on the RAMPS board. Click the motor-side sphere, then the RAMPS header sphere.",
       "targetIds": [
         "target_wire_motor_x"
@@ -423,7 +423,7 @@
       "id": "step_connect_y_left_motor",
       "name": "Connect Y-left stepper motor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 296,
+      "sequenceIndex": 302,
       "instructionText": "Plug the Y1 (left) stepper motor dupont connector into the Y-motor header on RAMPS.",
       "targetIds": [
         "target_wire_motor_y_left"
@@ -469,7 +469,7 @@
       "id": "step_connect_y_right_motor",
       "name": "Connect Y-right stepper motor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 297,
+      "sequenceIndex": 303,
       "instructionText": "Plug the Y2 (right) stepper motor dupont connector into the second Y-motor header on RAMPS. Both Y motors share the Y-driver or use a splitter cable.",
       "targetIds": [
         "target_wire_motor_y_right"
@@ -515,7 +515,7 @@
       "id": "step_connect_z_front_motor",
       "name": "Connect Z-front stepper motor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 298,
+      "sequenceIndex": 304,
       "instructionText": "Plug the Z-front motor dupont connector into the Z-motor header on RAMPS. Z uses a single driver; both Z motors are wired in series or parallel via a splitter.",
       "targetIds": [
         "target_wire_motor_z_front"
@@ -561,7 +561,7 @@
       "id": "step_connect_z_back_motor",
       "name": "Connect Z-back stepper motor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 299,
+      "sequenceIndex": 305,
       "instructionText": "Plug the Z-back motor dupont connector into the Z-motor splitter or second Z header. Both Z columns must be driven together for level bed movement.",
       "targetIds": [
         "target_wire_motor_z_back"
@@ -607,7 +607,7 @@
       "id": "step_connect_x_endstop",
       "name": "Connect X-axis min endstop to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 300,
+      "sequenceIndex": 306,
       "instructionText": "Connect the X min endstop 2-pin dupont to the X-MIN header on RAMPS (S and GND pins). This is the home position limit for the X axis.",
       "targetIds": [
         "target_wire_endstop_x"
@@ -653,7 +653,7 @@
       "id": "step_connect_y_endstop",
       "name": "Connect Y-axis min endstop to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 301,
+      "sequenceIndex": 307,
       "instructionText": "Connect the Y min endstop to the Y-MIN header on RAMPS.",
       "targetIds": [
         "target_wire_endstop_y"
@@ -699,7 +699,7 @@
       "id": "step_connect_z_endstop",
       "name": "Connect Z-axis min endstop to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 302,
+      "sequenceIndex": 308,
       "instructionText": "Connect the Z min endstop to the Z-MIN header on RAMPS. This is triggered when the bed reaches the home position (nozzle at Z=0).",
       "targetIds": [
         "target_wire_endstop_z"
@@ -745,7 +745,7 @@
       "id": "step_connect_heater_cartridge",
       "name": "Connect extruder heater cartridge to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 303,
+      "sequenceIndex": 309,
       "instructionText": "Connect the heater cartridge wires to the E0 heater output (D10) on RAMPS. Polarity does not matter for the resistive heater element.",
       "targetIds": [
         "target_wire_heater_cartridge"
@@ -791,7 +791,7 @@
       "id": "step_connect_thermistor",
       "name": "Connect extruder thermistor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 304,
+      "sequenceIndex": 310,
       "instructionText": "Connect the thermistor to the T0 2-pin header (signal + GND). Polarity matters â€” reversing causes false 300Â°C readings and thermal runaway shutdown.",
       "targetIds": [
         "target_wire_thermistor"
@@ -837,7 +837,7 @@
       "id": "step_connect_extruder_fan",
       "name": "Connect extruder part-cooling fan to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 305,
+      "sequenceIndex": 311,
       "instructionText": "Connect the part-cooling fan to the FAN header (always-on 12V) or D9 for PWM speed control. Red wire to +12V, black to GND.",
       "targetIds": [
         "target_wire_extruder_fan"
@@ -883,7 +883,7 @@
       "id": "step_route_cables_chain",
       "name": "Route all axis cables through the cable chain",
       "assemblyId": "assembly_d3d_electronics",
-      "sequenceIndex": 306,
+      "sequenceIndex": 312,
       "instructionText": "Route the X/Y motor cables and endstop wires through the cable chain. Leave 30mm of slack at each axis end for full travel. Snap the chain cover closed.",
       "targetIds": [
         "target_cable_chain_route"

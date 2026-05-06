@@ -1,0 +1,66 @@
+# Sub-slice D apply input — c4 (Z-Front) clone-from-c1.
+# Origin delta from c1: (+0.3008, 0, +0.1544)
+# c4 currently at seq 74-77 after c3 expansion. Existing 4-step block.
+prefab: BatchCarriageUnit
+clone_from:
+  prefix:        batch_c1
+  target_prefix: c1
+  partgroup_id:  partGroup_carriage_y_left
+  origin:        { x: 0.3728, y: 0.55, z: 0.0 }
+  rail:          y_left
+  extra_subs:
+    "Carriage 1": "Carriage 4"
+    "Y-Left":     "Z-Front"
+    "y_left":     "z_front"
+    "for step 58": "for step 79"
+    "for step 59": "for step 80"
+    "1 of 4 complete": "4 of 4 complete"
+    "1 of 4":          "4 of 4"
+
+start_seq: 74
+options:
+  prefix:         batch_c4
+  target_prefix:  c4
+  rail:           z_front
+  rail_label:     "Z-Front"
+  partgroup_id:   partGroup_carriage_z_front
+  partgroup_name: "Carriage 4 (Z-Front)"
+  origin_x:       0.6736
+  origin_y:       0.55
+  origin_z:       0.1544
+  start_seq:      74
+  parts_assembly_file: "assembly_d3d_batch_carriage_build.json"
+
+parts:
+  half_a: z_front_carriage_half_a
+  half_b: z_front_carriage_half_b
+  bearings:
+    - z_front_lm8uu_a
+    - z_front_lm8uu_b
+    - z_front_lm8uu_c
+    - z_front_lm8uu_d
+  bolt_top_a: z_front_m6x18_a
+  bolt_top_b: z_front_m6x18_b
+  bolt_bot_a: z_front_m6x30_a
+  bolt_bot_b: z_front_m6x30_b
+  nuts:
+    - z_front_m6_nut_a
+    - z_front_m6_nut_b
+    - z_front_m6_nut_c
+    - z_front_m6_nut_d
+
+parts_remap:
+  y_left_carriage_half_a:   z_front_carriage_half_a
+  y_left_carriage_half_b:   z_front_carriage_half_b
+  y_left_lm8uu_a:           z_front_lm8uu_a
+  y_left_lm8uu_b:           z_front_lm8uu_b
+  y_left_lm8uu_c:           z_front_lm8uu_c
+  y_left_lm8uu_d:           z_front_lm8uu_d
+  y_left_m6x18_a:           z_front_m6x18_a
+  y_left_carriage_m6x18_b:  z_front_m6x18_b
+  y_left_m6x30_a:           z_front_m6x30_a
+  y_left_m6x30_b:           z_front_m6x30_b
+  y_left_m6_nut_a:          z_front_m6_nut_a
+  y_left_m6_nut_b:          z_front_m6_nut_b
+  y_left_m6_nut_c:          z_front_m6_nut_c
+  y_left_m6_nut_d:          z_front_m6_nut_d

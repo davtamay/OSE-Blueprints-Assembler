@@ -204,8 +204,6 @@ Agent-authored staging position for a part. Lives in `parts[].stagingPose`, not 
 | `safetyNotes` | `string` | Safety warnings. |
 | `searchTerms` | `string[]` | Search keywords. |
 | `assetRef` | `string` | 3D model asset reference. |
-| `useOrientationOverride` | `bool` | When `true`, use `orientationEuler` instead of auto-detection. |
-| `orientationEuler` | `Vector3` | Legacy Euler override `{"x":0,"y":0,"z":0}`. Superseded by `toolPose.cursorRotation`. |
 | `scaleOverride` | `float` | Scale multiplier for the tool preview cursor. `0` or `1` = default. |
 | `persistent` | `bool` | When `true`, tool remains on workpiece after use (clamps, fixtures). |
 | `toolPose` | `ToolPoseConfig` | Spatial metadata for grip, tip, and cursor. |
@@ -218,7 +216,8 @@ Agent-authored staging position for a part. Lives in `parts[].stagingPose`, not 
 | `gripRotation` | `SceneFloat3` | Euler correction for held orientation. |
 | `tipPoint` | `SceneFloat3` | Local offset to business end (nozzle, socket, blade). |
 | `cursorOffset` | `SceneFloat3` | Additional offset for desktop/mobile cursor. |
-| `cursorRotation` | `SceneFloat3` | Euler override for cursor preview orientation. |
+| `cursorRotation` | `SceneFloat3` | Euler override for cursor preview orientation. Gated by `useCursorRotation`. |
+| `useCursorRotation` | `bool` | When `true`, apply `cursorRotation` verbatim and skip auto-detect — even if value is `(0,0,0)`. |
 | `handedness` | `string` | `"right"`, `"left"`, or `"either"`. |
 | `poseHint` | `string` | `"power_grip"`, `"pinch"`, `"precision"`, or `"two_hand"`. |
 | `tipAxis` | `SceneFloat3` | Explicit tip direction (model-local). Preferred over derived `tipPoint - gripPoint`. |
@@ -553,7 +552,7 @@ Quaternion rotation. Identity = `{ "x": 0, "y": 0, "z": 0, "w": 1 }`. Zero (all 
 
 ### Vector3
 
-Unity engine Vector3 (used only on `ToolDefinition.orientationEuler`).
+Unity engine Vector3. No remaining live uses; identical wire format to `SceneFloat3`.
 
 ```json
 { "x": 0, "y": 0, "z": 0 }

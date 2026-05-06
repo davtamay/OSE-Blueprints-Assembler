@@ -33,18 +33,6 @@ namespace OSE.Content
         public AnimationCueEntry[] animationCues;
 
         /// <summary>
-        /// Set to true to use <see cref="orientationEuler"/> instead of automatic
-        /// shaft-detection in <c>ComputeUprightCorrection</c>.
-        /// </summary>
-        public bool useOrientationOverride;
-
-        /// <summary>
-        /// Euler-angle override (X, Y, Z) for the tool preview cursor orientation.
-        /// Only used when <see cref="useOrientationOverride"/> is true.
-        /// </summary>
-        public Vector3 orientationEuler;
-
-        /// <summary>
         /// Multiplier applied on top of <c>ToolCursorUniformScale</c> for this
         /// tool's preview indicator. 0 or 1 = no override (use default scale).
         /// </summary>
@@ -57,9 +45,9 @@ namespace OSE.Content
         public bool persistent;
 
         /// <summary>
-        /// Spatial metadata: grip point, tip point, action axis, and XR hand hints.
-        /// Auto-detected by analyze_tool_pose.py, refined via ToolPoseGizmoEditor.
-        /// When present, takes priority over <see cref="orientationEuler"/>.
+        /// Spatial metadata: grip point, tip point, action axis, cursor rotation,
+        /// and XR hand hints. Auto-detected by analyze_tool_pose.py, refined via
+        /// ToolPoseGizmoEditor. Authoritative source for tool orientation.
         /// </summary>
         public ToolPoseConfig toolPose;
 
@@ -69,8 +57,6 @@ namespace OSE.Content
         /// still override per step for off-label use. Null means "no default — author picks".
         /// </summary>
         public string primaryActionType;
-
-        public bool HasOrientationOverride => useOrientationOverride;
 
         /// <summary>
         /// True when <see cref="toolPose"/> carries any authored spatial data.
