@@ -179,32 +179,11 @@
         "hint_stage_simplified_carriage"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [
-        "target_extruder_simplified_carriage_stage"
-      ],
-      "requiredPartIds": [
-        "d3d_extruder_simplified_carriage"
-      ],
+      "targetIds": [ "target_extruder_simplified_carriage_stage" ],
+      "requiredPartIds": [ "d3d_extruder_simplified_carriage" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_extruder_simplified_carriage"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_simplified_carriage","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_place_titan_aero_mount_bracket",
       "name": "Place the Titan Aero mount bracket",
@@ -217,32 +196,11 @@
         "hint_place_mount_bracket"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [
-        "target_extruder_mount_bracket_attach"
-      ],
-      "requiredPartIds": [
-        "d3d_extruder_mount_bracket"
-      ],
+      "targetIds": [ "target_extruder_mount_bracket_attach" ],
+      "requiredPartIds": [ "d3d_extruder_mount_bracket" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_extruder_mount_bracket"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_mount_bracket","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_secure_titan_aero_mount_bracket",
       "name": "Secure the mount bracket",
@@ -292,32 +250,11 @@
         "hint_place_mount_top_plate"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [
-        "target_extruder_mount_top_plate_attach"
-      ],
-      "requiredPartIds": [
-        "d3d_extruder_mount_top_plate"
-      ],
+      "targetIds": [ "target_extruder_mount_top_plate_attach" ],
+      "requiredPartIds": [ "d3d_extruder_mount_top_plate" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_extruder_mount_top_plate"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_mount_top_plate","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_secure_titan_aero_mount_top_plate",
       "name": "Secure the mount top plate",

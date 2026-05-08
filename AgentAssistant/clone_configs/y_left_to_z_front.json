@@ -1,0 +1,26 @@
+{
+  "_comment": "Clone Y-Left idler + motor + belt to Z-Front. Z-Front uses unsuffixed singletons (idler, motor, motor_piece) and z2_* prefixes for carriage parts.",
+  "package_id": "d3d_v18_10",
+  "source_assembly": "assembly_d3d_y_left_bench",
+  "target_assembly": "assembly_d3d_z_front_bench",
+  "target_axis": "z_front",
+  "clone_partGroups": ["idler_build", "motor_build", "belt_threading"],
+  "id_map": {
+    "motor002": "motor",
+    "idler002": "idler",
+    "idler002_half_b": "idler_half_b",
+    "y_left_m6x18_b": "z_front_idler_m6x18_inner"
+  },
+  "skip_part_ids": [],
+  "staging_offset": {
+    "x": -1.7,
+    "y": 0.0,
+    "z": 1.7
+  },
+  "text_substitutions": {
+    "Y-left": "Z-front",
+    "Y-Left": "Z-Front",
+    "y-left": "z-front",
+    "y_left": "z_front"
+  }
+}

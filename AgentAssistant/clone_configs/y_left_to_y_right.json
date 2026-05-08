@@ -1,0 +1,26 @@
+{
+  "_comment": "Clone Y-Left idler + motor + belt to Y-Right. Y-Right uses idler003 + motor003 + y2_* naming.",
+  "package_id": "d3d_v18_10",
+  "source_assembly": "assembly_d3d_y_left_bench",
+  "target_assembly": "assembly_d3d_y_right_bench",
+  "target_axis": "y_right",
+  "clone_partGroups": ["idler_build", "motor_build", "belt_threading"],
+  "id_map": {
+    "motor002": "motor003",
+    "idler002": "idler003",
+    "idler002_half_b": "idler003_half_b",
+    "y_left_m6x18_b": "y_right_idler_m6x18_inner"
+  },
+  "skip_part_ids": [],
+  "staging_offset": {
+    "x": -1.3,
+    "y": 0.0,
+    "z": 2.25
+  },
+  "text_substitutions": {
+    "Y-left": "Y-right",
+    "Y-Left": "Y-Right",
+    "y-left": "y-right",
+    "y_left": "y_right"
+  }
+}

@@ -12,10 +12,18 @@
         "partGroup_z_front_belt_threading"
       ],
       "stepIds": [
+        "step_z_front_rods_into_idler",
+        "step_z_front_idler_tighten_rods",
+        "step_z_front_carriage_onto_rods",
+        "step_z_front_motor_onto_rods",
+        "step_z_front_rods_qc",
+        "step_z_front_compose_axis",
         "step_z_front_idler_insert_bolt",
         "step_z_front_idler_insert_bearings",
         "step_z_front_idler_align_halves",
+        "step_z_front_idler_tighten_inner",
         "step_z_front_idler_bolt",
+        "step_z_front_idler_last_bolt_loose",
         "step_z_front_motor_pulley",
         "step_z_front_motor_pulley_pop",
         "step_z_front_motor_half_nuts",
@@ -24,12 +32,8 @@
         "step_z_front_motor_belt_test",
         "step_z_front_motor_screws",
         "step_z_front_motor_m6_bolts",
+        "step_z_front_motor_m6_bolts_tighten",
         "step_z_front_motor_dangle_test",
-        "step_z_front_rods_into_idler",
-        "step_z_front_idler_tighten_rods",
-        "step_z_front_carriage_onto_rods",
-        "step_z_front_motor_onto_rods",
-        "step_z_front_rods_qc",
         "step_z_front_belt_large_hole",
         "step_z_front_belt_around_idler",
         "step_z_front_belt_small_hole",
@@ -37,50 +41,30 @@
         "step_z_front_belt_first_peg",
         "step_z_front_belt_second_peg",
         "step_z_front_belt_travel_test",
-        "step_z_front_label_axis",
-        "step_z_front_compose_axis",
-        "step_qc_z_front_axis_bench"
+        "step_z_front_label_axis"
       ],
       "dependencyAssemblyIds": [
         "assembly_d3d_frame",
         "assembly_d3d_batch_carriage_build"
       ],
-      "learningFocus": "Z-Front uses the same build procedure as Y-Right (same plastic piece type). No endstop. The spacer pieces go between the carriage and the half-carriage during rod threading. The second belt peg is left loose — it is tensioned after the axis is mounted and sized to the front frame face."
+      "learningFocus": "Z-Front uses the same build procedure as Y-Right (same plastic piece type). No endstop. The spacer pieces go between the carriage and the half-carriage during rod threading. The second belt peg is left loose \u2014 it is tensioned after the axis is mounted and sized to the front frame face."
     }
   ],
   "partGroups": [
     {
-      "id": "partGroup_z_front_idler_build",
-      "name": "Z-Front Idler Assembly",
-      "stepIds": [ "step_z_front_idler_insert_bolt", "step_z_front_idler_insert_bearings", "step_z_front_idler_align_halves", "step_z_front_idler_bolt" ],
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "description": "Same idler build as Y-Right. Long M6x30 frame-mount bolt placed loosely — it will size to the front frame face bottom hole. No bearing in the middle of Z idler (Z uses the same idler piece as Y-Right).",
-      "milestoneMessage": "Z-front idler assembled. Frame-mount bolt left loose."
-  },
-    {
-      "id": "partGroup_z_front_motor_build",
-      "name": "Z-Front Motor Holder Assembly",
-      "stepIds": [ "step_z_front_motor_pulley", "step_z_front_motor_pulley_pop", "step_z_front_motor_half_nuts", "step_z_front_motor_belt_channel", "step_z_front_motor_close_halves", "step_z_front_motor_belt_test", "step_z_front_motor_screws", "step_z_front_motor_m6_bolts", "step_z_front_motor_dangle_test" ],
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "description": "Same motor holder build as Y-Right. Belt in channel, motor attached. All 8 motor-piece bolts will be tightened before frame mounting (they become inaccessible after).",
-      "milestoneMessage": "Z-front motor holder assembled."
-  },
-    {
       "id": "partGroup_z_front_rod_assembly",
       "name": "Z-Front Axis Rod Assembly",
-      "stepIds": [ "step_z_front_rods_into_idler", "step_z_front_idler_tighten_rods", "step_z_front_carriage_onto_rods", "step_z_front_motor_onto_rods", "step_z_front_rods_qc" ],
+      "stepIds": [
+        "step_z_front_rods_into_idler",
+        "step_z_front_idler_tighten_rods",
+        "step_z_front_carriage_onto_rods",
+        "step_z_front_motor_onto_rods",
+        "step_z_front_rods_qc"
+      ],
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "Threads rods through idler, carriage (with spacers z2_spacer and z2_spacer_2 between carriage and half-carriage), and motor holder. Checks rods flush at idler.",
       "milestoneMessage": "Z-front guide rods threaded with spacers in place."
-  },
-    {
-      "id": "partGroup_z_front_belt_threading",
-      "name": "Z-Front Belt Threading",
-      "stepIds": [ "step_z_front_belt_large_hole", "step_z_front_belt_around_idler", "step_z_front_belt_small_hole", "step_z_front_belt_peg_orient", "step_z_front_belt_first_peg", "step_z_front_belt_second_peg", "step_z_front_belt_travel_test", "step_z_front_label_axis" ],
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "description": "Routes belt, locks first peg, places second peg loosely. No endstop for Z axes. Label axis Z-Front.",
-      "milestoneMessage": "Z-front axis complete: belt routed, first peg locked, axis labeled and QC checked."
-  },
+    },
     {
       "id": "partGroup_z_front_bench_unit",
       "name": "Z Front Complete Axis Unit",
@@ -98,6 +82,62 @@
       "stepIds": [
         "step_z_front_compose_axis"
       ],
+      "isAggregate": true
+    },
+    {
+      "id": "partGroup_z_front_idler_build",
+      "name": "Z-Front Idler Assembly",
+      "stepIds": [
+        "step_z_front_idler_insert_bolt",
+        "step_z_front_idler_insert_bearings",
+        "step_z_front_idler_align_halves",
+        "step_z_front_idler_tighten_inner",
+        "step_z_front_idler_bolt",
+        "step_z_front_idler_last_bolt_loose"
+      ],
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "description": "Inserts M6x18 bolt through one idler half, seats two flanged bearings on the bolt with flanges facing out, places the second idler half so rod holes line up, then installs the M6x30 frame-mount bolt in the belt-side hole to clamp the halves together.",
+      "milestoneMessage": "Z-front idler assembled. Frame-mount bolt left loose for sizing at frame."
+    },
+    {
+      "id": "partGroup_z_front_motor_build",
+      "name": "Z-Front Motor Holder Assembly",
+      "stepIds": [
+        "step_z_front_motor_pulley",
+        "step_z_front_motor_pulley_pop",
+        "step_z_front_motor_half_nuts",
+        "step_z_front_motor_belt_channel",
+        "step_z_front_motor_close_halves",
+        "step_z_front_motor_belt_test",
+        "step_z_front_motor_screws",
+        "step_z_front_motor_m6_bolts",
+        "step_z_front_motor_m6_bolts_tighten",
+        "step_z_front_motor_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "description": "Places pulley on motor shaft with thin spacer, tightens first set screw, removes spacer, tightens second set screw until pop. Preps motor half-piece with one M6x30 bolt (bottom-left hole, poking up) and three nuts. Places belt toothed-side inward in belt channel of other half. Closes halves gently. Inserts motor with cable plug facing bottom-right. Tightens 4 M3x25 motor screws \u00c2\u00be tight then 3 M6x18 bolts. Performs dangle test.",
+      "milestoneMessage": "Z-front motor holder assembled and dangle-tested."
+    },
+    {
+      "id": "partGroup_z_front_belt_threading",
+      "name": "Z-Front Belt Threading",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "description": "Inserts one belt end through the larger carriage belt hole, routes it around the idler bearing (slight curve helps), pulls through the smaller carriage belt hole. Threads through first peg (foot facing away from axis center), inserts belt end ~\u00c2\u00be inch and pushes peg into ribbed hole. Places second peg loosely \u00e2\u20ac\u201d it will be tightened after frame mounting when the full belt length is confirmed.",
+      "partIds": [
+        "idler",
+        "idler_half_b"
+      ],
+      "stepIds": [
+        "step_z_front_belt_large_hole",
+        "step_z_front_belt_around_idler",
+        "step_z_front_belt_small_hole",
+        "step_z_front_belt_peg_orient",
+        "step_z_front_belt_first_peg",
+        "step_z_front_belt_second_peg",
+        "step_z_front_belt_travel_test",
+        "step_z_front_label_axis"
+      ],
+      "milestoneMessage": "Z-front belt routed and first peg locked. Second peg loose for frame-side tensioning.",
       "isAggregate": true
     }
   ],
@@ -320,180 +360,829 @@
       "partGroupIds": [
         "partGroup_z_front_rod_assembly"
       ]
+    },
+    {
+      "id": "z_front_idler_m6x18_loose",
+      "displayName": "Z-Front Idler M6x18 Bolt (Last Hole, Loose)",
+      "name": "Z-Front Idler M6x18 Loose Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Inserted loosely through the last idler hole \u2014 kept loose with a nut for later frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.73,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_motor_m6_nut_a",
+      "displayName": "Z-Front Motor M6 Nut A",
+      "name": "Z-Front Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5,
+          "y": 0.55,
+          "z": 1.8
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_motor_holder_m6x18_c",
+      "displayName": "Z-Front Motor Holder M6x18 Bolt C",
+      "name": "Z-Front Motor Holder M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.74,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "idler_half_b",
+      "displayName": "Idler002 Half B",
+      "assetRef": "idler_approved.glb",
+      "name": "Z-Front Belt Idler Clamping Half",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.85,
+          "y": 0.55,
+          "z": 1.8499999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_gt2_belt",
+      "displayName": "Z-Front GT2 Belt",
+      "name": "Z-Front Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.9199999999999999,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.12,
+          "g": 0.12,
+          "b": 0.12,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_motor_m6_nut_c",
+      "displayName": "Z-Front Motor M6 Nut C",
+      "name": "Z-Front Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5,
+          "y": 0.55,
+          "z": 1.8599999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_motor_m6_nut_b",
+      "displayName": "Z-Front Motor M6 Nut B",
+      "name": "Z-Front Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5,
+          "y": 0.55,
+          "z": 1.83
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_b",
+      "displayName": "Z-Front M3x25 B",
+      "name": "Z-Front Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.45999999999999996,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6_nut_inner",
+      "displayName": "Z-Front Idler M6 Nut (Inner Bolt)",
+      "name": "Z-Front Idler M6 Hex Nut \u2014 Inner",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads onto the inner M6x18 (back side) so the bearings can be tightened against the idler halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.6499999999999999,
+          "y": 0.55,
+          "z": 1.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_625zz_a",
+      "displayName": "Z-Front 625ZZ A",
+      "name": "Z-Front Idler Bearing A",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.6199999999999999,
+          "y": 0.55,
+          "z": 1.8499999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_c",
+      "displayName": "Z-Front M3x25 C",
+      "name": "Z-Front Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.3799999999999999,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_625zz_b",
+      "displayName": "Z-Front 625ZZ B",
+      "name": "Z-Front Idler Bearing B",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.54,
+          "y": 0.55,
+          "z": 1.8499999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_m6x18_b",
+      "displayName": "Z-Front M6x18 B",
+      "name": "Z-Front M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures idler halves together.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.7799999999999999,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_d",
+      "displayName": "Z-Front M3x25 D",
+      "name": "Z-Front Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.30000000000000004,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_motor_holder_m6x18_b",
+      "displayName": "Z-Front Motor Holder M6x18 Bolt B",
+      "name": "Z-Front Motor Holder M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.76,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6_nut_frame",
+      "displayName": "Z-Front Idler M6 Nut (Frame Bolt)",
+      "name": "Z-Front Idler M6 Hex Nut \u2014 Frame Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the M6x30 frame-mount bolt \u2014 held loose so the idler can be repositioned during frame mounting.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5700000000000001,
+          "y": 0.55,
+          "z": 1.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_gt2_pulley",
+      "displayName": "Z-Front GT2 Pulley",
+      "name": "Z-Front Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -1.0499999999999998,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.78,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6x30_a",
+      "displayName": "Z-Front Idler M6x30 Bolt",
+      "name": "Z-Front Idler Frame-Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel",
+      "function": "Clamps the two idler halves together through the belt-side hole.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5999999999999999,
+          "y": 0.55,
+          "z": 1.5999999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_a",
+      "displayName": "Z-Front M3x25 A",
+      "name": "Z-Front Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.54,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_m6x18_c",
+      "displayName": "Z-Front M6x18 C",
+      "name": "Z-Front M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.19999999999999996,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_motor_build"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6_nut_loose",
+      "displayName": "Z-Front Idler M6 Nut (Loose Bolt)",
+      "name": "Z-Front Idler M6 Hex Nut \u2014 Loose Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the second M6x18 in the last idler hole \u2014 kept loose for frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.73,
+          "y": 0.55,
+          "z": 1.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6x18_inner",
+      "displayName": "Z-Front M6x18 B",
+      "name": "Z-Front M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures idler halves together.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.7799999999999999,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_idler_build"
+      ]
     }
   ],
   "steps": [
-    {
-      "id": "step_z_front_idler_insert_bolt",
-      "name": "Insert M6x18 bolt into idler half",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_idler_build",
-      "sequenceIndex": 215,
-      "family": "Place",
-      "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "idler"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "idler"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
-    {
-      "id": "step_z_front_idler_insert_bearings",
-      "name": "Stack two flanged bearings onto bolt",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_idler_build",
-      "sequenceIndex": 216,
-      "family": "Place",
-      "instructionText": "Insert two bearing pieces one on top of the other onto the bolt, flanges facing outward (away from each other)."
-    },
-    {
-      "id": "step_z_front_idler_align_halves",
-      "name": "Align idler rod holes before closing",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_idler_build",
-      "sequenceIndex": 217,
-      "family": "Confirm",
-      "instructionText": "Hold the second idler half against the first and confirm the circular rod holes on both halves line up correctly before pressing them together."
-    },
-    {
-      "id": "step_z_front_idler_bolt",
-      "name": "Bolt idler halves and secure bearing",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_idler_build",
-      "sequenceIndex": 218,
-      "family": "Use",
-      "instructionText": "Secure the idler with an M6x18 bolt through the top and one M6x30 bolt in the belt-side hole. Tighten until firm."
-    },
-    {
-      "id": "step_z_front_motor_pulley",
-      "name": "Mount pulley on motor shaft with spacer",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 219,
-      "family": "Place",
-      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "motor"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "motor"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
-    {
-      "id": "step_z_front_motor_pulley_pop",
-      "name": "Lock pulley set screw until it pops",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 220,
-      "family": "Use",
-      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can."
-    },
-    {
-      "id": "step_z_front_motor_half_nuts",
-      "name": "Load motor holder half with nuts and M6x30 bolt",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 221,
-      "family": "Place",
-      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now — the motor will cover them and block access later."
-    },
-    {
-      "id": "step_z_front_motor_belt_channel",
-      "name": "Insert belt in motor holder channel",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 222,
-      "family": "Place",
-      "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit."
-    },
-    {
-      "id": "step_z_front_motor_close_halves",
-      "name": "Close motor holder halves together",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 223,
-      "family": "Place",
-      "instructionText": "Press the two motor holder halves together with the belt seated in the channel."
-    },
-    {
-      "id": "step_z_front_motor_belt_test",
-      "name": "Confirm belt runs smoothly on pulley",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 224,
-      "family": "Confirm",
-      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull — it should slide along the motor pulley. If it does not, reseat the belt in the channel."
-    },
-    {
-      "id": "step_z_front_motor_screws",
-      "name": "Attach motor with 4 M3x25 screws",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 225,
-      "family": "Use",
-      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way — leave slightly loose so the motor retains flex for belt tensioning later."
-    },
-    {
-      "id": "step_z_front_motor_m6_bolts",
-      "name": "Insert M6x18 bolts into motor holder",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 226,
-      "family": "Use",
-      "instructionText": "Insert M6x18 bolts into the three remaining motor holder holes and tighten each into the nuts with an electric drill."
-    },
-    {
-      "id": "step_z_front_motor_dangle_test",
-      "name": "Dangle test: motor holder hangs securely",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_motor_build",
-      "sequenceIndex": 227,
-      "family": "Confirm",
-      "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion."
-    },
     {
       "id": "step_z_front_rods_into_idler",
       "name": "Insert rods into idler, ends flush",
       "assemblyId": "assembly_d3d_z_front_bench",
       "partGroupId": "partGroup_z_front_rod_assembly",
-      "sequenceIndex": 228,
+      "sequenceIndex": 197,
       "family": "Place",
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
       "removePersistentToolIds": [],
@@ -506,41 +1195,65 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "z2_spacer"
+          "id": "z2_spacer",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         },
         {
           "kind": "part",
-          "id": "z2_spacer_2"
+          "id": "z2_spacer_2",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
+      ]
     },
     {
       "id": "step_z_front_idler_tighten_rods",
       "name": "Tighten short idler bolts onto rods",
       "assemblyId": "assembly_d3d_z_front_bench",
       "partGroupId": "partGroup_z_front_rod_assembly",
-      "sequenceIndex": 229,
+      "sequenceIndex": 198,
       "family": "Use",
-      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose — it will be used to attach the axis to the frame."
+      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
     },
     {
       "id": "step_z_front_carriage_onto_rods",
       "name": "Slide carriage onto rods",
       "assemblyId": "assembly_d3d_z_front_bench",
       "partGroupId": "partGroup_z_front_rod_assembly",
-      "sequenceIndex": 230,
+      "sequenceIndex": 199,
       "family": "Place",
       "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
       "removePersistentToolIds": [],
@@ -552,28 +1265,34 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "motor_piece"
+          "id": "motor_piece",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
+      ]
     },
     {
       "id": "step_z_front_motor_onto_rods",
       "name": "Push motor holder onto rods",
       "assemblyId": "assembly_d3d_z_front_bench",
       "partGroupId": "partGroup_z_front_rod_assembly",
-      "sequenceIndex": 231,
+      "sequenceIndex": 200,
       "family": "Place",
       "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
     },
@@ -582,105 +1301,9 @@
       "name": "QC: rods flush, carriage slides freely",
       "assemblyId": "assembly_d3d_z_front_bench",
       "partGroupId": "partGroup_z_front_rod_assembly",
-      "sequenceIndex": 232,
+      "sequenceIndex": 201,
       "family": "Confirm",
-      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length — it should move with only slight bearing resistance."
-    },
-    {
-      "id": "step_z_front_belt_large_hole",
-      "name": "Thread belt through large carriage hole",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 233,
-      "family": "Place",
-      "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward."
-    },
-    {
-      "id": "step_z_front_belt_around_idler",
-      "name": "Route belt around idler bearing",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 234,
-      "family": "Place",
-      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first — it navigates around the bearing more easily."
-    },
-    {
-      "id": "step_z_front_belt_small_hole",
-      "name": "Thread belt back through small carriage hole",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 235,
-      "family": "Place",
-      "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole."
-    },
-    {
-      "id": "step_z_front_belt_peg_orient",
-      "name": "Confirm belt peg orientation before locking",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 236,
-      "family": "Confirm",
-      "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "fastener_z_front_belt_peg"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "fastener_z_front_belt_peg"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
-    {
-      "id": "step_z_front_belt_first_peg",
-      "name": "Lock first belt peg",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 237,
-      "family": "Use",
-      "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks."
-    },
-    {
-      "id": "step_z_front_belt_second_peg",
-      "name": "Insert second peg loosely",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 238,
-      "family": "Place",
-      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose — it will be fully tensioned after mounting to the frame."
-    },
-    {
-      "id": "step_z_front_belt_travel_test",
-      "name": "Travel test: carriage moves smoothly with belt",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 239,
-      "family": "Confirm",
-      "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded."
-    },
-    {
-      "id": "step_z_front_label_axis",
-      "name": "Label completed Z-Front Axis and set aside",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 240,
-      "family": "Confirm",
-      "instructionText": "Use masking tape and a marker to label this assembly as \"Z-Front Axis\". Set it aside in a safe place. It is complete and ready for frame mounting."
+      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
     },
     {
       "id": "step_z_front_compose_axis",
@@ -693,23 +1316,857 @@
         "target_z_front_bench_staged"
       ],
       "instructionText": "Z-Front axis assembly is complete. Place the assembled axis unit at the staging position on your bench. It will be mounted to the front face of the frame.",
-      "sequenceIndex": 273
+      "sequenceIndex": 242
     },
     {
-      "id": "step_qc_z_front_axis_bench",
-      "name": "Z-front axis bench QC and label",
+      "id": "step_z_front_idler_insert_bolt",
+      "name": "Insert M6x18 bolt into idler half",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_idler_build",
+      "sequenceIndex": 243,
+      "family": "Place",
+      "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler",
+        "z_front_idler_m6x18_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6x18_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_idler_insert_bearings",
+      "name": "Stack two flanged bearings onto bolt",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_idler_build",
+      "sequenceIndex": 244,
+      "family": "Place",
+      "instructionText": "Insert two bearing pieces one on top of the other onto the bolt, flanges facing outward (away from each other).",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_625zz_a",
+        "z_front_625zz_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_625zz_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_625zz_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_idler_align_halves",
+      "name": "Place second idler half and align rod holes",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_idler_build",
+      "sequenceIndex": 245,
+      "family": "Place",
+      "instructionText": "Place the second idler half against the first, flipping it so the magnet pockets face inward. Confirm the circular rod holes on both halves line up before pressing them together.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler_half_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_idler_tighten_inner",
+      "name": "Tighten M6x18 inner bolt against bearings",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_idler_build",
+      "sequenceIndex": 246,
+      "family": "Use",
+      "profile": "Torque",
+      "instructionText": "Thread an M6 nut onto the back of the inner M6x18 bolt and tighten fully with the electric drill on its lowest torque setting. The bearings should be firmly clamped between the two idler halves.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_idler_m6_nut_inner"
+      ],
+      "relevantToolIds": [
+        "tool_power_drill"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6_nut_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_idler_bolt",
+      "name": "Insert M6x30 frame-mount bolt loosely",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_idler_build",
+      "sequenceIndex": 247,
+      "family": "Place",
+      "instructionText": "With the idler flat and the bearing hole pointing away from you, insert the M6x30 bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened down later during frame mounting.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_idler_m6x30_a",
+        "z_front_idler_m6_nut_frame"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6x30_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6_nut_frame",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_idler_last_bolt_loose",
+      "name": "Insert M6x18 in last idler hole loosely",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_idler_build",
+      "sequenceIndex": 248,
+      "family": "Place",
+      "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches the threads, but keep it visibly loose \u2014 like the M6x30, this stays loose for frame attachment.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_idler_m6x18_loose",
+        "z_front_idler_m6_nut_loose"
+      ],
+      "relevantToolIds": [
+        "tool_power_drill"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6x18_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6_nut_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_motor_pulley",
+      "name": "Mount pulley on motor shaft with spacer",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 249,
+      "family": "Place",
+      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u00e2\u20ac\u201d the spacer keeps the pulley off the housing.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor",
+        "z_front_gt2_pulley"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_gt2_pulley",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_motor_pulley_pop",
+      "name": "Lock pulley set screw until it pops",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 250,
+      "family": "Use",
+      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_motor_half_nuts",
+      "name": "Load motor holder half with nuts and M6x30 bolt",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 251,
+      "family": "Place",
+      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u00e2\u20ac\u201d the motor will cover them and block access later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_motor_m6_nut_a",
+        "z_front_motor_m6_nut_b",
+        "z_front_motor_m6_nut_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_motor_m6_nut_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_m6_nut_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_m6_nut_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_motor_belt_channel",
+      "name": "Insert belt in motor holder channel",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 252,
+      "family": "Place",
+      "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_gt2_belt"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_gt2_belt",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_motor_close_halves",
+      "name": "Close motor holder halves together",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 253,
+      "family": "Place",
+      "instructionText": "Press the two motor holder halves together with the belt seated in the channel.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_motor_belt_test",
+      "name": "Confirm belt runs smoothly on pulley",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 254,
+      "family": "Confirm",
+      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u00e2\u20ac\u201d it should slide along the motor pulley. If it does not, reseat the belt in the channel.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_motor_screws",
+      "name": "Attach motor with 4 M3x25 screws",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 255,
+      "family": "Place",
+      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u00e2\u20ac\u201d leave slightly loose so the motor retains flex for belt tensioning later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_m3x25_a",
+        "z_front_m3x25_b",
+        "z_front_m3x25_c",
+        "z_front_m3x25_d"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_d",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_motor_m6_bolts",
+      "name": "Insert M6x18 bolts into motor holder",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 256,
+      "family": "Place",
+      "instructionText": "Insert M6x18 bolts into the three remaining holes of the motor holder, threading each into its embedded nut. Hand-snug for now \u2014 the next step uses the drill.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_m6x18_c",
+        "z_front_motor_holder_m6x18_b",
+        "z_front_motor_holder_m6x18_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_holder_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_holder_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_z_front_motor_m6_bolts_tighten",
+      "name": "Tighten motor holder M6x18 bolts with drill",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 257,
+      "family": "Use",
+      "profile": "Torque",
+      "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill. The motor holder is now fully clamped to the holder pieces.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_power_drill"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_z_front_motor_dangle_test",
+      "name": "Dangle test: motor holder hangs securely",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_motor_build",
+      "sequenceIndex": 258,
+      "family": "Confirm",
+      "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_large_hole",
+      "name": "Thread belt through large carriage hole",
       "assemblyId": "assembly_d3d_z_front_bench",
       "partGroupId": "partGroup_z_front_belt_threading",
-      "sequenceIndex": 274,
-      "instructionText": "QC checklist: belt smooth along full rod length; rods flush with idler bottom; idler and carriage bolt heads on same side; toothed side of belt inward. Label axis Z-Front. Set aside for frame mounting.",
+      "sequenceIndex": 259,
+      "family": "Place",
+      "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_around_idler",
+      "name": "Route belt around idler bearing",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 260,
+      "family": "Place",
+      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u00e2\u20ac\u201d it navigates around the bearing more easily.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_small_hole",
+      "name": "Thread belt back through small carriage hole",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 261,
+      "family": "Place",
+      "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_peg_orient",
+      "name": "Confirm belt peg orientation before locking",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 262,
       "family": "Confirm",
-      "viewMode": "Inspect",
-      "targetIds": [
-        "target_bench_z_front_qc"
-      ],
-      "hintIds": [
-        "hint_qc_z_front_axis_bench"
-      ]
+      "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_first_peg",
+      "name": "Lock first belt peg",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 263,
+      "family": "Use",
+      "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_second_peg",
+      "name": "Insert second peg loosely",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 264,
+      "family": "Place",
+      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u00e2\u20ac\u201d it will be fully tensioned after mounting to the frame.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_belt_travel_test",
+      "name": "Travel test: carriage moves smoothly with belt",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 265,
+      "family": "Confirm",
+      "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded.",
+      "requiredPartIds": []
+    },
+    {
+      "id": "step_z_front_label_axis",
+      "name": "Label completed Z-Front Axis and set aside",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 266,
+      "family": "Confirm",
+      "instructionText": "Use masking tape and a marker to label this assembly as \"Z-Front Axis\". Set it aside in a safe place. It is complete and ready for frame mounting.",
+      "requiredPartIds": []
     }
   ],
   "targets": [
@@ -748,7 +2205,7 @@
       "id": "hint_qc_z_front_axis_bench",
       "type": "highlight",
       "title": "Four-point QC and label Z-Front",
-      "message": "Same four-point QC as Y axes. Label Z-Front. Set aside — it mounts on the front frame face.",
+      "message": "Same four-point QC as Y axes. Label Z-Front. Set aside \u2014 it mounts on the front frame face.",
       "targetId": "target_bench_z_front_qc",
       "priority": "medium"
     }

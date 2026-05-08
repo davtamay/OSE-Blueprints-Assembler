@@ -1,0 +1,25 @@
+{
+  "_comment": "Clone Y-Left motor + belt sections to Z-Back. Idler was already cloned by fix_z_back_idler.py and is excluded here. Rod assembly is excluded because Z-Back's carriage structure (z1_half_carriage singular) differs from Y-Left (two halves + bracket); rod steps will be patched in a follow-up.",
+  "package_id": "d3d_v18_10",
+  "source_assembly": "assembly_d3d_y_left_bench",
+  "target_assembly": "assembly_d3d_z_back_bench",
+  "target_axis": "z_back",
+  "clone_partGroups": ["motor_build", "belt_threading"],
+  "id_map": {
+    "motor002": "motor001",
+    "idler002": "idler001",
+    "idler002_half_b": "idler001_half_b"
+  },
+  "skip_part_ids": [],
+  "staging_offset": {
+    "x": -1.7,
+    "y": 0.0,
+    "z": 3.45
+  },
+  "text_substitutions": {
+    "Y-left": "Z-back",
+    "Y-Left": "Z-Back",
+    "y-left": "z-back",
+    "y_left": "z_back"
+  }
+}

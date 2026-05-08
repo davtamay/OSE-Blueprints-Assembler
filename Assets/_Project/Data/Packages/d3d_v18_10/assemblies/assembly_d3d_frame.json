@@ -1252,59 +1252,16 @@
         "gestureMode": "easy",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Place all four bars of the bottom frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
-        "whyItMattersText": "All four edges of the bottom frame side must stay true to the 14 inch square geometry or the final D3D frame will accumulate twist before assembly."
-      },
+      "guidance": {"instructionText":"Place all four bars of the bottom frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.","whyItMattersText":"All four edges of the bottom frame side must stay true to the 14 inch square geometry or the final D3D frame will accumulate twist before assembly."},
       "removePersistentToolIds": [],
-      "targetIds": [
-        "target_bottom_top_bar",
-        "target_bottom_right_bar",
-        "target_bottom_bottom_bar",
-        "target_bottom_left_bar"
-      ],
-      "requiredPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar"
-      ],
+      "targetIds": [ "target_bottom_top_bar", "target_bottom_right_bar", "target_bottom_bottom_bar", "target_bottom_left_bar" ],
+      "requiredPartIds": [ "d3d_frame_bottom_top_bar", "d3d_frame_bottom_right_bar", "d3d_frame_bottom_bottom_bar", "d3d_frame_bottom_left_bar" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_frame_bottom_top_bar",
-          "unorderedSet": "bottom_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_bottom_right_bar",
-          "unorderedSet": "bottom_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_bottom_bottom_bar",
-          "unorderedSet": "bottom_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_bottom_left_bar",
-          "unorderedSet": "bottom_frame_bars"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_frame_bottom_top_bar","unorderedSet":"bottom_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_bottom_right_bar","unorderedSet":"bottom_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_bottom_bottom_bar","unorderedSet":"bottom_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_bottom_left_bar","unorderedSet":"bottom_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_bottom_verify_square",
       "name": "Verify the bottom frame side is square",
@@ -1446,33 +1403,21 @@
         "weld",
         "tack_sequence"
       ],
-      "feedback": {
-        "completionEffectColor": "#FF8A33",
-        "completionPulseScale": 1.35,
-        "completionParticleId": "weld_glow"
-      },
       "difficulty": {
         "hintAvailability": "always",
         "gestureMode": "easy",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Equip the MIG torch and place four short tack welds on the bottom frame side in this order: upper-left, lower-right, upper-right, then lower-left. Keep the panel flat and avoid a long heat soak.",
-        "whyItMattersText": "Short tacks lock the overlap geometry in place while limiting distortion before the full frame cube is assembled."
-      },
-      "reinforcement": {
-        "milestoneMessage": "First frame side complete! You've learned the full Place-Square-Clamp-Weld cycle.",
-        "safetyNote": "Keep the MIG torch tip clean between tacks. A dirty tip causes spatter and weak penetration.",
-        "counterfactualText": "Skipping the diagonal order would concentrate heat on one side, warping the panel before the last corner locks."
-      },
+      "guidance": {"instructionText":"Equip the MIG torch and place four short tack welds on the bottom frame side in this order: upper-left, lower-right, upper-right, then lower-left. Keep the panel flat and avoid a long heat soak.","whyItMattersText":"Short tacks lock the overlap geometry in place while limiting distortion before the full frame cube is assembled."},
+      "feedback": {"completionEffectColor":"#FF8A33","completionPulseScale":1.35,"completionParticleId":"weld_glow"},
+      "reinforcement": {"milestoneMessage":"First frame side complete! You've learned the full Place-Square-Clamp-Weld cycle.","safetyNote":"Keep the MIG torch tip clean between tacks. A dirty tip causes spatter and weak penetration.","counterfactualText":"Skipping the diagonal order would concentrate heat on one side, warping the panel before the last corner locks."},
       "removePersistentToolIds": [],
       "targetIds": [ "target_bottom_weld_upper_left", "target_bottom_weld_lower_right", "target_bottom_weld_upper_right", "target_bottom_weld_lower_left" ],
       "requiredToolActions": [ {"id":"action_bottom_weld_upper_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_left","requiredCount":1,"successMessage":"Bottom Frame Side upper-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_bottom_weld_lower_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_right","requiredCount":1,"successMessage":"Bottom Frame Side lower-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_bottom_weld_upper_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_right","requiredCount":1,"successMessage":"Bottom Frame Side upper-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_bottom_weld_lower_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_left","requiredCount":1,"successMessage":"Bottom Frame Side lower-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}} ],
       "taskOrder": [{"kind":"toolAction","id":"action_bottom_weld_upper_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"toolAction","id":"action_bottom_weld_lower_right","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"toolAction","id":"action_bottom_weld_upper_right","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
-        {"kind":"toolAction","id":"action_bottom_weld_lower_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}],
-      "workingOrientation": {"partGroupRotation":{"x":0,"y":0,"z":0},"partGroupPositionOffset":{"x":0,"y":0,"z":0}}
+        {"kind":"toolAction","id":"action_bottom_weld_lower_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
   },
     {
       "id": "step_top_place_bars",
@@ -1513,61 +1458,16 @@
         "gestureMode": "standard",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Place the four top frame bars. Same 1-inch overlap, same 14-inch square.",
-        "whyItMattersText": "Same geometry rules apply â€” keep the 14-inch outer square consistent across every side."
-      },
-      "removePersistentToolIds": [
-        "tool_locking_clamp"
-      ],
-      "targetIds": [
-        "target_top_top_bar",
-        "target_top_right_bar",
-        "target_top_bottom_bar",
-        "target_top_left_bar"
-      ],
-      "requiredPartIds": [
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar"
-      ],
+      "guidance": {"instructionText":"Place the four top frame bars. Same 1-inch overlap, same 14-inch square.","whyItMattersText":"Same geometry rules apply â€” keep the 14-inch outer square consistent across every side."},
+      "removePersistentToolIds": [ "tool_locking_clamp" ],
+      "targetIds": [ "target_top_top_bar", "target_top_right_bar", "target_top_bottom_bar", "target_top_left_bar" ],
+      "requiredPartIds": [ "d3d_frame_top_top_bar", "d3d_frame_top_right_bar", "d3d_frame_top_bottom_bar", "d3d_frame_top_left_bar" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_frame_top_top_bar",
-          "unorderedSet": "top_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_top_right_bar",
-          "unorderedSet": "top_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_top_bottom_bar",
-          "unorderedSet": "top_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_top_left_bar",
-          "unorderedSet": "top_frame_bars"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_frame_top_top_bar","unorderedSet":"top_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_top_right_bar","unorderedSet":"top_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_top_bottom_bar","unorderedSet":"top_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_top_left_bar","unorderedSet":"top_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_top_verify_square",
       "name": "Verify the top frame side is square",
@@ -1811,61 +1711,16 @@
         "gestureMode": "standard",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Place the left side bars.",
-        "whyItMattersText": null
-      },
-      "removePersistentToolIds": [
-        "tool_locking_clamp"
-      ],
-      "targetIds": [
-        "target_left_top_bar",
-        "target_left_right_bar",
-        "target_left_bottom_bar",
-        "target_left_left_bar"
-      ],
-      "requiredPartIds": [
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar"
-      ],
+      "guidance": {"instructionText":"Place the left side bars."},
+      "removePersistentToolIds": [ "tool_locking_clamp" ],
+      "targetIds": [ "target_left_top_bar", "target_left_right_bar", "target_left_bottom_bar", "target_left_left_bar" ],
+      "requiredPartIds": [ "d3d_frame_left_top_bar", "d3d_frame_left_right_bar", "d3d_frame_left_bottom_bar", "d3d_frame_left_left_bar" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_frame_left_top_bar",
-          "unorderedSet": "left_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_left_right_bar",
-          "unorderedSet": "left_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_left_bottom_bar",
-          "unorderedSet": "left_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_left_left_bar",
-          "unorderedSet": "left_frame_bars"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_frame_left_top_bar","unorderedSet":"left_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_left_right_bar","unorderedSet":"left_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_left_bottom_bar","unorderedSet":"left_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_left_left_bar","unorderedSet":"left_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_left_verify_square",
       "name": "Verify the left frame side is square",
@@ -2106,61 +1961,16 @@
         "gestureMode": "standard",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Place bars.",
-        "whyItMattersText": null
-      },
-      "removePersistentToolIds": [
-        "tool_locking_clamp"
-      ],
-      "targetIds": [
-        "target_right_top_bar",
-        "target_right_right_bar",
-        "target_right_bottom_bar",
-        "target_right_left_bar"
-      ],
-      "requiredPartIds": [
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar"
-      ],
+      "guidance": {"instructionText":"Place bars."},
+      "removePersistentToolIds": [ "tool_locking_clamp" ],
+      "targetIds": [ "target_right_top_bar", "target_right_right_bar", "target_right_bottom_bar", "target_right_left_bar" ],
+      "requiredPartIds": [ "d3d_frame_right_top_bar", "d3d_frame_right_right_bar", "d3d_frame_right_bottom_bar", "d3d_frame_right_left_bar" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_frame_right_top_bar",
-          "unorderedSet": "right_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_right_right_bar",
-          "unorderedSet": "right_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_right_bottom_bar",
-          "unorderedSet": "right_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_right_left_bar",
-          "unorderedSet": "right_frame_bars"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_frame_right_top_bar","unorderedSet":"right_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_right_right_bar","unorderedSet":"right_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_right_bottom_bar","unorderedSet":"right_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_right_left_bar","unorderedSet":"right_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_right_verify_square",
       "name": "Verify the right frame side is square",
@@ -2401,61 +2211,16 @@
         "gestureMode": "standard",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Place bars.",
-        "whyItMattersText": null
-      },
-      "removePersistentToolIds": [
-        "tool_locking_clamp"
-      ],
-      "targetIds": [
-        "target_front_top_bar",
-        "target_front_right_bar",
-        "target_front_bottom_bar",
-        "target_front_left_bar"
-      ],
-      "requiredPartIds": [
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar"
-      ],
+      "guidance": {"instructionText":"Place bars."},
+      "removePersistentToolIds": [ "tool_locking_clamp" ],
+      "targetIds": [ "target_front_top_bar", "target_front_right_bar", "target_front_bottom_bar", "target_front_left_bar" ],
+      "requiredPartIds": [ "d3d_frame_front_top_bar", "d3d_frame_front_right_bar", "d3d_frame_front_bottom_bar", "d3d_frame_front_left_bar" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_frame_front_top_bar",
-          "unorderedSet": "front_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_front_right_bar",
-          "unorderedSet": "front_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_front_bottom_bar",
-          "unorderedSet": "front_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_front_left_bar",
-          "unorderedSet": "front_frame_bars"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_frame_front_top_bar","unorderedSet":"front_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_front_right_bar","unorderedSet":"front_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_front_bottom_bar","unorderedSet":"front_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_front_left_bar","unorderedSet":"front_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_front_verify_square",
       "name": "Verify the front frame side is square",
@@ -2696,61 +2461,16 @@
         "gestureMode": "standard",
         "allowSkip": false
       },
-      "guidance": {
-        "instructionText": "Place bars.",
-        "whyItMattersText": null
-      },
-      "removePersistentToolIds": [
-        "tool_locking_clamp"
-      ],
-      "targetIds": [
-        "target_rear_top_bar",
-        "target_rear_right_bar",
-        "target_rear_bottom_bar",
-        "target_rear_left_bar"
-      ],
-      "requiredPartIds": [
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "guidance": {"instructionText":"Place bars."},
+      "removePersistentToolIds": [ "tool_locking_clamp" ],
+      "targetIds": [ "target_rear_top_bar", "target_rear_right_bar", "target_rear_bottom_bar", "target_rear_left_bar" ],
+      "requiredPartIds": [ "d3d_frame_rear_top_bar", "d3d_frame_rear_right_bar", "d3d_frame_rear_bottom_bar", "d3d_frame_rear_left_bar" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_frame_rear_top_bar",
-          "unorderedSet": "rear_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_rear_right_bar",
-          "unorderedSet": "rear_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_rear_bottom_bar",
-          "unorderedSet": "rear_frame_bars"
-        },
-        {
-          "kind": "part",
-          "id": "d3d_frame_rear_left_bar",
-          "unorderedSet": "rear_frame_bars"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"d3d_frame_rear_top_bar","unorderedSet":"rear_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_rear_right_bar","unorderedSet":"rear_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_rear_bottom_bar","unorderedSet":"rear_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"d3d_frame_rear_left_bar","unorderedSet":"rear_frame_bars","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_rear_verify_square",
       "name": "Verify the rear frame side is square",
@@ -3730,50 +3450,14 @@
         "lower_corners"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [
-        "target_cube_weld_lower_front_left",
-        "target_cube_weld_lower_rear_right",
-        "target_cube_weld_lower_front_right",
-        "target_cube_weld_lower_rear_left"
-      ],
-      "requiredPartIds": [
-        "compound007_lower_fl",
-        "compound007_lower_fr",
-        "compound007_lower_rl",
-        "compound007_lower_rr"
-      ],
+      "targetIds": [ "target_cube_weld_lower_front_left", "target_cube_weld_lower_rear_right", "target_cube_weld_lower_front_right", "target_cube_weld_lower_rear_left" ],
+      "requiredPartIds": [ "compound007_lower_fl", "compound007_lower_fr", "compound007_lower_rl", "compound007_lower_rr" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "compound007_lower_fl"
-        },
-        {
-          "kind": "part",
-          "id": "compound007_lower_fr"
-        },
-        {
-          "kind": "part",
-          "id": "compound007_lower_rl"
-        },
-        {
-          "kind": "part",
-          "id": "compound007_lower_rr"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"compound007_lower_fl","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"compound007_lower_fr","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"compound007_lower_rl","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"compound007_lower_rr","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_snug_lower_bracket_bolts",
       "name": "Snug lower bracket bolts with allen key",
@@ -3879,49 +3563,13 @@
         "upper_corners"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [
-        "target_cube_weld_upper_front_left",
-        "target_cube_weld_upper_rear_right",
-        "target_cube_weld_upper_front_right",
-        "target_cube_weld_upper_rear_left"
-      ],
-      "requiredPartIds": [
-        "compound007_upper_fl",
-        "compound007_upper_fr",
-        "compound007_upper_rl",
-        "compound007_upper_rr"
-      ],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "compound007_upper_fl"
-        },
-        {
-          "kind": "part",
-          "id": "compound007_upper_fr"
-        },
-        {
-          "kind": "part",
-          "id": "compound007_upper_rl"
-        },
-        {
-          "kind": "part",
-          "id": "compound007_upper_rr"
-        }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "targetIds": [ "target_cube_weld_upper_front_left", "target_cube_weld_upper_rear_right", "target_cube_weld_upper_front_right", "target_cube_weld_upper_rear_left" ],
+      "requiredPartIds": [ "compound007_upper_fl", "compound007_upper_fr", "compound007_upper_rl", "compound007_upper_rr" ],
+      "taskOrder": [{"kind":"part","id":"compound007_upper_fl","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"compound007_upper_fr","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"compound007_upper_rl","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"compound007_upper_rr","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
+  },
     {
       "id": "step_snug_upper_bracket_bolts",
       "name": "Snug upper bracket bolts with allen key",

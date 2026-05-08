@@ -1,0 +1,1825 @@
+{
+  "source": "Axes - D3D v18.10.pdf",
+  "page_count": 97,
+  "pages": [
+    {
+      "page": 1,
+      "section": "Axes Cut List",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [
+        "x_axis",
+        "y_left",
+        "y_right",
+        "z_back",
+        "z_front"
+      ],
+      "matches_template": "_Intro",
+      "char_count": 2101
+    },
+    {
+      "page": 2,
+      "section": null,
+      "subtopic": "Idler > Bearing",
+      "steps": [],
+      "applies_to": [
+        "y_left",
+        "z_back",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 564
+    },
+    {
+      "page": 3,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "1.1",
+          "title": "Setup & Prepare  - Get the correct pieces out."
+        },
+        {
+          "num": "1.2",
+          "title": "Clean up carriage half-pieces, idler half pieces, and motor holder half pieces of big and"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "_Tools",
+      "char_count": 1325
+    },
+    {
+      "page": 4,
+      "section": "Instructional - Preparation",
+      "subtopic": "Carriage > half piece with excess plastic",
+      "steps": [],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "_Prep",
+      "char_count": 272
+    },
+    {
+      "page": 5,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "1.3",
+          "title": "Plastic Parts Quality Control"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "_QC",
+      "char_count": 449
+    },
+    {
+      "page": 6,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "1.4",
+          "title": "Test bearings \ufb01t"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 360
+    },
+    {
+      "page": 7,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Left/Z-Back Axis",
+      "steps": [],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BearingCarriage",
+      "char_count": 398
+    },
+    {
+      "page": 8,
+      "section": null,
+      "subtopic": "Motor > s will be pulling a belt attached to",
+      "steps": [],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BearingCarriage",
+      "char_count": 795
+    },
+    {
+      "page": 9,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "1.4",
+          "title": "Adjust bearings if needed"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 596
+    },
+    {
+      "page": 10,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "2.1",
+          "title": "Assemble Carriage"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 471
+    },
+    {
+      "page": 11,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "2.2",
+          "title": "Tighten bolts into the nuts"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 335
+    },
+    {
+      "page": 12,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "3.1",
+          "title": "Insert M6x18 Bolt"
+        },
+        {
+          "num": "3.2",
+          "title": "Insert two bearing pieces"
+        },
+        {
+          "num": "3.3",
+          "title": "Identify how to put the idler"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 470
+    },
+    {
+      "page": 13,
+      "section": "Instructional",
+      "subtopic": "Idler > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "3.4",
+          "title": "Secure bearing with one M6x18 bolt"
+        },
+        {
+          "num": "3.5",
+          "title": "Put 1 m6x30 screw into correct hole"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 612
+    },
+    {
+      "page": 14,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "3.6",
+          "title": "Secure a M6x18 bolt"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 367
+    },
+    {
+      "page": 15,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "4.1",
+          "title": "Put pulley on motor"
+        },
+        {
+          "num": "4.2",
+          "title": "Tighten pulley set screw"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 504
+    },
+    {
+      "page": 16,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "4.3",
+          "title": "Quality Control Check"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "_QC",
+      "char_count": 703
+    },
+    {
+      "page": 17,
+      "section": "Instructional",
+      "subtopic": "Motor > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "5.1",
+          "title": "Setup Motor half-piece with three nuts, one M6x30 bolt"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 408
+    },
+    {
+      "page": 18,
+      "section": "Instructional",
+      "subtopic": "Motor > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "5.2",
+          "title": "Set up the other half piece"
+        },
+        {
+          "num": "5.3",
+          "title": "Close up the two half"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 275
+    },
+    {
+      "page": 19,
+      "section": "Instructional",
+      "subtopic": "Motor > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "5.3",
+          "title": "Test out the pulley"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 284
+    },
+    {
+      "page": 20,
+      "section": "Instructional",
+      "subtopic": "Motor > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "5.4",
+          "title": "Attach the step motor"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 355
+    },
+    {
+      "page": 21,
+      "section": "Instructional",
+      "subtopic": "Motor > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "5.4",
+          "title": "Attach the step motor (continued)"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 201
+    },
+    {
+      "page": 22,
+      "section": "Instructional",
+      "subtopic": "Motor > Y-Left/Z-Back Axis",
+      "steps": [
+        {
+          "num": "5.5",
+          "title": "Test the motor assembly"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 219
+    },
+    {
+      "page": 23,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "6.1",
+          "title": "Place the idler on the rods"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 330
+    },
+    {
+      "page": 24,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "6.2",
+          "title": "Tighten the idler bolts"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 317
+    },
+    {
+      "page": 25,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "6.3",
+          "title": "Put carriage assembly onto rods"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 301
+    },
+    {
+      "page": 26,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "6.4",
+          "title": "Put motor piece onto rods"
+        },
+        {
+          "num": "6.5",
+          "title": "Quality Control Check"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 398
+    },
+    {
+      "page": 27,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "7.1",
+          "title": "Thread belt into carriage"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 387
+    },
+    {
+      "page": 28,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "7.2",
+          "title": "Thread belt around idler bearing"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 326
+    },
+    {
+      "page": 29,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "7.2",
+          "title": "Thread belt around idler bearing (continued)"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 251
+    },
+    {
+      "page": 30,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "7.3",
+          "title": "Thread belt through one peg"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 392
+    },
+    {
+      "page": 31,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "7.4",
+          "title": "Tighten \ufb01rst peg into carriage"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 275
+    },
+    {
+      "page": 32,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "7.5",
+          "title": "Tighten second peg into carriage"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 408
+    },
+    {
+      "page": 33,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "8",
+          "title": "Label Y-left Axis"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": null,
+      "char_count": 257
+    },
+    {
+      "page": 34,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "9.1",
+          "title": "Gather an end stop holder piece and an"
+        },
+        {
+          "num": "9.3",
+          "title": "Super glue the end stop to the end stop"
+        }
+      ],
+      "applies_to": [
+        "y_left"
+      ],
+      "matches_template": null,
+      "char_count": 667
+    },
+    {
+      "page": 35,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.1",
+          "title": "Prep the Y-axis to have the"
+        },
+        {
+          "num": "10.2",
+          "title": "Super glue the end stop"
+        },
+        {
+          "num": "10.3",
+          "title": "Add super glue along the"
+        }
+      ],
+      "applies_to": [
+        "y_left"
+      ],
+      "matches_template": null,
+      "char_count": 603
+    },
+    {
+      "page": 36,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "12.3",
+          "title": "Quality Control"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "_QC",
+      "char_count": 250
+    },
+    {
+      "page": 37,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "8.0",
+          "title": "Lay out all parts (outside of rods) on an 8.5x11 sheet of"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 646
+    },
+    {
+      "page": 38,
+      "section": null,
+      "subtopic": "Tools",
+      "steps": [],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "_Tools",
+      "char_count": 459
+    },
+    {
+      "page": 39,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "8.1",
+          "title": "Setup & Prepare"
+        },
+        {
+          "num": "8.2",
+          "title": "Clean up carriage half-pieces, idler half pieces, and motor holder half"
+        }
+      ],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "_Prep",
+      "char_count": 912
+    },
+    {
+      "page": 40,
+      "section": "Instructional - Preparation",
+      "subtopic": "Carriage > half piece with excess plastic",
+      "steps": [],
+      "applies_to": [
+        "y_left",
+        "z_back"
+      ],
+      "matches_template": "_Prep",
+      "char_count": 272
+    },
+    {
+      "page": 41,
+      "section": "Instructional - Preparation",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "1.3",
+          "title": "Plastic Parts Quality Control"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "_QC",
+      "char_count": 243
+    },
+    {
+      "page": 42,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Right/Z-Front Axis",
+      "steps": [
+        {
+          "num": "8.4",
+          "title": "Test bearings \ufb01t"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 362
+    },
+    {
+      "page": 43,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Right/Z-Front Axis",
+      "steps": [],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "BearingCarriage",
+      "char_count": 400
+    },
+    {
+      "page": 44,
+      "section": null,
+      "subtopic": "Motor > s will be pulling a belt",
+      "steps": [],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "BearingCarriage",
+      "char_count": 801
+    },
+    {
+      "page": 45,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "8.5",
+          "title": "Adjust bearings if needed"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 603
+    },
+    {
+      "page": 46,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "2.1",
+          "title": "Assemble Carriage"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 468
+    },
+    {
+      "page": 47,
+      "section": "Instructional",
+      "subtopic": "Carriage > Y-Right/Z-Front Axis",
+      "steps": [
+        {
+          "num": "9.2",
+          "title": "Tighten bolts with nuts"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 325
+    },
+    {
+      "page": 48,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.1",
+          "title": "Insert M6x18 Bolt"
+        },
+        {
+          "num": "10.2",
+          "title": "Insert two bearing pieces"
+        },
+        {
+          "num": "10.3",
+          "title": "Identify how to put the idler"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 469
+    },
+    {
+      "page": 49,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.4",
+          "title": "Secure bearing with one M6x18"
+        },
+        {
+          "num": "10.5",
+          "title": "Put 1 m6x30 screw into correct"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 643
+    },
+    {
+      "page": 50,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.6",
+          "title": "Secure a M6x18"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 363
+    },
+    {
+      "page": 51,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "11.1",
+          "title": "Put pulley on motor"
+        },
+        {
+          "num": "11.2",
+          "title": "Tighten pulley set screw onto motor shaft"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 508
+    },
+    {
+      "page": 52,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "11.3",
+          "title": "Quality Control Check"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "_QC",
+      "char_count": 710
+    },
+    {
+      "page": 53,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.1",
+          "title": "Setup Motor half-piece with three nuts, one M6x30"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 539
+    },
+    {
+      "page": 54,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.2",
+          "title": "Set up the other"
+        },
+        {
+          "num": "10.3",
+          "title": "Close up the two"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 382
+    },
+    {
+      "page": 55,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "10.3",
+          "title": "Fasten small bolts into"
+        },
+        {
+          "num": "10.4",
+          "title": "Fasten 3 m6x18 bolts into motor piece"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 807
+    },
+    {
+      "page": 56,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "11.1",
+          "title": "Assemble Y-Right Idler piece"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 530
+    },
+    {
+      "page": 57,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "11.2",
+          "title": "Put carriage assembly onto rods"
+        },
+        {
+          "num": "11.3",
+          "title": "Put motor piece onto rods"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 567
+    },
+    {
+      "page": 58,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "11.4",
+          "title": "Quality Control Rods are Flush"
+        },
+        {
+          "num": "11.5",
+          "title": "Thread belt into carriage"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 861
+    },
+    {
+      "page": 59,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "12.1",
+          "title": "Tighten Belt into carriage"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 624
+    },
+    {
+      "page": 60,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 45
+    },
+    {
+      "page": 61,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "12.2",
+          "title": "Label the completed axis"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": null,
+      "char_count": 184
+    },
+    {
+      "page": 62,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "12.3",
+          "title": "Quality Control"
+        }
+      ],
+      "applies_to": [
+        "y_right",
+        "z_front"
+      ],
+      "matches_template": "_QC",
+      "char_count": 251
+    },
+    {
+      "page": 63,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 41
+    },
+    {
+      "page": 64,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "13.1",
+          "title": "Setup X Axis"
+        },
+        {
+          "num": "13.2",
+          "title": "Inspect Carriage and other small holes"
+        },
+        {
+          "num": "13.3",
+          "title": "Inspect Carriages and other big holes"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "_Prep",
+      "char_count": 555
+    },
+    {
+      "page": 65,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "13.4",
+          "title": "Test bearings \ufb01t"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 270
+    },
+    {
+      "page": 66,
+      "section": null,
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "BearingCarriage",
+      "char_count": 379
+    },
+    {
+      "page": 67,
+      "section": null,
+      "subtopic": "Motor > s will be pulling a belt attached to",
+      "steps": [],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "BearingCarriage",
+      "char_count": 647
+    },
+    {
+      "page": 68,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "13.5",
+          "title": "Adjust bearings if needed"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 617
+    },
+    {
+      "page": 69,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "14.1",
+          "title": "Assemble Carriage"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 395
+    },
+    {
+      "page": 70,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "14.2",
+          "title": "Tighten carriage bolts"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 169
+    },
+    {
+      "page": 71,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "15.1",
+          "title": "Assemble the idler"
+        },
+        {
+          "num": "15.2",
+          "title": "Insert M6x18 bolt"
+        },
+        {
+          "num": "15.3",
+          "title": "Put bearings together"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 345
+    },
+    {
+      "page": 72,
+      "section": "Instructional",
+      "subtopic": "Idler > of X Axis",
+      "steps": [
+        {
+          "num": "15.2",
+          "title": "Place nuts in idler"
+        },
+        {
+          "num": "15.3",
+          "title": "Add [2] M6x18 bolts"
+        },
+        {
+          "num": "15.4",
+          "title": "Close up the idler"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "IdlerHalves",
+      "char_count": 521
+    },
+    {
+      "page": 73,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "16.1",
+          "title": "Setup Motor Half-piece with two nuts"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 128
+    },
+    {
+      "page": 74,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "16.2",
+          "title": "Insert the belt"
+        },
+        {
+          "num": "16.3",
+          "title": "Close up the motor"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 307
+    },
+    {
+      "page": 75,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "17.1",
+          "title": "Put pulley on motor"
+        },
+        {
+          "num": "17.2",
+          "title": "Tighten pulley set screw onto motor shaft"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "MotorHolder",
+      "char_count": 483
+    },
+    {
+      "page": 76,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "17.3",
+          "title": "Quality Control Check."
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "_QC",
+      "char_count": 496
+    },
+    {
+      "page": 77,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "17.4",
+          "title": "Insert the motor"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 195
+    },
+    {
+      "page": 78,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "17.5",
+          "title": "Insert motor screws"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 145
+    },
+    {
+      "page": 79,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "17.6",
+          "title": "Insert motor bolts"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 204
+    },
+    {
+      "page": 80,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "18.1",
+          "title": "Assemble Idler piece"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 294
+    },
+    {
+      "page": 81,
+      "section": null,
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "18.2",
+          "title": "Put carriage assembly onto"
+        },
+        {
+          "num": "18.3",
+          "title": "Put motor piece onto rods"
+        },
+        {
+          "num": "18.4",
+          "title": "Quality Control Check"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "RodAssembly",
+      "char_count": 452
+    },
+    {
+      "page": 82,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "18.5",
+          "title": "Thread belt into carriage"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 358
+    },
+    {
+      "page": 83,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "BeltThread",
+      "char_count": 362
+    },
+    {
+      "page": 84,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "18.5",
+          "title": "Thread belt around idler bearing"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 294
+    },
+    {
+      "page": 85,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "19.2",
+          "title": "Tighten \ufb01rst peg into carriage"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 219
+    },
+    {
+      "page": 86,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "19.3",
+          "title": "Tighten second peg into carriage"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 455
+    },
+    {
+      "page": 87,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "20.1",
+          "title": "Gather an end stop holder piece and an"
+        },
+        {
+          "num": "20.3",
+          "title": "Super glue the end stop to the end stop"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 657
+    },
+    {
+      "page": 88,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "21.1",
+          "title": "Prep the Y-axis to have the"
+        },
+        {
+          "num": "21.2",
+          "title": "Super glue the end stop"
+        },
+        {
+          "num": "21.3",
+          "title": "Add super glue along the"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": null,
+      "char_count": 603
+    },
+    {
+      "page": 89,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "22",
+          "title": "Label the completed X-Axis"
+        },
+        {
+          "num": "23",
+          "title": "Check that the X and Y Axes \ufb01t"
+        },
+        {
+          "num": "24",
+          "title": "Quality Control"
+        }
+      ],
+      "applies_to": [
+        "x_axis"
+      ],
+      "matches_template": "_QC",
+      "char_count": 498
+    },
+    {
+      "page": 90,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [],
+      "matches_template": "_QC",
+      "char_count": 341
+    },
+    {
+      "page": 91,
+      "section": "Introduction",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [
+        "z_back",
+        "z_front"
+      ],
+      "matches_template": "_Intro",
+      "char_count": 263
+    },
+    {
+      "page": 92,
+      "section": null,
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [],
+      "matches_template": null,
+      "char_count": 513
+    },
+    {
+      "page": 93,
+      "section": null,
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [],
+      "matches_template": null,
+      "char_count": 354
+    },
+    {
+      "page": 94,
+      "section": "Parts",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "22",
+          "title": "Make another idler"
+        }
+      ],
+      "applies_to": [],
+      "matches_template": null,
+      "char_count": 393
+    },
+    {
+      "page": 95,
+      "section": "Instructional",
+      "subtopic": null,
+      "steps": [
+        {
+          "num": "22",
+          "title": "Insert rods in the idler piece."
+        }
+      ],
+      "applies_to": [],
+      "matches_template": "IdlerHalves",
+      "char_count": 364
+    },
+    {
+      "page": 96,
+      "section": "Completion Checklist",
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [],
+      "matches_template": null,
+      "char_count": 726
+    },
+    {
+      "page": 97,
+      "section": null,
+      "subtopic": null,
+      "steps": [],
+      "applies_to": [],
+      "matches_template": null,
+      "char_count": 827
+    }
+  ],
+  "rollups": [
+    {
+      "template": "BearingCarriage",
+      "axes": [
+        "x_axis"
+      ],
+      "pages": [
+        66,
+        67
+      ]
+    },
+    {
+      "template": "BearingCarriage",
+      "axes": [
+        "y_left",
+        "z_back"
+      ],
+      "pages": [
+        7,
+        8
+      ]
+    },
+    {
+      "template": "BearingCarriage",
+      "axes": [
+        "y_right",
+        "z_front"
+      ],
+      "pages": [
+        43,
+        44
+      ]
+    },
+    {
+      "template": "BeltThread",
+      "axes": [
+        "x_axis"
+      ],
+      "pages": [
+        69,
+        82,
+        83
+      ]
+    },
+    {
+      "template": "BeltThread",
+      "axes": [
+        "y_left",
+        "z_back"
+      ],
+      "pages": [
+        10,
+        27,
+        29,
+        30,
+        31,
+        32
+      ]
+    },
+    {
+      "template": "BeltThread",
+      "axes": [
+        "y_right",
+        "z_front"
+      ],
+      "pages": [
+        46,
+        59
+      ]
+    },
+    {
+      "template": "IdlerHalves",
+      "axes": [],
+      "pages": [
+        95
+      ]
+    },
+    {
+      "template": "IdlerHalves",
+      "axes": [
+        "x_axis"
+      ],
+      "pages": [
+        71,
+        72
+      ]
+    },
+    {
+      "template": "IdlerHalves",
+      "axes": [
+        "y_left",
+        "z_back"
+      ],
+      "pages": [
+        12,
+        13,
+        14,
+        24
+      ]
+    },
+    {
+      "template": "IdlerHalves",
+      "axes": [
+        "y_right",
+        "z_front"
+      ],
+      "pages": [
+        48,
+        49,
+        50
+      ]
+    },
+    {
+      "template": "MotorHolder",
+      "axes": [
+        "x_axis"
+      ],
+      "pages": [
+        74,
+        75
+      ]
+    },
+    {
+      "template": "MotorHolder",
+      "axes": [
+        "y_left",
+        "z_back"
+      ],
+      "pages": [
+        15,
+        18
+      ]
+    },
+    {
+      "template": "MotorHolder",
+      "axes": [
+        "y_right",
+        "z_front"
+      ],
+      "pages": [
+        51,
+        54,
+        55
+      ]
+    },
+    {
+      "template": "RodAssembly",
+      "axes": [
+        "x_axis"
+      ],
+      "pages": [
+        81
+      ]
+    },
+    {
+      "template": "RodAssembly",
+      "axes": [
+        "y_left",
+        "z_back"
+      ],
+      "pages": [
+        6,
+        25,
+        26
+      ]
+    },
+    {
+      "template": "RodAssembly",
+      "axes": [
+        "y_right",
+        "z_front"
+      ],
+      "pages": [
+        42,
+        56,
+        57,
+        58
+      ]
+    }
+  ]
+}

@@ -17,10 +17,12 @@
     {
       "id": "partGroup_cable_routing",
       "name": "Cable Routing",
-      "stepIds": [ "step_place_cable_management" ],
+      "stepIds": [
+        "step_place_cable_management"
+      ],
       "assemblyId": "assembly_d3d_cable_stage_01",
       "description": "Cable chain assemblies for X-axis and Y-axis wiring routes."
-  }
+    }
   ],
   "parts": [
     {
@@ -142,7 +144,7 @@
       "assemblyId": "assembly_d3d_cable_stage_01",
       "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
       "family": "Place",
-      "sequenceIndex": 293,
+      "sequenceIndex": 302,
       "hintIds": [
         "hint_cable_management"
       ],
@@ -161,29 +163,71 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "cable_chain"
+          "id": "cable_chain",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         },
         {
           "kind": "part",
-          "id": "cable_chain_y"
+          "id": "cable_chain_y",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         },
         {
           "kind": "part",
-          "id": "cable_chain_bracket"
+          "id": "cable_chain_bracket",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         }
-      ],
-      "workingOrientation": {
-        "partGroupRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "partGroupPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
+      ]
     }
   ],
   "targets": [
