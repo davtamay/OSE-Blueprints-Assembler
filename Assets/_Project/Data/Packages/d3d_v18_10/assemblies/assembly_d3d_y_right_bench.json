@@ -1882,17 +1882,40 @@
       "partGroupId": "partGroup_y_right_idler_build",
       "sequenceIndex": 218,
       "family": "Place",
-      "instructionText": "Place the second idler half against the first, flipping it so the magnet pockets face inward. Confirm the circular rod holes on both halves line up before pressing them together.",
+      "instructionText": "Place the second idler half against the first, flipping it so the magnet pockets face inward. Confirm the circular rod holes on both halves line up before pressing them together. Also pick up the M6 nut now \u2014 it threads onto the back of the inner bolt before tightening in the next step.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "idler003_half_b"
+        "idler003_half_b",
+        "y_right_idler_m6_nut_inner"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
           "id": "idler003_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6_nut_inner",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -1922,40 +1945,15 @@
       "sequenceIndex": 219,
       "family": "Use",
       "profile": "Torque",
-      "instructionText": "Thread an M6 nut onto the back of the inner M6x18 bolt and tighten fully with the electric drill on its lowest torque setting. The bearings should be firmly clamped between the two idler halves.",
+      "instructionText": "Hold the previously-threaded M6 nut on the back of the inner bolt and tighten the bolt with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the two idler halves.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "y_right_idler_m6_nut_inner"
-      ],
+      "requiredPartIds": [],
       "relevantToolIds": [
         "tool_power_drill"
       ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_right_idler_m6_nut_inner",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
+      "taskOrder": []
     },
     {
       "id": "step_y_right_idler_bolt",

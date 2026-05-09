@@ -1488,17 +1488,40 @@
       "partGroupId": "partGroup_z_back_idler_build",
       "sequenceIndex": 204,
       "family": "Place",
-      "instructionText": "Place the second idler half against the first. Confirm the circular rod holes on both halves line up exactly so the rods will pass through cleanly.",
+      "instructionText": "Place the second idler half against the first. Confirm the circular rod holes on both halves line up exactly so the rods will pass through cleanly. Also pick up the M6 nut now \u2014 it threads onto the back of the inner bolt before tightening in the next step.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "idler001_half_b"
+        "idler001_half_b",
+        "z_back_idler_m6_nut_inner"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
           "id": "idler001_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6_nut_inner",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -1528,40 +1551,15 @@
       "sequenceIndex": 205,
       "family": "Use",
       "profile": "Torque",
-      "instructionText": "Thread an M6 nut onto the back of the inner M6x18 bolt and tighten fully with the electric drill on its lowest torque setting.",
+      "instructionText": "Hold the previously-threaded M6 nut on the back of the inner bolt and tighten the bolt with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the two idler halves.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "z_back_idler_m6_nut_inner"
-      ],
+      "requiredPartIds": [],
       "relevantToolIds": [
         "tool_power_drill"
       ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "z_back_idler_m6_nut_inner",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
+      "taskOrder": []
     },
     {
       "id": "step_z_back_idler_bolt",
