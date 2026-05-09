@@ -5,7 +5,9 @@
       "name": "Y-Right Axis Bench Build",
       "description": "Assembles the Y-right axis module from individual parts using the same procedure as Y-left. Y-right and Z-Front share the same plastic piece type \u2014 build instructions are identical. Note the slight orientation differences in motor cable direction and long-bolt position. Produces a labeled Y-right axis module ready for frame mounting.",
       "machineId": "d3d_v18_10",
-      "partGroupIds": [],
+      "partGroupIds": [
+        "partGroup_y_right_bench_unit"
+      ],
       "stepIds": [
         "step_y_right_compose_axis",
         "step_qc_y_right_axis_bench"
@@ -567,7 +569,7 @@
       "id": "step_qc_y_right_axis_bench",
       "name": "Y-Right axis bench QC and label",
       "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
+      "partGroupId": "partGroup_y_right_bench_unit",
       "sequenceIndex": 338,
       "family": "Confirm",
       "viewMode": "Inspect",

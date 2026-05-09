@@ -5,7 +5,9 @@
       "name": "Z-Front Axis Bench Build",
       "description": "Assembles the Z-front axis module from individual parts. Z-Front uses the same plastic piece type as Y-Right. No endstop is attached to Z axes. The long M6x30 frame-mount bolt on the idler is left loose at bench build. Produces a complete Z-front axis module ready for mounting on the front frame face.",
       "machineId": "d3d_v18_10",
-      "partGroupIds": [],
+      "partGroupIds": [
+        "partGroup_z_front_bench_unit"
+      ],
       "stepIds": [
         "step_z_front_compose_axis",
         "step_qc_z_front_axis_bench"
@@ -62,7 +64,7 @@
       "id": "step_qc_z_front_axis_bench",
       "name": "Z-Front axis bench QC and label",
       "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_belt_threading",
+      "partGroupId": "partGroup_z_front_bench_unit",
       "sequenceIndex": 340,
       "family": "Confirm",
       "viewMode": "Inspect",

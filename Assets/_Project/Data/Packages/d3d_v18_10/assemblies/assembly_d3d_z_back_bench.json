@@ -5,7 +5,9 @@
       "name": "Z-Back Axis Bench Build",
       "description": "Assembles the Z-back axis module from individual parts. Z-Back uses the same plastic piece type as Y-Left. No endstop is attached to Z axes. Produces a complete Z-back axis module ready for mounting on the back frame face directly behind Z-front.",
       "machineId": "d3d_v18_10",
-      "partGroupIds": [],
+      "partGroupIds": [
+        "partGroup_z_back_bench_unit"
+      ],
       "stepIds": [
         "step_z_back_compose_axis",
         "step_qc_z_back_axis_bench"
@@ -62,7 +64,7 @@
       "id": "step_qc_z_back_axis_bench",
       "name": "Z-Back axis bench QC and label",
       "assemblyId": "assembly_d3d_z_back_bench",
-      "partGroupId": "partGroup_z_back_belt_threading",
+      "partGroupId": "partGroup_z_back_bench_unit",
       "sequenceIndex": 339,
       "family": "Confirm",
       "viewMode": "Inspect",
