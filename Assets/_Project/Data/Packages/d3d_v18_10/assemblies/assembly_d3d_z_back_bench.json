@@ -1221,12 +1221,14 @@
       "partGroupId": "partGroup_z_back_rod_assembly",
       "sequenceIndex": 208,
       "family": "Place",
-      "instructionText": "Insert both Z-back guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
+      "instructionText": "Insert both Z-back guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten. Slide the upper and lower spacers onto the rods before they enter the idler \u2014 Z-axis rods seat against these.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
         "z_back_rod_a",
-        "z_back_rod_b"
+        "z_back_rod_b",
+        "z1_spacer_1",
+        "z1_spacer_002"
       ],
       "requiredToolActions": [],
       "taskOrder": [
@@ -1273,6 +1275,50 @@
               "z": 0.0
             }
           }
+        },
+        {
+          "kind": "part",
+          "id": "z1_spacer_1",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z1_spacer_002",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
         }
       ]
     },
@@ -1295,9 +1341,34 @@
       "instructionText": "Slide the already-assembled Z-back carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the Z-axis travel. The carriage was built earlier in the batch carriage stage \u2014 no new parts to place.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "z1_half_carriage"
+      ],
       "requiredToolActions": [],
-      "taskOrder": []
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z1_half_carriage",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
     },
     {
       "id": "step_z_back_motor_onto_rods",
