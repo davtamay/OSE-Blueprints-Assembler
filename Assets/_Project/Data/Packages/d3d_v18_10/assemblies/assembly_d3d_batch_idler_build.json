@@ -170,9 +170,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.8132,
+          "x": 0.0,
           "y": 0.55,
-          "z": 0.1027
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -207,9 +207,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.85,
+          "x": 0.08,
           "y": 0.55,
-          "z": 0.15
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -244,9 +244,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.08,
+          "x": 0.02,
           "y": 0.55,
-          "z": 0.15
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -281,9 +281,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.16,
+          "x": 0.06,
           "y": 0.55,
-          "z": 0.15
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -318,9 +318,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.92,
-          "y": 0.6,
-          "z": -0.018
+          "x": 0.02,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -355,9 +355,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.1,
+          "x": 0.1,
           "y": 0.55,
-          "z": -0.1
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -392,9 +392,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.05,
+          "x": 0.02,
           "y": 0.55,
-          "z": -0.05
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -429,9 +429,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.13,
+          "x": 0.06,
           "y": 0.55,
-          "z": -0.05
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -466,9 +466,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.97,
-          "y": 0.6,
-          "z": -0.018
+          "x": 0.06,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -503,9 +503,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.97,
+          "x": 0.1,
           "y": 0.55,
-          "z": -0.05
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -540,9 +540,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.45,
+          "x": 0.18,
           "y": 0.55,
-          "z": 2.4
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -577,9 +577,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.14000000000000012,
+          "x": 0.24,
           "y": 0.55,
-          "z": 2.4
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -614,9 +614,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.33000000000000007,
+          "x": 0.28,
           "y": 0.55,
-          "z": 2.2
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -651,9 +651,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.45000000000000007,
+          "x": 0.26,
           "y": 0.55,
-          "z": 2.4
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -688,9 +688,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.21999999999999997,
+          "x": 0.2,
           "y": 0.55,
-          "z": 2.4
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -725,9 +725,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.17000000000000015,
+          "x": 0.24,
           "y": 0.55,
-          "z": 2.2
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -762,9 +762,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.25,
+          "x": 0.2,
           "y": 0.55,
-          "z": 2.2
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -799,9 +799,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.19999999999999996,
+          "x": 0.28,
           "y": 0.55,
-          "z": 2.15
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -836,9 +836,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.33000000000000007,
-          "y": 0.6,
-          "z": 2.232
+          "x": 0.24,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -873,9 +873,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.38,
-          "y": 0.6,
-          "z": 2.232
+          "x": 0.2,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -910,9 +910,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.9,
+          "x": 0.36,
           "y": 0.55,
-          "z": 3.6
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -947,9 +947,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.7999999999999999,
+          "x": 0.44,
           "y": 0.55,
-          "z": 3.65
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -984,9 +984,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.6,
+          "x": 0.38,
           "y": 0.55,
-          "z": 3.65
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -1021,9 +1021,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.52,
+          "x": 0.42,
           "y": 0.55,
-          "z": 3.65
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -1058,9 +1058,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.76,
-          "y": 0.6000000000000001,
-          "z": 3.482
+          "x": 0.38,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -1095,9 +1095,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.63,
+          "x": 0.38,
           "y": 0.55,
-          "z": 3.45
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -1132,9 +1132,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.58,
-          "y": 0.6000000000000001,
-          "z": 3.482
+          "x": 0.46,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -1169,9 +1169,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.55,
+          "x": 0.42,
           "y": 0.55,
-          "z": 3.45
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -1206,9 +1206,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.72,
-          "y": 0.6000000000000001,
-          "z": 3.482
+          "x": 0.42,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -1243,9 +1243,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.72,
+          "x": 0.46,
           "y": 0.55,
-          "z": 3.45
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -1280,9 +1280,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.9,
+          "x": 0.54,
           "y": 0.55,
-          "z": 3.2
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -1317,9 +1317,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.73,
-          "y": 0.6,
-          "z": 1.682
+          "x": 0.6,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -1354,9 +1354,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.85,
+          "x": 0.62,
           "y": 0.55,
-          "z": 1.8499999999999999
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -1391,9 +1391,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.6499999999999999,
+          "x": 0.56,
           "y": 0.55,
-          "z": 1.65
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -1428,9 +1428,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.6199999999999999,
+          "x": 0.56,
           "y": 0.55,
-          "z": 1.8499999999999999
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -1465,9 +1465,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.54,
+          "x": 0.6,
           "y": 0.55,
-          "z": 1.8499999999999999
+          "z": 0.05
         },
         "rotation": {
           "x": 0.0,
@@ -1502,9 +1502,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.5700000000000001,
+          "x": 0.6,
           "y": 0.55,
-          "z": 1.65
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -1539,9 +1539,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.5999999999999999,
+          "x": 0.64,
           "y": 0.55,
-          "z": 1.5999999999999999
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -1576,9 +1576,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.73,
+          "x": 0.64,
           "y": 0.55,
-          "z": 1.65
+          "z": 0.15
         },
         "rotation": {
           "x": 0.0,
@@ -1613,9 +1613,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": -0.7799999999999999,
-          "y": 0.6,
-          "z": 1.682
+          "x": 0.56,
+          "y": 0.55,
+          "z": 0.1
         },
         "rotation": {
           "x": 0.0,
@@ -1646,7 +1646,7 @@
       "name": "Lay out all 8 idler half-pieces and hardware",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_batch_all",
-      "sequenceIndex": 82,
+      "sequenceIndex": 81,
       "family": "Confirm",
       "instructionText": "Lay out the 8 idler half-pieces (2 per axis: Y-Left, Y-Right, Z-Back, Z-Front), 8 flanged 625ZZ bearings, 4 inner M6x18 bolts, 4 frame-mount M6x30 bolts, 4 loose-mount M6x18 bolts, and 12 M6 hex nuts on your workbench. Group by axis.",
       "removePersistentToolIds": [],
@@ -1660,7 +1660,7 @@
       "name": "Clean excess plastic from idler holes",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_batch_all",
-      "sequenceIndex": 84,
+      "sequenceIndex": 82,
       "family": "Use",
       "instructionText": "Use a 6 mm drill bit (or box cutter) to thresh out plastic covering the bolt-pass-through holes on every idler half. Each half should have 4 clear holes plus one rod-pass cutout.",
       "removePersistentToolIds": [],
@@ -1674,7 +1674,7 @@
       "name": "QC: verify all idler holes are clean",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_batch_all",
-      "sequenceIndex": 86,
+      "sequenceIndex": 83,
       "family": "Confirm",
       "instructionText": "Verify each idler half has 4 clear bolt holes and clean rod-pass cutouts on both ends. Confirm bearing-side flange recesses are clean \u2014 bearings must seat flush.",
       "removePersistentToolIds": [],
@@ -1688,7 +1688,7 @@
       "name": "Idler 1 (Y-Left): insert M6x18 inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_left",
-      "sequenceIndex": 88,
+      "sequenceIndex": 84,
       "family": "Place",
       "instructionText": "Begin assembling the Y-Left idler: place the inner M6x18 bolt through one half-piece (idler002) from the outside.",
       "removePersistentToolIds": [],
@@ -1750,7 +1750,7 @@
       "name": "Idler 1: stack 2 flanged bearings on bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_left",
-      "sequenceIndex": 90,
+      "sequenceIndex": 85,
       "family": "Place",
       "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
       "removePersistentToolIds": [],
@@ -1812,7 +1812,7 @@
       "name": "Idler 1: place 2nd half + thread M6 nut",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_left",
-      "sequenceIndex": 92,
+      "sequenceIndex": 86,
       "family": "Place",
       "instructionText": "Place the second idler half (idler002_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
       "removePersistentToolIds": [],
@@ -1874,7 +1874,7 @@
       "name": "Idler 1: drill-tighten inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_left",
-      "sequenceIndex": 94,
+      "sequenceIndex": 87,
       "family": "Use",
       "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
       "removePersistentToolIds": [],
@@ -1892,7 +1892,7 @@
       "name": "Idler 1: insert M6x30 frame-mount LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_left",
-      "sequenceIndex": 96,
+      "sequenceIndex": 88,
       "family": "Place",
       "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
       "removePersistentToolIds": [],
@@ -1954,7 +1954,7 @@
       "name": "Idler 1: insert M6x18 in last hole LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_left",
-      "sequenceIndex": 98,
+      "sequenceIndex": 89,
       "family": "Place",
       "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
       "removePersistentToolIds": [],
@@ -2016,7 +2016,7 @@
       "name": "Idler 2 (Y-Right): insert M6x18 inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_right",
-      "sequenceIndex": 100,
+      "sequenceIndex": 90,
       "family": "Place",
       "instructionText": "Begin assembling the Y-Right idler: place the inner M6x18 bolt through one half-piece (idler003) from the outside.",
       "removePersistentToolIds": [],
@@ -2078,7 +2078,7 @@
       "name": "Idler 2: stack 2 flanged bearings on bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_right",
-      "sequenceIndex": 102,
+      "sequenceIndex": 91,
       "family": "Place",
       "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
       "removePersistentToolIds": [],
@@ -2140,7 +2140,7 @@
       "name": "Idler 2: place 2nd half + thread M6 nut",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_right",
-      "sequenceIndex": 104,
+      "sequenceIndex": 92,
       "family": "Place",
       "instructionText": "Place the second idler half (idler003_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
       "removePersistentToolIds": [],
@@ -2202,7 +2202,7 @@
       "name": "Idler 2: drill-tighten inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_right",
-      "sequenceIndex": 106,
+      "sequenceIndex": 93,
       "family": "Use",
       "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
       "removePersistentToolIds": [],
@@ -2220,7 +2220,7 @@
       "name": "Idler 2: insert M6x30 frame-mount LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_right",
-      "sequenceIndex": 107,
+      "sequenceIndex": 94,
       "family": "Place",
       "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
       "removePersistentToolIds": [],
@@ -2282,7 +2282,7 @@
       "name": "Idler 2: insert M6x18 in last hole LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_y_right",
-      "sequenceIndex": 109,
+      "sequenceIndex": 95,
       "family": "Place",
       "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
       "removePersistentToolIds": [],
@@ -2344,7 +2344,7 @@
       "name": "Idler 3 (Z-Back): insert M6x18 inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_back",
-      "sequenceIndex": 111,
+      "sequenceIndex": 96,
       "family": "Place",
       "instructionText": "Begin assembling the Z-Back idler: place the inner M6x18 bolt through one half-piece (idler001) from the outside.",
       "removePersistentToolIds": [],
@@ -2406,7 +2406,7 @@
       "name": "Idler 3: stack 2 flanged bearings on bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_back",
-      "sequenceIndex": 113,
+      "sequenceIndex": 97,
       "family": "Place",
       "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
       "removePersistentToolIds": [],
@@ -2468,7 +2468,7 @@
       "name": "Idler 3: place 2nd half + thread M6 nut",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_back",
-      "sequenceIndex": 115,
+      "sequenceIndex": 98,
       "family": "Place",
       "instructionText": "Place the second idler half (idler001_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
       "removePersistentToolIds": [],
@@ -2530,7 +2530,7 @@
       "name": "Idler 3: drill-tighten inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_back",
-      "sequenceIndex": 117,
+      "sequenceIndex": 99,
       "family": "Use",
       "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
       "removePersistentToolIds": [],
@@ -2548,7 +2548,7 @@
       "name": "Idler 3: insert M6x30 frame-mount LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_back",
-      "sequenceIndex": 119,
+      "sequenceIndex": 100,
       "family": "Place",
       "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
       "removePersistentToolIds": [],
@@ -2610,7 +2610,7 @@
       "name": "Idler 3: insert M6x18 in last hole LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_back",
-      "sequenceIndex": 121,
+      "sequenceIndex": 101,
       "family": "Place",
       "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
       "removePersistentToolIds": [],
@@ -2672,7 +2672,7 @@
       "name": "Idler 4 (Z-Front): insert M6x18 inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_front",
-      "sequenceIndex": 123,
+      "sequenceIndex": 102,
       "family": "Place",
       "instructionText": "Begin assembling the Z-Front idler: place the inner M6x18 bolt through one half-piece (idler) from the outside.",
       "removePersistentToolIds": [],
@@ -2734,7 +2734,7 @@
       "name": "Idler 4: stack 2 flanged bearings on bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_front",
-      "sequenceIndex": 125,
+      "sequenceIndex": 103,
       "family": "Place",
       "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
       "removePersistentToolIds": [],
@@ -2796,7 +2796,7 @@
       "name": "Idler 4: place 2nd half + thread M6 nut",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_front",
-      "sequenceIndex": 127,
+      "sequenceIndex": 104,
       "family": "Place",
       "instructionText": "Place the second idler half (idler_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
       "removePersistentToolIds": [],
@@ -2858,7 +2858,7 @@
       "name": "Idler 4: drill-tighten inner bolt",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_front",
-      "sequenceIndex": 129,
+      "sequenceIndex": 105,
       "family": "Use",
       "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
       "removePersistentToolIds": [],
@@ -2876,7 +2876,7 @@
       "name": "Idler 4: insert M6x30 frame-mount LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_front",
-      "sequenceIndex": 131,
+      "sequenceIndex": 106,
       "family": "Place",
       "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
       "removePersistentToolIds": [],
@@ -2938,7 +2938,7 @@
       "name": "Idler 4: insert M6x18 in last hole LOOSE",
       "assemblyId": "assembly_d3d_batch_idler_build",
       "partGroupId": "partGroup_idler_z_front",
-      "sequenceIndex": 133,
+      "sequenceIndex": 107,
       "family": "Place",
       "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
       "removePersistentToolIds": [],
