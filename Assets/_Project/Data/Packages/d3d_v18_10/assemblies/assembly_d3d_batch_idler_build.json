@@ -1,0 +1,3001 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_batch_idler_build",
+      "name": "Batch Idler Build",
+      "description": "Builds all four belt idlers (Y-Left, Y-Right, Z-Back, Z-Front) in one production-line session before per-axis bench work completes. Lays out all 8 idler halves, cleans plastic, and runs the manual \u00a73.1-3.6 procedure for each axis: insert inner bolt, stack flanged bearings, close halves, drill-tighten, install frame-mount + last bolt LOOSE for later frame attachment. X-Axis idler is structurally different (manual \u00a715) and lives in assembly_d3d_x_axis_bench.",
+      "machineId": "d3d_v18_10",
+      "partGroupIds": [
+        "partGroup_idler_batch_all",
+        "partGroup_idler_y_left",
+        "partGroup_idler_y_right",
+        "partGroup_idler_z_back",
+        "partGroup_idler_z_front"
+      ],
+      "stepIds": [
+        "step_batch_idler_layout",
+        "step_batch_idler_clean_holes",
+        "step_batch_idler_qc_plastic",
+        "step_batch_i1_insert_inner_bolt",
+        "step_batch_i1_place_bearings",
+        "step_batch_i1_align_halves",
+        "step_batch_i1_tighten_inner",
+        "step_batch_i1_frame_bolt_loose",
+        "step_batch_i1_last_bolt_loose",
+        "step_batch_i2_insert_inner_bolt",
+        "step_batch_i2_place_bearings",
+        "step_batch_i2_align_halves",
+        "step_batch_i2_tighten_inner",
+        "step_batch_i2_frame_bolt_loose",
+        "step_batch_i2_last_bolt_loose",
+        "step_batch_i3_insert_inner_bolt",
+        "step_batch_i3_place_bearings",
+        "step_batch_i3_align_halves",
+        "step_batch_i3_tighten_inner",
+        "step_batch_i3_frame_bolt_loose",
+        "step_batch_i3_last_bolt_loose",
+        "step_batch_i4_insert_inner_bolt",
+        "step_batch_i4_place_bearings",
+        "step_batch_i4_align_halves",
+        "step_batch_i4_tighten_inner",
+        "step_batch_i4_frame_bolt_loose",
+        "step_batch_i4_last_bolt_loose"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_frame",
+        "assembly_d3d_batch_carriage_build"
+      ],
+      "learningFocus": "Production-line idler assembly: insert M6x18 inner bolt, stack 2 flanged 625ZZ bearings flanges-out, close halves with hand-threaded M6 nut, drill-tighten on lowest torque, install frame-mount M6x30 + last M6x18 with nuts but LOOSE so the idlers can be repositioned during frame mounting."
+    }
+  ],
+  "partGroups": [
+    {
+      "id": "partGroup_idler_batch_all",
+      "name": "Batch Idler Build (all 4 axes)",
+      "stepIds": [
+        "step_batch_idler_layout",
+        "step_batch_idler_clean_holes",
+        "step_batch_idler_qc_plastic",
+        "step_batch_i1_insert_inner_bolt",
+        "step_batch_i1_place_bearings",
+        "step_batch_i1_align_halves",
+        "step_batch_i1_tighten_inner",
+        "step_batch_i1_frame_bolt_loose",
+        "step_batch_i1_last_bolt_loose",
+        "step_batch_i2_insert_inner_bolt",
+        "step_batch_i2_place_bearings",
+        "step_batch_i2_align_halves",
+        "step_batch_i2_tighten_inner",
+        "step_batch_i2_frame_bolt_loose",
+        "step_batch_i2_last_bolt_loose",
+        "step_batch_i3_insert_inner_bolt",
+        "step_batch_i3_place_bearings",
+        "step_batch_i3_align_halves",
+        "step_batch_i3_tighten_inner",
+        "step_batch_i3_frame_bolt_loose",
+        "step_batch_i3_last_bolt_loose",
+        "step_batch_i4_insert_inner_bolt",
+        "step_batch_i4_place_bearings",
+        "step_batch_i4_align_halves",
+        "step_batch_i4_tighten_inner",
+        "step_batch_i4_frame_bolt_loose",
+        "step_batch_i4_last_bolt_loose"
+      ],
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "description": "Production-line idler assembly: build all four belt idlers (Y-Left, Y-Right, Z-Back, Z-Front) in parallel, sharing the 3-step layout/clean/QC at the start. Mirrors batch_carriage_build.",
+      "milestoneMessage": "All four belt idlers assembled with frame-mount bolts left loose."
+    },
+    {
+      "id": "partGroup_idler_y_left",
+      "name": "Idler 1 (Y-Left)",
+      "stepIds": [
+        "step_batch_idler_layout",
+        "step_batch_idler_clean_holes",
+        "step_batch_idler_qc_plastic",
+        "step_batch_i1_insert_inner_bolt",
+        "step_batch_i1_place_bearings",
+        "step_batch_i1_align_halves",
+        "step_batch_i1_tighten_inner",
+        "step_batch_i1_frame_bolt_loose",
+        "step_batch_i1_last_bolt_loose"
+      ],
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "description": "Build the Y-Left idler: insert inner M6x18, stack two flanged bearings, close halves with nut, drill-tighten, then add frame-mount M6x30 and last M6x18 LOOSE for frame attachment.",
+      "milestoneMessage": "Y-Left idler complete; frame-mount bolts left loose."
+    },
+    {
+      "id": "partGroup_idler_y_right",
+      "name": "Idler 2 (Y-Right)",
+      "stepIds": [
+        "step_batch_idler_layout",
+        "step_batch_idler_clean_holes",
+        "step_batch_idler_qc_plastic",
+        "step_batch_i2_insert_inner_bolt",
+        "step_batch_i2_place_bearings",
+        "step_batch_i2_align_halves",
+        "step_batch_i2_tighten_inner",
+        "step_batch_i2_frame_bolt_loose",
+        "step_batch_i2_last_bolt_loose"
+      ],
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "description": "Build the Y-Right idler: insert inner M6x18, stack two flanged bearings, close halves with nut, drill-tighten, then add frame-mount M6x30 and last M6x18 LOOSE for frame attachment.",
+      "milestoneMessage": "Y-Right idler complete; frame-mount bolts left loose."
+    },
+    {
+      "id": "partGroup_idler_z_back",
+      "name": "Idler 3 (Z-Back)",
+      "stepIds": [
+        "step_batch_idler_layout",
+        "step_batch_idler_clean_holes",
+        "step_batch_idler_qc_plastic",
+        "step_batch_i3_insert_inner_bolt",
+        "step_batch_i3_place_bearings",
+        "step_batch_i3_align_halves",
+        "step_batch_i3_tighten_inner",
+        "step_batch_i3_frame_bolt_loose",
+        "step_batch_i3_last_bolt_loose"
+      ],
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "description": "Build the Z-Back idler: insert inner M6x18, stack two flanged bearings, close halves with nut, drill-tighten, then add frame-mount M6x30 and last M6x18 LOOSE for frame attachment.",
+      "milestoneMessage": "Z-Back idler complete; frame-mount bolts left loose."
+    },
+    {
+      "id": "partGroup_idler_z_front",
+      "name": "Idler 4 (Z-Front)",
+      "stepIds": [
+        "step_batch_idler_layout",
+        "step_batch_idler_clean_holes",
+        "step_batch_idler_qc_plastic",
+        "step_batch_i4_insert_inner_bolt",
+        "step_batch_i4_place_bearings",
+        "step_batch_i4_align_halves",
+        "step_batch_i4_tighten_inner",
+        "step_batch_i4_frame_bolt_loose",
+        "step_batch_i4_last_bolt_loose"
+      ],
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "description": "Build the Z-Front idler: insert inner M6x18, stack two flanged bearings, close halves with nut, drill-tighten, then add frame-mount M6x30 and last M6x18 LOOSE for frame attachment.",
+      "milestoneMessage": "Z-Front idler complete; frame-mount bolts left loose."
+    }
+  ],
+  "parts": [
+    {
+      "id": "idler002",
+      "displayName": "Idler002",
+      "assetRef": "idler_approved.glb",
+      "name": "Y-Left Belt Idler",
+      "category": "custom",
+      "material": "Belt idler pulley with bearing",
+      "function": "Redirects the Y-left axis drive belt at the front end of travel.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.8132,
+          "y": 0.55,
+          "z": 0.1027
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "idler002_half_b",
+      "displayName": "Idler002 Half B",
+      "assetRef": "idler_approved.glb",
+      "name": "Y-Left Belt Idler Clamping Half",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.85,
+          "y": 0.55,
+          "z": 0.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_625zz_a",
+      "displayName": "Y-Left 625ZZ A",
+      "name": "Y-Left Idler Bearing A",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 1.08,
+          "y": 0.55,
+          "z": 0.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_625zz_b",
+      "displayName": "Y-Left 625ZZ B",
+      "name": "Y-Left Idler Bearing B",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 1.16,
+          "y": 0.55,
+          "z": 0.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_m6x18_b",
+      "displayName": "Y-Left M6x18 B",
+      "name": "Y-Left M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures idler halves together.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.92,
+          "y": 0.6,
+          "z": -0.018
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_idler_m6x30_a",
+      "displayName": "Y-Left Idler M6x30 Bolt",
+      "name": "Y-Left Idler Frame-Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel",
+      "function": "Clamps the two idler halves together through the belt-side hole.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 1.1,
+          "y": 0.55,
+          "z": -0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_idler_m6_nut_inner",
+      "displayName": "Y-Left Idler M6 Nut (Inner Bolt)",
+      "name": "Y-Left Idler M6 Hex Nut \u2014 Inner",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads onto the inner M6x18 (back side) so the bearings can be tightened against the idler halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 1.05,
+          "y": 0.55,
+          "z": -0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_idler_m6_nut_frame",
+      "displayName": "Y-Left Idler M6 Nut (Frame Bolt)",
+      "name": "Y-Left Idler M6 Hex Nut \u2014 Frame Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the M6x30 frame-mount bolt \u2014 held loose so the idler can be repositioned during frame mounting.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 1.13,
+          "y": 0.55,
+          "z": -0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_idler_m6x18_loose",
+      "displayName": "Y-Left Idler M6x18 Bolt (Last Hole, Loose)",
+      "name": "Y-Left Idler M6x18 Loose Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Inserted loosely through the last idler hole \u2014 kept loose with a nut for later frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.97,
+          "y": 0.6,
+          "z": -0.018
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "y_left_idler_m6_nut_loose",
+      "displayName": "Y-Left Idler M6 Nut (Loose Bolt)",
+      "name": "Y-Left Idler M6 Hex Nut \u2014 Loose Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the second M6x18 in the last idler hole \u2014 kept loose for frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.97,
+          "y": 0.55,
+          "z": -0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_left"
+      ]
+    },
+    {
+      "id": "idler003",
+      "displayName": "Idler003",
+      "assetRef": "idler_approved.glb",
+      "name": "Y-Right Belt Idler",
+      "category": "custom",
+      "material": "Belt idler pulley with bearing",
+      "function": "Redirects the Y-right axis drive belt at the front end of travel.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.45,
+          "y": 0.55,
+          "z": 2.4
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_625zz_b",
+      "displayName": "Y-Right 625ZZ B",
+      "name": "Y-Right Idler Bearing B",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.14000000000000012,
+          "y": 0.55,
+          "z": 2.4
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_idler_m6_nut_loose",
+      "displayName": "Y-Right Idler M6 Nut (Loose Bolt)",
+      "name": "Y-Right Idler M6 Hex Nut \u2014 Loose Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the second M6x18 in the last idler hole \u2014 kept loose for frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.33000000000000007,
+          "y": 0.55,
+          "z": 2.2
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "idler003_half_b",
+      "displayName": "Idler002 Half B",
+      "assetRef": "idler_approved.glb",
+      "name": "Y-Right Belt Idler Clamping Half",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.45000000000000007,
+          "y": 0.55,
+          "z": 2.4
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_625zz_a",
+      "displayName": "Y-Right 625ZZ A",
+      "name": "Y-Right Idler Bearing A",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.21999999999999997,
+          "y": 0.55,
+          "z": 2.4
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_idler_m6_nut_frame",
+      "displayName": "Y-Right Idler M6 Nut (Frame Bolt)",
+      "name": "Y-Right Idler M6 Hex Nut \u2014 Frame Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the M6x30 frame-mount bolt \u2014 held loose so the idler can be repositioned during frame mounting.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.17000000000000015,
+          "y": 0.55,
+          "z": 2.2
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_idler_m6_nut_inner",
+      "displayName": "Y-Right Idler M6 Nut (Inner Bolt)",
+      "name": "Y-Right Idler M6 Hex Nut \u2014 Inner",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads onto the inner M6x18 (back side) so the bearings can be tightened against the idler halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.25,
+          "y": 0.55,
+          "z": 2.2
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_idler_m6x30_a",
+      "displayName": "Y-Right Idler M6x30 Bolt",
+      "name": "Y-Right Idler Frame-Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel",
+      "function": "Clamps the two idler halves together through the belt-side hole.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.19999999999999996,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_idler_m6x18_loose",
+      "displayName": "Y-Right Idler M6x18 Bolt (Last Hole, Loose)",
+      "name": "Y-Right Idler M6x18 Loose Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Inserted loosely through the last idler hole \u2014 kept loose with a nut for later frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.33000000000000007,
+          "y": 0.6,
+          "z": 2.232
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "y_right_idler_m6x18_inner",
+      "displayName": "Y-Right M6x18 B",
+      "name": "Y-Right M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures idler halves together.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.38,
+          "y": 0.6,
+          "z": 2.232
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_y_right"
+      ]
+    },
+    {
+      "id": "idler001",
+      "displayName": "Idler001",
+      "assetRef": "idler_approved.glb",
+      "name": "Z-Back Belt Idler",
+      "category": "custom",
+      "material": "Belt idler pulley with bearing",
+      "function": "Redirects the Z-back axis drive belt at the bottom-back of the frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.9,
+          "y": 0.55,
+          "z": 3.6
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "idler001_half_b",
+      "displayName": "Z-Back Idler Clamping Half",
+      "name": "Z-Back Belt Idler Clamping Half",
+      "assetRef": "idler_approved.glb",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler001 to capture the flanged bearings on the M6x18 bolt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.7999999999999999,
+          "y": 0.55,
+          "z": 3.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_625zz_a",
+      "displayName": "Z-Back Idler Bearing A",
+      "name": "Z-Back Idler 625ZZ Flanged Bearing A",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "fastener",
+      "material": "Steel flanged ball bearing",
+      "function": "Lower idler bearing \u2014 flanges face outward to keep the belt centered.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.6,
+          "y": 0.55,
+          "z": 3.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_625zz_b",
+      "displayName": "Z-Back Idler Bearing B",
+      "name": "Z-Back Idler 625ZZ Flanged Bearing B",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "fastener",
+      "material": "Steel flanged ball bearing",
+      "function": "Upper idler bearing \u2014 flanges face outward (opposite of bearing A).",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.52,
+          "y": 0.55,
+          "z": 3.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_idler_m6x18_inner",
+      "displayName": "Z-Back Idler M6x18 Inner Bolt",
+      "name": "Z-Back Idler M6x18 Inner Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Inner bolt that captures the two flanged bearings between the idler halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.76,
+          "y": 0.6000000000000001,
+          "z": 3.482
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_idler_m6_nut_inner",
+      "displayName": "Z-Back Idler M6 Nut (Inner Bolt)",
+      "name": "Z-Back Idler M6 Hex Nut \u2014 Inner",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads onto the inner M6x18 (back side) so bearings can be tightened against the halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.63,
+          "y": 0.55,
+          "z": 3.45
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_idler_m6x30_frame",
+      "displayName": "Z-Back Idler Frame-Mount M6x30 Bolt",
+      "name": "Z-Back Idler M6x30 Frame-Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Long bolt installed loosely in the top-right idler hole \u2014 used later for frame mounting.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.58,
+          "y": 0.6000000000000001,
+          "z": 3.482
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_idler_m6_nut_frame",
+      "displayName": "Z-Back Idler M6 Nut (Frame Bolt)",
+      "name": "Z-Back Idler M6 Hex Nut \u2014 Frame Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the M6x30 frame-mount bolt \u2014 held loose for frame mounting.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.55,
+          "y": 0.55,
+          "z": 3.45
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_idler_m6x18_loose",
+      "displayName": "Z-Back Idler M6x18 (Last Hole, Loose)",
+      "name": "Z-Back Idler M6x18 Loose Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Inserted loosely through the last idler hole \u2014 kept loose with a nut for frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.72,
+          "y": 0.6000000000000001,
+          "z": 3.482
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "z_back_idler_m6_nut_loose",
+      "displayName": "Z-Back Idler M6 Nut (Loose Bolt)",
+      "name": "Z-Back Idler M6 Hex Nut \u2014 Loose Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the second M6x18 in the last idler hole \u2014 kept loose for frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.72,
+          "y": 0.55,
+          "z": 3.45
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_back"
+      ]
+    },
+    {
+      "id": "idler",
+      "displayName": "Idler",
+      "assetRef": "idler_approved.glb",
+      "name": "Z-Front Leadscrew Idler",
+      "category": "custom",
+      "material": "Bearing idler for leadscrew",
+      "function": "Supports the front Z-axis leadscrew at the bottom of the frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.9,
+          "y": 0.55,
+          "z": 3.2
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6x18_loose",
+      "displayName": "Z-Front Idler M6x18 Bolt (Last Hole, Loose)",
+      "name": "Z-Front Idler M6x18 Loose Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Inserted loosely through the last idler hole \u2014 kept loose with a nut for later frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.73,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "idler_half_b",
+      "displayName": "Idler002 Half B",
+      "assetRef": "idler_approved.glb",
+      "name": "Z-Front Belt Idler Clamping Half",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.85,
+          "y": 0.55,
+          "z": 1.8499999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6_nut_inner",
+      "displayName": "Z-Front Idler M6 Nut (Inner Bolt)",
+      "name": "Z-Front Idler M6 Hex Nut \u2014 Inner",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads onto the inner M6x18 (back side) so the bearings can be tightened against the idler halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.6499999999999999,
+          "y": 0.55,
+          "z": 1.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_625zz_a",
+      "displayName": "Z-Front 625ZZ A",
+      "name": "Z-Front Idler Bearing A",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.6199999999999999,
+          "y": 0.55,
+          "z": 1.8499999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_625zz_b",
+      "displayName": "Z-Front 625ZZ B",
+      "name": "Z-Front Idler Bearing B",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.54,
+          "y": 0.55,
+          "z": 1.8499999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6_nut_frame",
+      "displayName": "Z-Front Idler M6 Nut (Frame Bolt)",
+      "name": "Z-Front Idler M6 Hex Nut \u2014 Frame Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the M6x30 frame-mount bolt \u2014 held loose so the idler can be repositioned during frame mounting.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5700000000000001,
+          "y": 0.55,
+          "z": 1.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6x30_a",
+      "displayName": "Z-Front Idler M6x30 Bolt",
+      "name": "Z-Front Idler Frame-Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel",
+      "function": "Clamps the two idler halves together through the belt-side hole.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.5999999999999999,
+          "y": 0.55,
+          "z": 1.5999999999999999
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6_nut_loose",
+      "displayName": "Z-Front Idler M6 Nut (Loose Bolt)",
+      "name": "Z-Front Idler M6 Hex Nut \u2014 Loose Mount",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "Steel hex nut",
+      "function": "Threads loosely onto the second M6x18 in the last idler hole \u2014 kept loose for frame attachment.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.73,
+          "y": 0.55,
+          "z": 1.65
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    },
+    {
+      "id": "z_front_idler_m6x18_inner",
+      "displayName": "Z-Front M6x18 B",
+      "name": "Z-Front M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures idler halves together.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.7799999999999999,
+          "y": 0.6,
+          "z": 1.682
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_idler_z_front"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_batch_idler_layout",
+      "name": "Lay out all 8 idler half-pieces and hardware",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_batch_all",
+      "sequenceIndex": 82,
+      "family": "Confirm",
+      "instructionText": "Lay out the 8 idler half-pieces (2 per axis: Y-Left, Y-Right, Z-Back, Z-Front), 8 flanged 625ZZ bearings, 4 inner M6x18 bolts, 4 frame-mount M6x30 bolts, 4 loose-mount M6x18 bolts, and 12 M6 hex nuts on your workbench. Group by axis.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_idler_clean_holes",
+      "name": "Clean excess plastic from idler holes",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_batch_all",
+      "sequenceIndex": 84,
+      "family": "Use",
+      "instructionText": "Use a 6 mm drill bit (or box cutter) to thresh out plastic covering the bolt-pass-through holes on every idler half. Each half should have 4 clear holes plus one rod-pass cutout.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_idler_qc_plastic",
+      "name": "QC: verify all idler holes are clean",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_batch_all",
+      "sequenceIndex": 86,
+      "family": "Confirm",
+      "instructionText": "Verify each idler half has 4 clear bolt holes and clean rod-pass cutouts on both ends. Confirm bearing-side flange recesses are clean \u2014 bearings must seat flush.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_i1_insert_inner_bolt",
+      "name": "Idler 1 (Y-Left): insert M6x18 inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_left",
+      "sequenceIndex": 88,
+      "family": "Place",
+      "instructionText": "Begin assembling the Y-Left idler: place the inner M6x18 bolt through one half-piece (idler002) from the outside.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler002",
+        "y_left_m6x18_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler002",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i1_place_bearings",
+      "name": "Idler 1: stack 2 flanged bearings on bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_left",
+      "sequenceIndex": 90,
+      "family": "Place",
+      "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_625zz_a",
+        "y_left_625zz_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_625zz_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_625zz_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i1_align_halves",
+      "name": "Idler 1: place 2nd half + thread M6 nut",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_left",
+      "sequenceIndex": 92,
+      "family": "Place",
+      "instructionText": "Place the second idler half (idler002_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler002_half_b",
+        "y_left_idler_m6_nut_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler002_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_idler_m6_nut_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i1_tighten_inner",
+      "name": "Idler 1: drill-tighten inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_left",
+      "sequenceIndex": 94,
+      "family": "Use",
+      "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_i1_frame_bolt_loose",
+      "name": "Idler 1: insert M6x30 frame-mount LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_left",
+      "sequenceIndex": 96,
+      "family": "Place",
+      "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_idler_m6x30_a",
+        "y_left_idler_m6_nut_frame"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_idler_m6x30_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_idler_m6_nut_frame",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i1_last_bolt_loose",
+      "name": "Idler 1: insert M6x18 in last hole LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_left",
+      "sequenceIndex": 98,
+      "family": "Place",
+      "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_idler_m6x18_loose",
+        "y_left_idler_m6_nut_loose"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_idler_m6x18_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_idler_m6_nut_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i2_insert_inner_bolt",
+      "name": "Idler 2 (Y-Right): insert M6x18 inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_right",
+      "sequenceIndex": 100,
+      "family": "Place",
+      "instructionText": "Begin assembling the Y-Right idler: place the inner M6x18 bolt through one half-piece (idler003) from the outside.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler003",
+        "y_right_idler_m6x18_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler003",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6x18_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i2_place_bearings",
+      "name": "Idler 2: stack 2 flanged bearings on bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_right",
+      "sequenceIndex": 102,
+      "family": "Place",
+      "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_625zz_a",
+        "y_right_625zz_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_625zz_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_625zz_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i2_align_halves",
+      "name": "Idler 2: place 2nd half + thread M6 nut",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_right",
+      "sequenceIndex": 104,
+      "family": "Place",
+      "instructionText": "Place the second idler half (idler003_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler003_half_b",
+        "y_right_idler_m6_nut_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler003_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6_nut_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i2_tighten_inner",
+      "name": "Idler 2: drill-tighten inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_right",
+      "sequenceIndex": 106,
+      "family": "Use",
+      "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_i2_frame_bolt_loose",
+      "name": "Idler 2: insert M6x30 frame-mount LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_right",
+      "sequenceIndex": 107,
+      "family": "Place",
+      "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_idler_m6x30_a",
+        "y_right_idler_m6_nut_frame"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6x30_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6_nut_frame",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i2_last_bolt_loose",
+      "name": "Idler 2: insert M6x18 in last hole LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_y_right",
+      "sequenceIndex": 109,
+      "family": "Place",
+      "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_idler_m6x18_loose",
+        "y_right_idler_m6_nut_loose"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6x18_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_idler_m6_nut_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i3_insert_inner_bolt",
+      "name": "Idler 3 (Z-Back): insert M6x18 inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_back",
+      "sequenceIndex": 111,
+      "family": "Place",
+      "instructionText": "Begin assembling the Z-Back idler: place the inner M6x18 bolt through one half-piece (idler001) from the outside.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler001",
+        "z_back_idler_m6x18_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler001",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6x18_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i3_place_bearings",
+      "name": "Idler 3: stack 2 flanged bearings on bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_back",
+      "sequenceIndex": 113,
+      "family": "Place",
+      "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_625zz_a",
+        "z_back_625zz_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_625zz_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_625zz_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i3_align_halves",
+      "name": "Idler 3: place 2nd half + thread M6 nut",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_back",
+      "sequenceIndex": 115,
+      "family": "Place",
+      "instructionText": "Place the second idler half (idler001_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler001_half_b",
+        "z_back_idler_m6_nut_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler001_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6_nut_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i3_tighten_inner",
+      "name": "Idler 3: drill-tighten inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_back",
+      "sequenceIndex": 117,
+      "family": "Use",
+      "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_i3_frame_bolt_loose",
+      "name": "Idler 3: insert M6x30 frame-mount LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_back",
+      "sequenceIndex": 119,
+      "family": "Place",
+      "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_idler_m6x30_frame",
+        "z_back_idler_m6_nut_frame"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6x30_frame",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6_nut_frame",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i3_last_bolt_loose",
+      "name": "Idler 3: insert M6x18 in last hole LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_back",
+      "sequenceIndex": 121,
+      "family": "Place",
+      "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_idler_m6x18_loose",
+        "z_back_idler_m6_nut_loose"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6x18_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_idler_m6_nut_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i4_insert_inner_bolt",
+      "name": "Idler 4 (Z-Front): insert M6x18 inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_front",
+      "sequenceIndex": 123,
+      "family": "Place",
+      "instructionText": "Begin assembling the Z-Front idler: place the inner M6x18 bolt through one half-piece (idler) from the outside.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler",
+        "z_front_idler_m6x18_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6x18_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i4_place_bearings",
+      "name": "Idler 4: stack 2 flanged bearings on bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_front",
+      "sequenceIndex": 125,
+      "family": "Place",
+      "instructionText": "Stack the two flanged 625ZZ bearings onto the inner bolt, flanges facing OUTWARD (away from each other).",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_625zz_a",
+        "z_front_625zz_b"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_625zz_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_625zz_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i4_align_halves",
+      "name": "Idler 4: place 2nd half + thread M6 nut",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_front",
+      "sequenceIndex": 127,
+      "family": "Place",
+      "instructionText": "Place the second idler half (idler_half_b) against the first so the rod-pass holes line up exactly. Thread the M6 nut onto the back of the inner bolt \u2014 hand-snug for now; the next step uses the drill.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "idler_half_b",
+        "z_front_idler_m6_nut_inner"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler_half_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6_nut_inner",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i4_tighten_inner",
+      "name": "Idler 4: drill-tighten inner bolt",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_front",
+      "sequenceIndex": 129,
+      "family": "Use",
+      "instructionText": "Tighten the inner bolt fully with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the idler halves.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_i4_frame_bolt_loose",
+      "name": "Idler 4: insert M6x30 frame-mount LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_front",
+      "sequenceIndex": 131,
+      "family": "Place",
+      "instructionText": "With the idler flat and the bearing hole pointing away, insert the M6x30 frame-mount bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened during frame mounting.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_idler_m6x30_a",
+        "z_front_idler_m6_nut_frame"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6x30_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6_nut_frame",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_i4_last_bolt_loose",
+      "name": "Idler 4: insert M6x18 in last hole LOOSE",
+      "assemblyId": "assembly_d3d_batch_idler_build",
+      "partGroupId": "partGroup_idler_z_front",
+      "sequenceIndex": 133,
+      "family": "Place",
+      "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches, but keep it visibly loose.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_idler_m6x18_loose",
+        "z_front_idler_m6_nut_loose"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6x18_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_idler_m6_nut_loose",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "targets": [],
+  "hints": []
+}

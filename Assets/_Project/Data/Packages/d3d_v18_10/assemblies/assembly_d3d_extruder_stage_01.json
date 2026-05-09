@@ -30,19 +30,28 @@
     {
       "id": "partGroup_titan_aero_core",
       "name": "Titan Aero Core",
-      "stepIds": [ "step_stage_titan_aero_core", "step_attach_extruder_nozzle_assembly" ],
+      "stepIds": [
+        "step_stage_titan_aero_core",
+        "step_attach_extruder_nozzle_assembly"
+      ],
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "description": "Stages the Titan Aero core and adds the nozzle assembly as the base of the first extruder module slice.",
       "milestoneMessage": "Titan Aero core and nozzle assembly staged."
-  },
+    },
     {
       "id": "partGroup_extruder_sensor_and_fan_attachment",
       "name": "Extruder Sensor and Fan Attachment",
-      "stepIds": [ "step_place_extruder_blower_attachment", "step_secure_extruder_blower_attachment", "step_place_extruder_sensor_holder", "step_secure_extruder_sensor_holder", "step_place_extruder_8mm_sensor" ],
+      "stepIds": [
+        "step_place_extruder_blower_attachment",
+        "step_secure_extruder_blower_attachment",
+        "step_place_extruder_sensor_holder",
+        "step_secure_extruder_sensor_holder",
+        "step_place_extruder_8mm_sensor"
+      ],
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "description": "Adds the first print-cooling blower, sensor holder, and 8 mm sensor around the staged Titan Aero core.",
       "milestoneMessage": "First fan and sensor-side hardware added to the nozzle module."
-  },
+    },
     {
       "id": "partGroup_extruder_nozzle_module",
       "name": "Extruder Nozzle Module",
@@ -250,58 +259,139 @@
       "name": "Stage the Titan Aero core",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_titan_aero_core",
-      "sequenceIndex": 94,
+      "sequenceIndex": 108,
       "instructionText": "Place the Titan Aero core into the extruder work zone so the nozzle, fan, and sensor-side parts can be added in sequence.",
       "family": "Place",
       "hintIds": [
         "hint_stage_titan_aero_core"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_titan_aero_core_stage" ],
-      "requiredPartIds": [ "d3d_titan_aero_core" ],
+      "targetIds": [
+        "target_titan_aero_core_stage"
+      ],
+      "requiredPartIds": [
+        "d3d_titan_aero_core"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_titan_aero_core","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_titan_aero_core",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_attach_extruder_nozzle_assembly",
       "name": "Attach the nozzle assembly",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_titan_aero_core",
-      "sequenceIndex": 95,
+      "sequenceIndex": 110,
       "instructionText": "Place the nozzle assembly onto the staged Titan Aero core before any cooling or sensor-side hardware is added.",
       "family": "Place",
       "hintIds": [
         "hint_attach_extruder_nozzle"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_nozzle_attach" ],
-      "requiredPartIds": [ "d3d_extruder_nozzle_assembly" ],
+      "targetIds": [
+        "target_extruder_nozzle_attach"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_nozzle_assembly"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_nozzle_assembly","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_nozzle_assembly",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_place_extruder_blower_attachment",
       "name": "Place the print-cooling blower",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 96,
+      "sequenceIndex": 112,
       "instructionText": "Place the 5015 blower on the fan side of the nozzle module before securing its mount points.",
       "family": "Place",
       "hintIds": [
         "hint_place_extruder_blower"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_blower_attach" ],
-      "requiredPartIds": [ "d3d_extruder_5015_blower" ],
+      "targetIds": [
+        "target_extruder_blower_attach"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_5015_blower"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_5015_blower","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_5015_blower",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_secure_extruder_blower_attachment",
       "name": "Secure the blower attachment",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 97,
+      "sequenceIndex": 114,
       "instructionText": "Tighten the blower-side fasteners only after the blower body is seated on the nozzle module.",
       "family": "Use",
       "profile": "Torque",
@@ -338,24 +428,51 @@
       "name": "Place the sensor holder",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 98,
+      "sequenceIndex": 116,
       "instructionText": "Place the sensor holder on the nozzle module after the blower side is established.",
       "family": "Place",
       "hintIds": [
         "hint_place_sensor_holder"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_sensor_holder_attach" ],
-      "requiredPartIds": [ "d3d_extruder_sensor_holder" ],
+      "targetIds": [
+        "target_extruder_sensor_holder_attach"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_sensor_holder"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_sensor_holder","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_sensor_holder",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_secure_extruder_sensor_holder",
       "name": "Secure the sensor holder",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 99,
+      "sequenceIndex": 118,
       "instructionText": "Tighten the small holder-side fasteners so the sensor holder is fixed before the sensor is inserted.",
       "family": "Use",
       "profile": "Torque",
@@ -392,24 +509,51 @@
       "name": "Place the 8 mm sensor",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 100,
+      "sequenceIndex": 120,
       "instructionText": "Place the 8 mm sensor into the holder after the holder is secured.",
       "family": "Place",
       "hintIds": [
         "hint_place_8mm_sensor"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_sensor_insert" ],
-      "requiredPartIds": [ "d3d_extruder_8mm_sensor" ],
+      "targetIds": [
+        "target_extruder_sensor_insert"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_8mm_sensor"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_8mm_sensor","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_8mm_sensor",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
     {
       "id": "step_check_extruder_nozzle_module_clearance",
       "name": "Check nozzle-module clearance",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "partGroupId": "partGroup_extruder_nozzle_module",
-      "sequenceIndex": 101,
+      "sequenceIndex": 122,
       "instructionText": "Inspect the completed nozzle module and confirm the nozzle, blower side, and sensor side all keep clear service space for later carriage integration.",
       "family": "Confirm",
       "viewMode": "Inspect",

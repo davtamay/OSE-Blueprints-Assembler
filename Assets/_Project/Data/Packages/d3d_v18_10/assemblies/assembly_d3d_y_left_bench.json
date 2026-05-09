@@ -6,19 +6,12 @@
       "description": "Assembles the Y-left axis module from individual parts on the workbench: seats linear bearings in the carriage halves, builds the idler with flanged bearing, preps the motor holder with pulley and belt, threads all three units onto the guide rods, routes and pegs the belt, then glues the endstop to the motor holder. Produces a complete, labeled Y-left axis module ready for frame mounting.",
       "machineId": "d3d_v18_10",
       "partGroupIds": [
-        "partGroup_y_left_idler_build",
         "partGroup_y_left_motor_build",
         "partGroup_y_left_rod_assembly",
         "partGroup_y_left_belt_threading",
         "partGroup_y_left_endstop_build"
       ],
       "stepIds": [
-        "step_y_left_idler_insert_bolt",
-        "step_y_left_idler_insert_bearings",
-        "step_y_left_idler_align_halves",
-        "step_y_left_idler_tighten_inner",
-        "step_y_left_idler_bolt",
-        "step_y_left_idler_last_bolt_loose",
         "step_y_left_motor_pulley",
         "step_y_left_motor_pulley_pop",
         "step_y_left_motor_half_nuts",
@@ -53,27 +46,13 @@
       ],
       "dependencyAssemblyIds": [
         "assembly_d3d_frame",
-        "assembly_d3d_batch_carriage_build"
+        "assembly_d3d_batch_carriage_build",
+        "assembly_d3d_batch_idler_build"
       ],
       "learningFocus": "Carriage bearing fit and belt-hole alignment, idler bearing and rod-hole alignment, motor pulley press-fit and belt channel, rod threading order (idler \u00e2\u2020\u2019 carriage \u00e2\u2020\u2019 motor holder), belt routing and peg locking, endstop gluing, and full bench QC before frame mounting."
     }
   ],
   "partGroups": [
-    {
-      "id": "partGroup_y_left_idler_build",
-      "name": "Y-Left Idler Assembly",
-      "stepIds": [
-        "step_y_left_idler_insert_bolt",
-        "step_y_left_idler_insert_bearings",
-        "step_y_left_idler_align_halves",
-        "step_y_left_idler_tighten_inner",
-        "step_y_left_idler_bolt",
-        "step_y_left_idler_last_bolt_loose"
-      ],
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "description": "Inserts M6x18 bolt through one idler half, seats two flanged bearings on the bolt with flanges facing out, places the second idler half so rod holes line up, then installs the M6x30 frame-mount bolt in the belt-side hole to clamp the halves together.",
-      "milestoneMessage": "Y-left idler assembled. Frame-mount bolt left loose for sizing at frame."
-    },
     {
       "id": "partGroup_y_left_motor_build",
       "name": "Y-Left Motor Holder Assembly",
@@ -169,80 +148,6 @@
     }
   ],
   "parts": [
-    {
-      "id": "idler002",
-      "displayName": "Idler002",
-      "assetRef": "idler_approved.glb",
-      "name": "Y-Left Belt Idler",
-      "category": "custom",
-      "material": "Belt idler pulley with bearing",
-      "function": "Redirects the Y-left axis drive belt at the front end of travel.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.8132,
-          "y": 0.55,
-          "z": 0.1027
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
-      "id": "idler002_half_b",
-      "displayName": "Idler002 Half B",
-      "assetRef": "idler_approved.glb",
-      "name": "Y-Left Belt Idler Clamping Half",
-      "category": "custom",
-      "material": "Printed idler half",
-      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.85,
-          "y": 0.55,
-          "z": 0.15
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
     {
       "id": "motor002",
       "displayName": "motor002",
@@ -651,80 +556,6 @@
       }
     },
     {
-      "id": "y_left_625zz_a",
-      "displayName": "Y-Left 625ZZ A",
-      "name": "Y-Left Idler Bearing A",
-      "assetRef": "d3d_axis_625zz_bearing.glb",
-      "category": "custom",
-      "material": "625ZZ flanged ball bearing",
-      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.08,
-          "y": 0.55,
-          "z": 0.15
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
-      "id": "y_left_625zz_b",
-      "displayName": "Y-Left 625ZZ B",
-      "name": "Y-Left Idler Bearing B",
-      "assetRef": "d3d_axis_625zz_bearing.glb",
-      "category": "custom",
-      "material": "625ZZ flanged ball bearing",
-      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.16,
-          "y": 0.55,
-          "z": 0.15
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
       "id": "y_left_gt2_pulley",
       "displayName": "Y-Left GT2 Pulley",
       "name": "Y-Left Motor Pulley",
@@ -834,43 +665,6 @@
           "a": 1.0
         }
       }
-    },
-    {
-      "id": "y_left_m6x18_b",
-      "displayName": "Y-Left M6x18 B",
-      "name": "Y-Left M6x18 Bolt B",
-      "assetRef": "d3d_axis_m6x18_bolt.glb",
-      "category": "fastener",
-      "material": "M6x18 hex bolt, zinc-plated",
-      "function": "Secures idler halves together.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.92,
-          "y": 0.6,
-          "z": -0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
     },
     {
       "id": "y_left_m6x18_c",
@@ -1280,43 +1074,6 @@
       ]
     },
     {
-      "id": "y_left_idler_m6x30_a",
-      "displayName": "Y-Left Idler M6x30 Bolt",
-      "name": "Y-Left Idler Frame-Mount Bolt",
-      "assetRef": "d3d_axis_m6x18_bolt.glb",
-      "category": "fastener",
-      "material": "Steel",
-      "function": "Clamps the two idler halves together through the belt-side hole.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.1,
-          "y": 0.55,
-          "z": -0.1
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.35,
-          "g": 0.35,
-          "b": 0.38,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
       "id": "y_left_carriage_half_a",
       "name": "Y-Left Carriage Half A (bearing side)",
       "function": "Open carriage half with bearing pockets \u00e2\u20ac\u201d receives 4 LM8UU bearings.",
@@ -1534,154 +1291,6 @@
       }
     },
     {
-      "id": "y_left_idler_m6_nut_inner",
-      "displayName": "Y-Left Idler M6 Nut (Inner Bolt)",
-      "name": "Y-Left Idler M6 Hex Nut \u2014 Inner",
-      "assetRef": "d3d_axis_m6_nut.glb",
-      "category": "fastener",
-      "material": "Steel hex nut",
-      "function": "Threads onto the inner M6x18 (back side) so the bearings can be tightened against the idler halves.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.05,
-          "y": 0.55,
-          "z": -0.05
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
-      "id": "y_left_idler_m6_nut_frame",
-      "displayName": "Y-Left Idler M6 Nut (Frame Bolt)",
-      "name": "Y-Left Idler M6 Hex Nut \u2014 Frame Mount",
-      "assetRef": "d3d_axis_m6_nut.glb",
-      "category": "fastener",
-      "material": "Steel hex nut",
-      "function": "Threads loosely onto the M6x30 frame-mount bolt \u2014 held loose so the idler can be repositioned during frame mounting.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.13,
-          "y": 0.55,
-          "z": -0.05
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
-      "id": "y_left_idler_m6x18_loose",
-      "displayName": "Y-Left Idler M6x18 Bolt (Last Hole, Loose)",
-      "name": "Y-Left Idler M6x18 Loose Mount Bolt",
-      "assetRef": "d3d_axis_m6x18_bolt.glb",
-      "category": "fastener",
-      "material": "Steel socket-head bolt",
-      "function": "Inserted loosely through the last idler hole \u2014 kept loose with a nut for later frame attachment.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.97,
-          "y": 0.6,
-          "z": -0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
-      "id": "y_left_idler_m6_nut_loose",
-      "displayName": "Y-Left Idler M6 Nut (Loose Bolt)",
-      "name": "Y-Left Idler M6 Hex Nut \u2014 Loose Mount",
-      "assetRef": "d3d_axis_m6_nut.glb",
-      "category": "fastener",
-      "material": "Steel hex nut",
-      "function": "Threads loosely onto the second M6x18 in the last idler hole \u2014 kept loose for frame attachment.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.97,
-          "y": 0.55,
-          "z": -0.05
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_left_idler_build"
-      ]
-    },
-    {
       "id": "y_left_motor_holder_m6x18_b",
       "displayName": "Y-Left Motor Holder M6x18 Bolt B",
       "name": "Y-Left Motor Holder M6x18 Bolt B",
@@ -1758,259 +1367,11 @@
   ],
   "steps": [
     {
-      "id": "step_y_left_idler_insert_bolt",
-      "name": "Insert M6x18 bolt into idler half",
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "partGroupId": "partGroup_y_left_idler_build",
-      "sequenceIndex": 118,
-      "family": "Place",
-      "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "idler002",
-        "y_left_m6x18_b"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "idler002",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x18_b",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "step_y_left_idler_insert_bearings",
-      "name": "Stack two flanged bearings onto bolt",
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "partGroupId": "partGroup_y_left_idler_build",
-      "sequenceIndex": 119,
-      "family": "Place",
-      "instructionText": "Insert two bearing pieces one on top of the other onto the bolt, flanges facing outward (away from each other).",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "y_left_625zz_a",
-        "y_left_625zz_b"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_left_625zz_a",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_left_625zz_b",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "step_y_left_idler_align_halves",
-      "name": "Place second idler half and align rod holes",
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "partGroupId": "partGroup_y_left_idler_build",
-      "sequenceIndex": 120,
-      "family": "Place",
-      "instructionText": "Place the second idler half against the first, flipping it so the magnet pockets face inward. Confirm the circular rod holes on both halves line up before pressing them together. Also pick up the M6 nut now \u2014 it threads onto the back of the inner bolt before tightening in the next step.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "idler002_half_b",
-        "y_left_idler_m6_nut_inner"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "idler002_half_b",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_left_idler_m6_nut_inner",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "step_y_left_idler_bolt",
-      "name": "Insert M6x30 frame-mount bolt loosely",
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "partGroupId": "partGroup_y_left_idler_build",
-      "sequenceIndex": 122,
-      "family": "Place",
-      "instructionText": "With the idler flat and the bearing hole pointing away from you, insert the M6x30 bolt through the top-right hole in the same direction as the inner bolt. Thread the M6 nut on the opposite side and keep it LOOSE \u2014 the idler will be tightened down later during frame mounting.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "y_left_idler_m6x30_a",
-        "y_left_idler_m6_nut_frame"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_left_idler_m6x30_a",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_left_idler_m6_nut_frame",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
       "id": "step_y_left_motor_pulley",
       "name": "Mount pulley on motor shaft with spacer",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 124,
+      "sequenceIndex": 145,
       "family": "Place",
       "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u00e2\u20ac\u201d the spacer keeps the pulley off the housing.",
       "removePersistentToolIds": [],
@@ -2072,7 +1433,7 @@
       "name": "Lock pulley set screw until it pops",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 125,
+      "sequenceIndex": 146,
       "family": "Use",
       "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can."
     },
@@ -2081,7 +1442,7 @@
       "name": "Load motor holder half with nuts and M6x30 bolt",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 126,
+      "sequenceIndex": 147,
       "family": "Place",
       "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u00e2\u20ac\u201d the motor will cover them and block access later.",
       "removePersistentToolIds": [],
@@ -2166,7 +1527,7 @@
       "name": "Insert belt in motor holder channel",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 127,
+      "sequenceIndex": 148,
       "family": "Place",
       "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit.",
       "removePersistentToolIds": [],
@@ -2205,7 +1566,7 @@
       "name": "Close motor holder halves together",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 128,
+      "sequenceIndex": 149,
       "family": "Place",
       "instructionText": "Press the two motor holder halves together with the belt seated in the channel."
     },
@@ -2214,7 +1575,7 @@
       "name": "Confirm belt runs smoothly on pulley",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 129,
+      "sequenceIndex": 150,
       "family": "Confirm",
       "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u00e2\u20ac\u201d it should slide along the motor pulley. If it does not, reseat the belt in the channel."
     },
@@ -2223,7 +1584,7 @@
       "name": "Attach motor with 4 M3x25 screws",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 130,
+      "sequenceIndex": 151,
       "family": "Place",
       "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u00e2\u20ac\u201d leave slightly loose so the motor retains flex for belt tensioning later.",
       "removePersistentToolIds": [],
@@ -2331,7 +1692,7 @@
       "name": "Insert M6x18 bolts into motor holder",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 131,
+      "sequenceIndex": 152,
       "family": "Place",
       "instructionText": "Insert M6x18 bolts into the three remaining holes of the motor holder, threading each into its embedded nut. Hand-snug for now \u2014 the next step uses the drill.",
       "removePersistentToolIds": [],
@@ -2416,7 +1777,7 @@
       "name": "Dangle test: motor holder hangs securely",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 133,
+      "sequenceIndex": 154,
       "family": "Confirm",
       "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion."
     },
@@ -2425,7 +1786,7 @@
       "name": "Insert rods into idler, ends flush",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_rod_assembly",
-      "sequenceIndex": 134,
+      "sequenceIndex": 155,
       "family": "Place",
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
       "removePersistentToolIds": [],
@@ -2487,7 +1848,7 @@
       "name": "Tighten short idler bolts onto rods",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_rod_assembly",
-      "sequenceIndex": 135,
+      "sequenceIndex": 156,
       "family": "Use",
       "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u00e2\u20ac\u201d it will be used to attach the axis to the frame."
     },
@@ -2496,7 +1857,7 @@
       "name": "Slide carriage onto rods",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_rod_assembly",
-      "sequenceIndex": 136,
+      "sequenceIndex": 157,
       "family": "Place",
       "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
       "removePersistentToolIds": [],
@@ -2581,7 +1942,7 @@
       "name": "Push motor holder onto rods",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_rod_assembly",
-      "sequenceIndex": 137,
+      "sequenceIndex": 158,
       "family": "Place",
       "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
     },
@@ -2590,7 +1951,7 @@
       "name": "QC: rods flush, carriage slides freely",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_rod_assembly",
-      "sequenceIndex": 138,
+      "sequenceIndex": 159,
       "family": "Confirm",
       "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u00e2\u20ac\u201d it should move with only slight bearing resistance."
     },
@@ -2599,7 +1960,7 @@
       "name": "Thread belt through large carriage hole",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 139,
+      "sequenceIndex": 160,
       "family": "Place",
       "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward."
     },
@@ -2608,7 +1969,7 @@
       "name": "Route belt around idler bearing",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 140,
+      "sequenceIndex": 161,
       "family": "Place",
       "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u00e2\u20ac\u201d it navigates around the bearing more easily."
     },
@@ -2617,7 +1978,7 @@
       "name": "Thread belt back through small carriage hole",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 141,
+      "sequenceIndex": 162,
       "family": "Place",
       "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole."
     },
@@ -2626,7 +1987,7 @@
       "name": "Confirm belt peg orientation before locking",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 142,
+      "sequenceIndex": 163,
       "family": "Confirm",
       "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly."
     },
@@ -2635,7 +1996,7 @@
       "name": "Lock first belt peg",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 143,
+      "sequenceIndex": 164,
       "family": "Use",
       "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks."
     },
@@ -2644,7 +2005,7 @@
       "name": "Insert second peg loosely",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 144,
+      "sequenceIndex": 165,
       "family": "Place",
       "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u00e2\u20ac\u201d it will be fully tensioned after mounting to the frame."
     },
@@ -2653,7 +2014,7 @@
       "name": "Travel test: carriage moves smoothly with belt",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 145,
+      "sequenceIndex": 166,
       "family": "Confirm",
       "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded."
     },
@@ -2662,7 +2023,7 @@
       "name": "Label completed Y-Left Axis and set aside",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_belt_threading",
-      "sequenceIndex": 146,
+      "sequenceIndex": 167,
       "family": "Confirm",
       "instructionText": "Use masking tape and a marker to label this assembly as \"Y-Left Axis\". Set it aside in a safe place. It is complete and ready for frame mounting."
     },
@@ -2671,7 +2032,7 @@
       "name": "Gather endstop switch and holder piece",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 147,
+      "sequenceIndex": 168,
       "family": "Confirm",
       "instructionText": "Gather the endstop microswitch and its 3D-printed holder piece. This endstop step applies to this axis only.",
       "removePersistentToolIds": [],
@@ -2732,7 +2093,7 @@
       "name": "Slide endstop board into holder crevice",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 148,
+      "sequenceIndex": 169,
       "family": "Place",
       "instructionText": "Slide the endstop board into the crevice of the holder piece. The switch arm must face toward the arrowhead direction of the holder, away from the mounting legs. The bottom of the board should be flush with the bottom of the holder."
     },
@@ -2741,7 +2102,7 @@
       "name": "Super glue endstop into holder",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 149,
+      "sequenceIndex": 170,
       "family": "Confirm",
       "instructionText": "Dab super glue along the side edges of the crevice. Do not apply glue to the metal switch arm or any board contacts."
     },
@@ -2750,7 +2111,7 @@
       "name": "Prep motor holder holes for endstop",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 150,
+      "sequenceIndex": 171,
       "family": "Confirm",
       "instructionText": "Dab super glue into the two motor holder holes facing the belt (top-left and bottom-left when the motor faces you)."
     },
@@ -2759,7 +2120,7 @@
       "name": "Press endstop holder onto motor holder",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 151,
+      "sequenceIndex": 172,
       "family": "Place",
       "instructionText": "Press and hold the endstop holder piece firmly against the motor holder piece for at least 30 seconds until bonded."
     },
@@ -2768,7 +2129,7 @@
       "name": "Reinforce endstop joint with super glue",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 152,
+      "sequenceIndex": 173,
       "family": "Confirm",
       "instructionText": "Add super glue along all joint edges between the endstop holder and the motor holder to strengthen the connection."
     },
@@ -2783,14 +2144,14 @@
         "target_y_left_bench_staged"
       ],
       "instructionText": "All Y-Left axis components are assembled \u00e2\u20ac\u201d carriage, idler, motor holder, rods, and belt are complete. Pick up the assembled axis unit and place it at the staging position on your bench. It will sit here until frame mounting.",
-      "sequenceIndex": 194
+      "sequenceIndex": 209
     },
     {
       "id": "step_qc_y_left_axis_bench",
       "name": "Y-left axis bench QC and label",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 195,
+      "sequenceIndex": 210,
       "instructionText": "Run the full bench QC checklist before labeling and setting aside: belt moves smoothly along the full rod length; rod ends are flush with the idler bottom; the idler and carriage bolt heads are on the same side; the toothed side of the belt is facing inward. Label the axis Y-Left using masking tape and a marker.",
       "family": "Confirm",
       "viewMode": "Inspect",
@@ -2802,94 +2163,11 @@
       ]
     },
     {
-      "id": "step_y_left_idler_tighten_inner",
-      "name": "Tighten M6x18 inner bolt against bearings",
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "partGroupId": "partGroup_y_left_idler_build",
-      "sequenceIndex": 121,
-      "family": "Use",
-      "profile": "Torque",
-      "instructionText": "Hold the previously-threaded M6 nut on the back of the inner bolt and tighten the bolt with the electric drill on its lowest torque setting. The bearings should now be firmly clamped between the two idler halves.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [],
-      "relevantToolIds": [
-        "tool_power_drill"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": []
-    },
-    {
-      "id": "step_y_left_idler_last_bolt_loose",
-      "name": "Insert M6x18 in last idler hole loosely",
-      "assemblyId": "assembly_d3d_y_left_bench",
-      "partGroupId": "partGroup_y_left_idler_build",
-      "sequenceIndex": 123,
-      "family": "Place",
-      "instructionText": "Insert the second M6x18 bolt through the last idler hole and thread an M6 nut on the back. Run the drill briefly so the nut catches the threads, but keep it visibly loose \u2014 like the M6x30, this stays loose for frame attachment.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "y_left_idler_m6x18_loose",
-        "y_left_idler_m6_nut_loose"
-      ],
-      "relevantToolIds": [
-        "tool_power_drill"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_left_idler_m6x18_loose",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_left_idler_m6_nut_loose",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
       "id": "step_y_left_motor_m6_bolts_tighten",
       "name": "Tighten motor holder M6x18 bolts with drill",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_motor_build",
-      "sequenceIndex": 132,
+      "sequenceIndex": 153,
       "family": "Use",
       "profile": "Torque",
       "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill. The motor holder is now fully clamped to the holder pieces.",
