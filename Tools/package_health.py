@@ -37,6 +37,21 @@ Checks:
                                     identical assembledRotation. A clone whose halves
                                     don't rotate-to-clamshell will visually overlay
                                     instead of forming a closed carriage
+ 15. GLB shell audit: flag *_approved.glb files containing 2+ significant connected
+                       components whose AABBs overlap >30%, or that share a near-
+                       coincident face. Catches the Brackettop regression where two
+                       physically distinct parts (top plate + carriage) shipped
+                       fused into one mesh. See tools/audit_part_glbs.py
+ 16. GLB SHA dedup: flag *_approved.glb files with identical SHA256 hashes.
+                     Catches the idler×4 regression where the same mesh was copied
+                     to 4 filenames and referenced separately, bloating the package
+                     and creating multiple Unity GUIDs to maintain.
+ 17. Use-family parts pre-placed: family=Use steps cannot have requiredPartIds for
+                     parts not yet placed by a prior family=Place step. Use routes
+                     through UseStepHandler which doesn't place parts. Ports the
+                     C# normalizer's ValidateUseFamilyPartsArePrePlaced check so
+                     this class of bug fails the health check at author time
+                     instead of waiting for TTAW Validation Dashboard / Play.
 
 Reference locations for parts (all 5 must be checked):
   a. steps[].requiredPartIds / optionalPartIds
@@ -597,6 +612,85 @@ def run(package_id, fix_seqindex_flag=False):
           f"PartGroups: {len(part_groups)}, PrefabInstances: {len(prefab_instances)}")
     seqs = sorted(s["sequenceIndex"] for s in steps)
     print(f"  seqIndex range: {seqs[0] if seqs else '-'} to {seqs[-1] if seqs else '-'}")
+
+    # Check 15: GLB shell audit — flag fused composite parts (Brackettop regression).
+    # Imports lazily so the script still works if audit_part_glbs.py is moved.
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import audit_part_glbs
+        parts_dir = os.path.join(package_dir, "assets", "parts")
+        if os.path.isdir(parts_dir):
+            for fname in sorted(os.listdir(parts_dir)):
+                if not fname.endswith("_approved.glb"):
+                    continue
+                glb_issues = audit_part_glbs.audit(os.path.join(parts_dir, fname))
+                for issue in glb_issues:
+                    if "cannot audit" in issue:
+                        warnings.append(f"GLB audit: {issue}")
+                    else:
+                        errors.append(f"GLB audit: {issue}")
+    except Exception as e:
+        warnings.append(f"GLB audit skipped: {e}")
+
+    # Check 16: SHA dedup — flag *_approved.glb files with identical SHA256.
+    # Catches the idler×4 regression where the same mesh was copied to 4 filenames
+    # (idler_approved, idler001/002/003_approved) and referenced separately,
+    # bloating the package and creating 4 Unity GUIDs to maintain.
+    try:
+        import hashlib
+        parts_dir = os.path.join(package_dir, "assets", "parts")
+        if os.path.isdir(parts_dir):
+            sha_to_files = defaultdict(list)
+            for fname in sorted(os.listdir(parts_dir)):
+                if not fname.endswith(".glb"):
+                    continue
+                fpath = os.path.join(parts_dir, fname)
+                with open(fpath, "rb") as f:
+                    digest = hashlib.sha256(f.read()).hexdigest()
+                sha_to_files[digest].append(fname)
+            for digest, files in sha_to_files.items():
+                if len(files) > 1:
+                    canonical = min(files, key=len)
+                    dups = [f for f in files if f != canonical]
+                    warnings.append(
+                        f"GLB dedup: {len(files)} files share SHA {digest[:12]} — "
+                        f"canonical='{canonical}', duplicates={dups}. "
+                        f"Repoint assetRefs to canonical and delete duplicates."
+                    )
+    except Exception as e:
+        warnings.append(f"GLB dedup skipped: {e}")
+
+    # Check 17: Use-family parts must be pre-placed.
+    # Ports MachinePackageNormalizer.ValidateUseFamilyPartsArePrePlaced
+    # (Assets/_Project/Scripts/Content/Loading/MachinePackageNormalizer.cs:1207).
+    # Walks steps in seqIndex order, accumulating partIds placed by Place
+    # steps. For each Use step, errors if any requiredPartId hasn't been
+    # placed yet. Catches the authoring bug where "tighten X with drill"
+    # is family=Use but X is a fresh nut/bolt — Use routes through
+    # UseStepHandler which doesn't place parts.
+    sorted_steps = sorted(
+        (s for s in steps if s.get("sequenceIndex") is not None),
+        key=lambda s: s["sequenceIndex"],
+    )
+    placed_before = set()
+    for step in sorted_steps:
+        family = (step.get("family") or "").strip()
+        required = step.get("requiredPartIds") or []
+        if family.lower() == "use" and required:
+            unplaced = [pid for pid in required
+                        if pid and pid not in placed_before]
+            if unplaced:
+                errors.append(
+                    f"Use-family step '{step.get('id')}' "
+                    f"(seq {step.get('sequenceIndex')}) declares "
+                    f"requiredPartIds that no prior Place step placed: "
+                    f"{', '.join(unplaced)}. Either move them to a prior "
+                    f"Place step or split the step into Place+Use."
+                )
+        if family.lower() == "place":
+            for pid in required:
+                if pid:
+                    placed_before.add(pid)
 
     if errors:
         print(f"\nERRORS ({len(errors)}):")
