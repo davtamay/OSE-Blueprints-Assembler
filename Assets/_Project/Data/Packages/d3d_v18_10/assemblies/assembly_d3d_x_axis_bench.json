@@ -1775,6 +1775,43 @@
       "partGroupIds": [
         "partGroup_x_axis_idler_build"
       ]
+    },
+    {
+      "id": "x_endstop",
+      "displayName": "X Endstop",
+      "assetRef": "y_endstop_approved.glb",
+      "name": "X-Axis Endstop",
+      "category": "custom",
+      "material": "Mechanical endstop switch with 3D-printed holder",
+      "function": "Provides the X-axis home position reference. Glued to the motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.1,
+          "y": 0.55,
+          "z": 1.85
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_endstop_build"
+      ]
     }
   ],
   "steps": [
@@ -2223,51 +2260,29 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "d3d_x_axis_carriage_side"
+        "x_endstop"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_x_axis_carriage_side",
+          "id": "x_endstop",
           "endTransform": {
             "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
+              "x": 0,
+              "y": 0,
+              "z": 0
             },
             "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 0
             },
             "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
+              "x": 0,
+              "y": 0,
+              "z": 0
             }
           }
         }
