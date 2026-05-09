@@ -1,0 +1,1715 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_batch_rod_assembly",
+      "name": "Batch Rod Assembly",
+      "description": "Threads guide rods through idler/carriage/motor units for all 4 Y/Z axes (Y-Left, Y-Right, Z-Back, Z-Front) in one production-line session. Manual \u00a76.1-6.5. X-Axis rod assembly stays in assembly_d3d_x_axis_bench.",
+      "machineId": "d3d_v18_10",
+      "partGroupIds": [
+        "partGroup_rod_batch_all",
+        "partGroup_rod_y_left",
+        "partGroup_rod_y_right",
+        "partGroup_rod_z_back",
+        "partGroup_rod_z_front"
+      ],
+      "stepIds": [
+        "step_batch_rod_layout",
+        "step_batch_rod_clean_ends",
+        "step_batch_rod_qc_straight",
+        "step_batch_r1_rods_into_idler",
+        "step_batch_r1_idler_tighten_short_bolts",
+        "step_batch_r1_carriage_onto_rods",
+        "step_batch_r1_motor_holder_onto_rods",
+        "step_batch_r1_rods_qc",
+        "step_batch_r2_rods_into_idler",
+        "step_batch_r2_idler_tighten_short_bolts",
+        "step_batch_r2_carriage_onto_rods",
+        "step_batch_r2_motor_holder_onto_rods",
+        "step_batch_r2_rods_qc",
+        "step_batch_r3_rods_into_idler",
+        "step_batch_r3_idler_tighten_short_bolts",
+        "step_batch_r3_carriage_onto_rods",
+        "step_batch_r3_motor_holder_onto_rods",
+        "step_batch_r3_rods_qc",
+        "step_batch_r4_rods_into_idler",
+        "step_batch_r4_idler_tighten_short_bolts",
+        "step_batch_r4_carriage_onto_rods",
+        "step_batch_r4_motor_holder_onto_rods",
+        "step_batch_r4_rods_qc"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_frame",
+        "assembly_d3d_batch_carriage_build",
+        "assembly_d3d_batch_idler_build",
+        "assembly_d3d_batch_motor_build"
+      ],
+      "learningFocus": "Production-line rod threading: rod-flush invariant at idler, drill-tighten short bolts only (long bolts stay loose for frame), correct carriage orientation (long bolt ends toward idler)."
+    }
+  ],
+  "partGroups": [
+    {
+      "id": "partGroup_rod_batch_all",
+      "name": "Batch Rod Assembly (all 4 axes)",
+      "stepIds": [
+        "step_batch_rod_layout",
+        "step_batch_rod_clean_ends",
+        "step_batch_rod_qc_straight",
+        "step_batch_r1_rods_into_idler",
+        "step_batch_r1_idler_tighten_short_bolts",
+        "step_batch_r1_carriage_onto_rods",
+        "step_batch_r1_motor_holder_onto_rods",
+        "step_batch_r1_rods_qc",
+        "step_batch_r2_rods_into_idler",
+        "step_batch_r2_idler_tighten_short_bolts",
+        "step_batch_r2_carriage_onto_rods",
+        "step_batch_r2_motor_holder_onto_rods",
+        "step_batch_r2_rods_qc",
+        "step_batch_r3_rods_into_idler",
+        "step_batch_r3_idler_tighten_short_bolts",
+        "step_batch_r3_carriage_onto_rods",
+        "step_batch_r3_motor_holder_onto_rods",
+        "step_batch_r3_rods_qc",
+        "step_batch_r4_rods_into_idler",
+        "step_batch_r4_idler_tighten_short_bolts",
+        "step_batch_r4_carriage_onto_rods",
+        "step_batch_r4_motor_holder_onto_rods",
+        "step_batch_r4_rods_qc"
+      ],
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "description": "Production-line rod threading: insert 8 rods into 4 idlers, drill-tighten short idler bolts (LEAVE long bolt loose), slide carriages and motor holders onto rods. Manual \u00a76.1-6.5.",
+      "milestoneMessage": "All four axis rod-bundles complete; long idler bolts left loose."
+    },
+    {
+      "id": "partGroup_rod_y_left",
+      "name": "Rod 1 (Y-Left)",
+      "stepIds": [
+        "step_batch_rod_layout",
+        "step_batch_rod_clean_ends",
+        "step_batch_rod_qc_straight",
+        "step_batch_r1_rods_into_idler",
+        "step_batch_r1_idler_tighten_short_bolts",
+        "step_batch_r1_carriage_onto_rods",
+        "step_batch_r1_motor_holder_onto_rods",
+        "step_batch_r1_rods_qc"
+      ],
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "description": "Thread the Y-Left rod bundle: 2 rods into idler flush at bottom, drill-tighten short idler bolts, slide carriage on (long bolt ends toward idler), slide motor holder on, QC.",
+      "milestoneMessage": "Y-Left rod bundle threaded; carriage slides freely."
+    },
+    {
+      "id": "partGroup_rod_y_right",
+      "name": "Rod 2 (Y-Right)",
+      "stepIds": [
+        "step_batch_rod_layout",
+        "step_batch_rod_clean_ends",
+        "step_batch_rod_qc_straight",
+        "step_batch_r2_rods_into_idler",
+        "step_batch_r2_idler_tighten_short_bolts",
+        "step_batch_r2_carriage_onto_rods",
+        "step_batch_r2_motor_holder_onto_rods",
+        "step_batch_r2_rods_qc"
+      ],
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "description": "Thread the Y-Right rod bundle: 2 rods into idler flush at bottom, drill-tighten short idler bolts, slide carriage on (long bolt ends toward idler), slide motor holder on, QC.",
+      "milestoneMessage": "Y-Right rod bundle threaded; carriage slides freely."
+    },
+    {
+      "id": "partGroup_rod_z_back",
+      "name": "Rod 3 (Z-Back)",
+      "stepIds": [
+        "step_batch_rod_layout",
+        "step_batch_rod_clean_ends",
+        "step_batch_rod_qc_straight",
+        "step_batch_r3_rods_into_idler",
+        "step_batch_r3_idler_tighten_short_bolts",
+        "step_batch_r3_carriage_onto_rods",
+        "step_batch_r3_motor_holder_onto_rods",
+        "step_batch_r3_rods_qc"
+      ],
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "description": "Thread the Z-Back rod bundle: 2 rods into idler flush at bottom, drill-tighten short idler bolts, slide carriage on (long bolt ends toward idler), slide motor holder on, QC.",
+      "milestoneMessage": "Z-Back rod bundle threaded; carriage slides freely."
+    },
+    {
+      "id": "partGroup_rod_z_front",
+      "name": "Rod 4 (Z-Front)",
+      "stepIds": [
+        "step_batch_rod_layout",
+        "step_batch_rod_clean_ends",
+        "step_batch_rod_qc_straight",
+        "step_batch_r4_rods_into_idler",
+        "step_batch_r4_idler_tighten_short_bolts",
+        "step_batch_r4_carriage_onto_rods",
+        "step_batch_r4_motor_holder_onto_rods",
+        "step_batch_r4_rods_qc"
+      ],
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "description": "Thread the Z-Front rod bundle: 2 rods into idler flush at bottom, drill-tighten short idler bolts, slide carriage on (long bolt ends toward idler), slide motor holder on, QC.",
+      "milestoneMessage": "Z-Front rod bundle threaded; carriage slides freely."
+    }
+  ],
+  "parts": [
+    {
+      "id": "pocket039",
+      "displayName": "Pocket039",
+      "assetRef": "pocket039_approved.glb",
+      "name": "Y-Left Bearing Block A",
+      "category": "custom",
+      "material": "Printed bearing block",
+      "function": "Rod clamp or bearing block supporting the Y-left guide rods.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.08,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_left"
+      ]
+    },
+    {
+      "id": "pocket040",
+      "displayName": "Pocket040",
+      "assetRef": "pocket040_approved.glb",
+      "name": "Y-Left Bearing Block B",
+      "category": "custom",
+      "material": "Printed bearing block",
+      "function": "Rod clamp or bearing block supporting the Y-left guide rods.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.12,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_left"
+      ]
+    },
+    {
+      "id": "rod_005",
+      "displayName": "Rod 005",
+      "assetRef": "rod_005_approved.glb",
+      "name": "Y-Left Lower Guide Rod",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Lower linear guide rod for the Y-left axis carriage.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.04,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_left"
+      ]
+    },
+    {
+      "id": "rod_006",
+      "displayName": "Rod 006",
+      "assetRef": "rod_006_approved.glb",
+      "name": "Y-Left Upper Guide Rod",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Upper linear guide rod for the Y-left axis carriage.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.1,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_left"
+      ]
+    },
+    {
+      "id": "y1_bracket",
+      "displayName": "Y1 Bracket",
+      "assetRef": "y1_bracket_approved.glb",
+      "name": "Y-Left Mounting Bracket",
+      "category": "bracket",
+      "material": "Printed mounting bracket",
+      "function": "Attaches the Y-left axis unit to the welded steel frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.04,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_left"
+      ]
+    },
+    {
+      "id": "rod_007",
+      "displayName": "Rod 007",
+      "assetRef": "rod_007_approved.glb",
+      "name": "Y-Right Upper Guide Rod",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Upper linear guide rod for the Y-right axis carriage.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.22,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_right"
+      ]
+    },
+    {
+      "id": "rod_008",
+      "displayName": "Rod 008",
+      "assetRef": "rod_008_approved.glb",
+      "name": "Y-Right Lower Guide Rod",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Lower linear guide rod for the Y-right axis carriage.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.28,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_right"
+      ]
+    },
+    {
+      "id": "y2_bracket",
+      "displayName": "Y2 Bracket",
+      "assetRef": "y2_bracket_approved.glb",
+      "name": "Y-Right Mounting Bracket",
+      "category": "bracket",
+      "material": "Printed mounting bracket",
+      "function": "Attaches the Y-right axis unit to the welded steel frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.22,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_y_right"
+      ]
+    },
+    {
+      "id": "motor_piece001",
+      "displayName": "Motor Piece001",
+      "assetRef": "motor_piece001_approved.glb",
+      "name": "Z-Back Motor Mount",
+      "category": "bracket",
+      "material": "Printed motor mount bracket",
+      "function": "Mounts the Z-back stepper motor to the top of the frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.43,
+          "y": 0.55,
+          "z": 0.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_back"
+      ]
+    },
+    {
+      "id": "z1_half_carriage",
+      "displayName": "Z1 Half Carriage",
+      "assetRef": "z1_half_carriage_approved.glb",
+      "name": "Z-Back Carriage",
+      "category": "custom",
+      "material": "Printed Z carriage",
+      "function": "Rides on the back Z column and carries the X-axis gantry end.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.4,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_back"
+      ]
+    },
+    {
+      "id": "z1_spacer_002",
+      "displayName": "z1 spacer 002",
+      "assetRef": "z1_spacer_002_approved.glb",
+      "name": "Z-Back Lower Spacer",
+      "category": "custom",
+      "material": "Printed spacer",
+      "function": "Positions the back Z leadscrew idler at the bottom of the frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.46,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_back"
+      ]
+    },
+    {
+      "id": "z1_spacer_1",
+      "displayName": "z1 spacer 1",
+      "assetRef": "z1_spacer_1_approved.glb",
+      "name": "Z-Back Upper Spacer",
+      "category": "custom",
+      "material": "Printed spacer",
+      "function": "Positions the back Z leadscrew bearing at the correct height.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.4,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_back"
+      ]
+    },
+    {
+      "id": "z_back_rod_a",
+      "displayName": "Z-Back Lower Guide Rod",
+      "name": "Z-Back Lower Guide Rod",
+      "assetRef": "rod_005_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "One of two guide rods that the Z-back carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.4,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_back"
+      ]
+    },
+    {
+      "id": "z_back_rod_b",
+      "displayName": "Z-Back Upper Guide Rod",
+      "name": "Z-Back Upper Guide Rod",
+      "assetRef": "rod_006_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "Second of two guide rods that the Z-back carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.46,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_back"
+      ]
+    },
+    {
+      "id": "motor_piece",
+      "displayName": "Motor Piece",
+      "assetRef": "motor_piece_approved.glb",
+      "name": "Z-Front Motor Mount",
+      "category": "bracket",
+      "material": "Printed motor mount bracket",
+      "function": "Mounts the Z-front stepper motor to the top of the frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.61,
+          "y": 0.55,
+          "z": 0.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_front"
+      ]
+    },
+    {
+      "id": "z2_half_carriage",
+      "displayName": "Z2 Half Carriage",
+      "assetRef": "z2_half_carriage_approved.glb",
+      "name": "Z-Front Carriage",
+      "category": "custom",
+      "material": "Printed Z carriage",
+      "function": "Rides on the front Z column and carries the X-axis gantry end.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.58,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_front"
+      ]
+    },
+    {
+      "id": "z2_spacer",
+      "displayName": "z2 spacer",
+      "assetRef": "z2_spacer_approved.glb",
+      "name": "Z-Front Upper Spacer",
+      "category": "custom",
+      "material": "Printed spacer",
+      "function": "Positions the front Z leadscrew bearing at the correct height.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.58,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_front"
+      ]
+    },
+    {
+      "id": "z2_spacer_2",
+      "displayName": "z2 spacer 2",
+      "assetRef": "z2_spacer_2_approved.glb",
+      "name": "Z-Front Lower Spacer",
+      "category": "custom",
+      "material": "Printed spacer",
+      "function": "Positions the front Z leadscrew idler at the bottom of the frame.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.64,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_front"
+      ]
+    },
+    {
+      "id": "z_front_rod_a",
+      "displayName": "Z-Front Lower Guide Rod",
+      "name": "Z-Front Lower Guide Rod",
+      "assetRef": "rod_005_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "One of two guide rods that the Z-front carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.58,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_front"
+      ]
+    },
+    {
+      "id": "z_front_rod_b",
+      "displayName": "Z-Front Upper Guide Rod",
+      "name": "Z-Front Upper Guide Rod",
+      "assetRef": "rod_006_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "Second of two guide rods that the Z-front carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.64,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_rod_z_front"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_batch_rod_layout",
+      "name": "Lay out 8 guide rods + idler/carriage/motor units",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_batch_all",
+      "sequenceIndex": 151,
+      "family": "Confirm",
+      "instructionText": "Lay out the 8 guide rods (2 per axis: Y-Left, Y-Right, Z-Back, Z-Front), the 4 assembled idlers from batch_idler_build, the 4 assembled carriages from batch_carriage_build, and the 4 assembled motor units from batch_motor_build. Group by axis.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_rod_clean_ends",
+      "name": "Clean and inspect rod ends",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_batch_all",
+      "sequenceIndex": 152,
+      "family": "Use",
+      "instructionText": "Wipe each rod end with a clean cloth and inspect for burrs. Burred ends will catch on the LM8UU bearings inside the carriage.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_rod_qc_straight",
+      "name": "QC: confirm rod straightness",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_batch_all",
+      "sequenceIndex": 153,
+      "family": "Confirm",
+      "instructionText": "Roll each rod on a flat surface \u2014 rods must roll smoothly without wobble. Bent rods cause uneven carriage motion.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_r1_rods_into_idler",
+      "name": "Rod 1 (Y-Left): insert 2 rods into idler",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_left",
+      "sequenceIndex": 154,
+      "family": "Place",
+      "instructionText": "Insert both Y-Left guide rods into the completed idler. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "rod_005",
+        "rod_006"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "rod_005",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "rod_006",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r1_idler_tighten_short_bolts",
+      "name": "Rod 1: drill-tighten 2 short idler bolts",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_left",
+      "sequenceIndex": 155,
+      "family": "Use",
+      "instructionText": "Tighten the two SHORTER idler bolts with the electric drill on lowest torque setting \u2014 these grip the rods firmly. LEAVE the longer M6x30 frame-mount bolt LOOSE; it stays loose for frame attachment later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_r1_carriage_onto_rods",
+      "name": "Rod 1: slide carriage onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_left",
+      "sequenceIndex": 156,
+      "family": "Place",
+      "instructionText": "Slide the completed Y-Left carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes axis travel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y1_bracket",
+        "pocket039",
+        "pocket040"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y1_bracket",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "pocket039",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "pocket040",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r1_motor_holder_onto_rods",
+      "name": "Rod 1: push motor holder onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_left",
+      "sequenceIndex": 157,
+      "family": "Place",
+      "instructionText": "Push the motor-holder unit onto the rods so the motor faces the carriage bolt heads. Loosen carriage bolts slightly if needed to slide on, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_r1_rods_qc",
+      "name": "Rod 1: QC rod-flush + carriage-slide",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_left",
+      "sequenceIndex": 158,
+      "family": "Confirm",
+      "instructionText": "Verify rod ends are still flush at the idler bottom. Slide the carriage along the full rod length \u2014 should glide with consistent slight resistance.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_r2_rods_into_idler",
+      "name": "Rod 2 (Y-Right): insert 2 rods into idler",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_right",
+      "sequenceIndex": 159,
+      "family": "Place",
+      "instructionText": "Insert both Y-Right guide rods into the completed idler. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "rod_007",
+        "rod_008"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "rod_007",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "rod_008",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r2_idler_tighten_short_bolts",
+      "name": "Rod 2: drill-tighten 2 short idler bolts",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_right",
+      "sequenceIndex": 160,
+      "family": "Use",
+      "instructionText": "Tighten the two SHORTER idler bolts with the electric drill on lowest torque setting \u2014 these grip the rods firmly. LEAVE the longer M6x30 frame-mount bolt LOOSE; it stays loose for frame attachment later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_r2_carriage_onto_rods",
+      "name": "Rod 2: slide carriage onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_right",
+      "sequenceIndex": 161,
+      "family": "Place",
+      "instructionText": "Slide the completed Y-Right carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes axis travel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y2_bracket"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y2_bracket",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r2_motor_holder_onto_rods",
+      "name": "Rod 2: push motor holder onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_right",
+      "sequenceIndex": 162,
+      "family": "Place",
+      "instructionText": "Push the motor-holder unit onto the rods so the motor faces the carriage bolt heads. Loosen carriage bolts slightly if needed to slide on, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_r2_rods_qc",
+      "name": "Rod 2: QC rod-flush + carriage-slide",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_y_right",
+      "sequenceIndex": 163,
+      "family": "Confirm",
+      "instructionText": "Verify rod ends are still flush at the idler bottom. Slide the carriage along the full rod length \u2014 should glide with consistent slight resistance.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_r3_rods_into_idler",
+      "name": "Rod 3 (Z-Back): insert 2 rods into idler",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_back",
+      "sequenceIndex": 164,
+      "family": "Place",
+      "instructionText": "Insert both Z-Back guide rods into the completed idler. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_rod_a",
+        "z_back_rod_b",
+        "z1_spacer_1",
+        "z1_spacer_002"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_rod_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_rod_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z1_spacer_1",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z1_spacer_002",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r3_idler_tighten_short_bolts",
+      "name": "Rod 3: drill-tighten 2 short idler bolts",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_back",
+      "sequenceIndex": 165,
+      "family": "Use",
+      "instructionText": "Tighten the two SHORTER idler bolts with the electric drill on lowest torque setting \u2014 these grip the rods firmly. LEAVE the longer M6x30 frame-mount bolt LOOSE; it stays loose for frame attachment later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_r3_carriage_onto_rods",
+      "name": "Rod 3: slide carriage onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_back",
+      "sequenceIndex": 166,
+      "family": "Place",
+      "instructionText": "Slide the completed Z-Back carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes axis travel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z1_half_carriage"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z1_half_carriage",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r3_motor_holder_onto_rods",
+      "name": "Rod 3: push motor holder onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_back",
+      "sequenceIndex": 167,
+      "family": "Place",
+      "instructionText": "Push the motor-holder unit onto the rods so the motor faces the carriage bolt heads. Loosen carriage bolts slightly if needed to slide on, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor_piece001"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor_piece001",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r3_rods_qc",
+      "name": "Rod 3: QC rod-flush + carriage-slide",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_back",
+      "sequenceIndex": 168,
+      "family": "Confirm",
+      "instructionText": "Verify rod ends are still flush at the idler bottom. Slide the carriage along the full rod length \u2014 should glide with consistent slight resistance.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_r4_rods_into_idler",
+      "name": "Rod 4 (Z-Front): insert 2 rods into idler",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_front",
+      "sequenceIndex": 169,
+      "family": "Place",
+      "instructionText": "Insert both Z-Front guide rods into the completed idler. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_rod_a",
+        "z_front_rod_b",
+        "z2_spacer",
+        "z2_spacer_2"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_rod_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_rod_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z2_spacer",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z2_spacer_2",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r4_idler_tighten_short_bolts",
+      "name": "Rod 4: drill-tighten 2 short idler bolts",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_front",
+      "sequenceIndex": 170,
+      "family": "Use",
+      "instructionText": "Tighten the two SHORTER idler bolts with the electric drill on lowest torque setting \u2014 these grip the rods firmly. LEAVE the longer M6x30 frame-mount bolt LOOSE; it stays loose for frame attachment later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_r4_carriage_onto_rods",
+      "name": "Rod 4: slide carriage onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_front",
+      "sequenceIndex": 171,
+      "family": "Place",
+      "instructionText": "Slide the completed Z-Front carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes axis travel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z2_half_carriage"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z2_half_carriage",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r4_motor_holder_onto_rods",
+      "name": "Rod 4: push motor holder onto rods",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_front",
+      "sequenceIndex": 172,
+      "family": "Place",
+      "instructionText": "Push the motor-holder unit onto the rods so the motor faces the carriage bolt heads. Loosen carriage bolts slightly if needed to slide on, then re-tighten.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor_piece"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor_piece",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_r4_rods_qc",
+      "name": "Rod 4: QC rod-flush + carriage-slide",
+      "assemblyId": "assembly_d3d_batch_rod_assembly",
+      "partGroupId": "partGroup_rod_z_front",
+      "sequenceIndex": 173,
+      "family": "Confirm",
+      "instructionText": "Verify rod ends are still flush at the idler bottom. Slide the carriage along the full rod length \u2014 should glide with consistent slight resistance.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    }
+  ],
+  "targets": [],
+  "hints": []
+}

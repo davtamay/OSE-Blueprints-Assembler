@@ -21112,7 +21112,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_y_left_rod_assembly",
+        "partGroupId": "partGroup_rod_y_left",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21320,7 +21320,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_y_right_rod_assembly",
+        "partGroupId": "partGroup_rod_y_right",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21476,7 +21476,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_z_back_rod_assembly",
+        "partGroupId": "partGroup_rod_z_back",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21528,7 +21528,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_z_back_belt_threading",
+        "partGroupId": "partGroup_belt_z_back",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21684,7 +21684,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_z_front_rod_assembly",
+        "partGroupId": "partGroup_rod_z_front",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21736,7 +21736,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_z_front_belt_threading",
+        "partGroupId": "partGroup_belt_z_front",
         "position": {
           "x": 0.0,
           "y": 0.0,

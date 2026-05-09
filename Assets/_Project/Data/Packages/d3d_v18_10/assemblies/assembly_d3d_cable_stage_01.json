@@ -144,7 +144,7 @@
       "assemblyId": "assembly_d3d_cable_stage_01",
       "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
       "family": "Place",
-      "sequenceIndex": 312,
+      "sequenceIndex": 318,
       "hintIds": [
         "hint_cable_management"
       ],

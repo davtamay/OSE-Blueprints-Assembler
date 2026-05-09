@@ -5,51 +5,23 @@
       "name": "Y-Right Axis Bench Build",
       "description": "Assembles the Y-right axis module from individual parts using the same procedure as Y-left. Y-right and Z-Front share the same plastic piece type \u2014 build instructions are identical. Note the slight orientation differences in motor cable direction and long-bolt position. Produces a labeled Y-right axis module ready for frame mounting.",
       "machineId": "d3d_v18_10",
-      "partGroupIds": [
-        "partGroup_y_right_rod_assembly",
-        "partGroup_y_right_belt_threading"
-      ],
+      "partGroupIds": [],
       "stepIds": [
-        "step_y_right_rods_into_idler",
-        "step_y_right_idler_tighten_rods",
-        "step_y_right_carriage_onto_rods",
-        "step_y_right_motor_onto_rods",
-        "step_y_right_rods_qc",
         "step_y_right_compose_axis",
-        "step_y_right_belt_large_hole",
-        "step_y_right_belt_around_idler",
-        "step_y_right_belt_small_hole",
-        "step_y_right_belt_peg_orient",
-        "step_y_right_belt_first_peg",
-        "step_y_right_belt_second_peg",
-        "step_y_right_belt_travel_test",
-        "step_y_right_label_axis",
         "step_qc_y_right_axis_bench"
       ],
       "dependencyAssemblyIds": [
         "assembly_d3d_frame",
         "assembly_d3d_batch_carriage_build",
         "assembly_d3d_batch_idler_build",
-        "assembly_d3d_batch_motor_build"
+        "assembly_d3d_batch_motor_build",
+        "assembly_d3d_batch_rod_assembly",
+        "assembly_d3d_batch_belt_threading"
       ],
       "learningFocus": "Same bench-build sequence as Y-left: carriage bearing shake and rod-slide tests, idler rod-hole alignment, motor pulley pop-check, rod threading order, belt routing and first peg locked. Note: long M6x30 bolt is in bottom-left of motor half-piece (not top), and motor cable plug faces the belt drive hole."
     }
   ],
   "partGroups": [
-    {
-      "id": "partGroup_y_right_rod_assembly",
-      "name": "Y-Right Axis Rod Assembly",
-      "stepIds": [
-        "step_y_right_rods_into_idler",
-        "step_y_right_idler_tighten_rods",
-        "step_y_right_carriage_onto_rods",
-        "step_y_right_motor_onto_rods",
-        "step_y_right_rods_qc"
-      ],
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "description": "Inserts rods into idler flush with bottom, slides carriage onto rods (long bolts closer to idler), pushes motor holder onto rods (motor facing carriage bolt heads). Tightens idler's two shorter bolts and re-checks rods flush.",
-      "milestoneMessage": "Y-right guide rods threaded through all three units with rods flush at idler."
-    },
     {
       "id": "partGroup_y_right_bench_unit",
       "name": "Y Right Complete Axis Unit",
@@ -65,146 +37,13 @@
         "y2_bracket"
       ],
       "stepIds": [
-        "step_y_right_compose_axis"
-      ],
-      "isAggregate": true
-    },
-    {
-      "id": "partGroup_y_right_belt_threading",
-      "name": "Y-Right Belt Threading",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "description": "Inserts one belt end through the larger carriage belt hole, routes it around the idler bearing (slight curve helps), pulls through the smaller carriage belt hole. Threads through first peg (foot facing away from axis center), inserts belt end ~\u00c2\u00be inch and pushes peg into ribbed hole. Places second peg loosely \u00e2\u20ac\u201d it will be tightened after frame mounting when the full belt length is confirmed.",
-      "partIds": [
-        "idler003",
-        "idler003_half_b"
-      ],
-      "stepIds": [
-        "step_y_right_belt_large_hole",
-        "step_y_right_belt_around_idler",
-        "step_y_right_belt_small_hole",
-        "step_y_right_belt_peg_orient",
-        "step_y_right_belt_first_peg",
-        "step_y_right_belt_second_peg",
-        "step_y_right_belt_travel_test",
-        "step_y_right_label_axis",
+        "step_y_right_compose_axis",
         "step_qc_y_right_axis_bench"
       ],
-      "milestoneMessage": "Y-right belt routed and first peg locked. Second peg loose for frame-side tensioning.",
       "isAggregate": true
     }
   ],
   "parts": [
-    {
-      "id": "rod_007",
-      "displayName": "Rod 007",
-      "assetRef": "rod_007_approved.glb",
-      "name": "Y-Right Upper Guide Rod",
-      "category": "shaft",
-      "material": "Hardened steel guide rod",
-      "function": "Upper linear guide rod for the Y-right axis carriage.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.15,
-          "y": 0.55,
-          "z": 2.4
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_right_rod_assembly"
-      ]
-    },
-    {
-      "id": "rod_008",
-      "displayName": "Rod 008",
-      "assetRef": "rod_008_approved.glb",
-      "name": "Y-Right Lower Guide Rod",
-      "category": "shaft",
-      "material": "Hardened steel guide rod",
-      "function": "Lower linear guide rod for the Y-right axis carriage.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.45,
-          "y": 0.55,
-          "z": 2.4
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_right_rod_assembly"
-      ]
-    },
-    {
-      "id": "y2_bracket",
-      "displayName": "Y2 Bracket",
-      "assetRef": "y2_bracket_approved.glb",
-      "name": "Y-Right Mounting Bracket",
-      "category": "bracket",
-      "material": "Printed mounting bracket",
-      "function": "Attaches the Y-right axis unit to the welded steel frame.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.75,
-          "y": 0.55,
-          "z": 2.4
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_y_right_rod_assembly"
-      ]
-    },
     {
       "id": "y_right_carriage_half_a",
       "name": "Y-Right Carriage Half A (bearing side)",
@@ -712,134 +551,6 @@
   ],
   "steps": [
     {
-      "id": "step_y_right_rods_into_idler",
-      "name": "Insert rods into idler, ends flush",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_rod_assembly",
-      "sequenceIndex": 207,
-      "family": "Place",
-      "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "rod_007",
-        "rod_008"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "rod_007",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "rod_008",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "step_y_right_idler_tighten_rods",
-      "name": "Tighten short idler bolts onto rods",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_rod_assembly",
-      "sequenceIndex": 208,
-      "family": "Use",
-      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
-    },
-    {
-      "id": "step_y_right_carriage_onto_rods",
-      "name": "Slide carriage onto rods",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_rod_assembly",
-      "sequenceIndex": 209,
-      "family": "Place",
-      "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "y2_bracket"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y2_bracket",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "step_y_right_motor_onto_rods",
-      "name": "Push motor holder onto rods",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_rod_assembly",
-      "sequenceIndex": 210,
-      "family": "Place",
-      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
-    },
-    {
-      "id": "step_y_right_rods_qc",
-      "name": "QC: rods flush, carriage slides freely",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_rod_assembly",
-      "sequenceIndex": 211,
-      "family": "Confirm",
-      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
-    },
-    {
       "id": "step_y_right_compose_axis",
       "name": "Stage completed Y-Right axis on bench",
       "assemblyId": "assembly_d3d_y_right_bench",
@@ -850,94 +561,14 @@
         "target_y_right_bench_staged"
       ],
       "instructionText": "All Y-Right axis components are assembled. Pick up the completed axis unit and place it at the staging position on your bench. It sits here until frame mounting.",
-      "sequenceIndex": 244
-    },
-    {
-      "id": "step_y_right_belt_large_hole",
-      "name": "Thread belt through large carriage hole",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 245,
-      "family": "Place",
-      "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_belt_around_idler",
-      "name": "Route belt around idler bearing",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 246,
-      "family": "Place",
-      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u00e2\u20ac\u201d it navigates around the bearing more easily.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_belt_small_hole",
-      "name": "Thread belt back through small carriage hole",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 247,
-      "family": "Place",
-      "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_belt_peg_orient",
-      "name": "Confirm belt peg orientation before locking",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 248,
-      "family": "Confirm",
-      "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_belt_first_peg",
-      "name": "Lock first belt peg",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 249,
-      "family": "Use",
-      "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_belt_second_peg",
-      "name": "Insert second peg loosely",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 250,
-      "family": "Place",
-      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u00e2\u20ac\u201d it will be fully tensioned after mounting to the frame.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_belt_travel_test",
-      "name": "Travel test: carriage moves smoothly with belt",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 251,
-      "family": "Confirm",
-      "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded.",
-      "requiredPartIds": []
-    },
-    {
-      "id": "step_y_right_label_axis",
-      "name": "Label completed Y-Right Axis and set aside",
-      "assemblyId": "assembly_d3d_y_right_bench",
-      "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 252,
-      "family": "Confirm",
-      "instructionText": "Use masking tape and a marker to label this assembly as \"Y-Right Axis\". Set it aside in a safe place. It is complete and ready for frame mounting.",
-      "requiredPartIds": []
+      "sequenceIndex": 274
     },
     {
       "id": "step_qc_y_right_axis_bench",
       "name": "Y-Right axis bench QC and label",
       "assemblyId": "assembly_d3d_y_right_bench",
       "partGroupId": "partGroup_y_right_belt_threading",
-      "sequenceIndex": 332,
+      "sequenceIndex": 338,
       "family": "Confirm",
       "viewMode": "Inspect",
       "instructionText": "Run the full bench QC checklist before labeling and setting aside: belt moves smoothly along the full rod length; rod ends are flush with the idler bottom; the idler and carriage bolt heads are on the same side; the toothed side of the belt is facing inward. Label the axis Y-Right using masking tape and a marker.",
