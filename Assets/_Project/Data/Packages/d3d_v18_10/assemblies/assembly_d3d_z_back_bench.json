@@ -1137,6 +1137,80 @@
       "partGroupIds": [
         "partGroup_z_back_motor_build"
       ]
+    },
+    {
+      "id": "z_back_rod_a",
+      "displayName": "Z-Back Lower Guide Rod",
+      "name": "Z-Back Lower Guide Rod",
+      "assetRef": "rod_005_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "One of two guide rods that the Z-back carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.6,
+          "y": 0.55,
+          "z": 3.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_back_rod_assembly"
+      ]
+    },
+    {
+      "id": "z_back_rod_b",
+      "displayName": "Z-Back Upper Guide Rod",
+      "name": "Z-Back Upper Guide Rod",
+      "assetRef": "rod_006_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "Second of two guide rods that the Z-back carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.45,
+          "y": 0.55,
+          "z": 3.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_back_rod_assembly"
+      ]
     }
   ],
   "steps": [
@@ -1147,18 +1221,18 @@
       "partGroupId": "partGroup_z_back_rod_assembly",
       "sequenceIndex": 208,
       "family": "Place",
-      "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
+      "instructionText": "Insert both Z-back guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "z1_spacer_1",
-        "z1_spacer_002"
+        "z_back_rod_a",
+        "z_back_rod_b"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
-          "id": "z1_spacer_1",
+          "id": "z_back_rod_a",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -1180,7 +1254,7 @@
         },
         {
           "kind": "part",
-          "id": "z1_spacer_002",
+          "id": "z_back_rod_b",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -1218,13 +1292,24 @@
       "partGroupId": "partGroup_z_back_rod_assembly",
       "sequenceIndex": 210,
       "family": "Place",
-      "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
+      "instructionText": "Slide the already-assembled Z-back carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the Z-axis travel. The carriage was built earlier in the batch carriage stage \u2014 no new parts to place.",
       "removePersistentToolIds": [],
       "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_z_back_motor_onto_rods",
+      "name": "Push motor holder onto rods",
+      "assemblyId": "assembly_d3d_z_back_bench",
+      "partGroupId": "partGroup_z_back_rod_assembly",
+      "sequenceIndex": 211,
+      "family": "Place",
+      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on.",
       "requiredPartIds": [
         "motor_piece001"
       ],
-      "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
@@ -1249,15 +1334,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "step_z_back_motor_onto_rods",
-      "name": "Push motor holder onto rods",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "partGroupId": "partGroup_z_back_rod_assembly",
-      "sequenceIndex": 211,
-      "family": "Place",
-      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
     },
     {
       "id": "step_z_back_rods_qc",

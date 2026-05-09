@@ -1174,6 +1174,80 @@
       "partGroupIds": [
         "partGroup_z_front_idler_build"
       ]
+    },
+    {
+      "id": "z_front_rod_a",
+      "displayName": "Z-Front Lower Guide Rod",
+      "name": "Z-Front Lower Guide Rod",
+      "assetRef": "rod_005_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "One of two guide rods that the Z-front carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.85,
+          "y": 0.55,
+          "z": 1.7
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_rod_assembly"
+      ]
+    },
+    {
+      "id": "z_front_rod_b",
+      "displayName": "Z-Front Upper Guide Rod",
+      "name": "Z-Front Upper Guide Rod",
+      "assetRef": "rod_006_approved.glb",
+      "category": "shaft",
+      "material": "Polished steel guide rod (8mm)",
+      "function": "Second of two guide rods that the Z-front carriage slides along.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.7,
+          "y": 0.55,
+          "z": 1.7
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_z_front_rod_assembly"
+      ]
     }
   ],
   "steps": [
@@ -1184,18 +1258,18 @@
       "partGroupId": "partGroup_z_front_rod_assembly",
       "sequenceIndex": 197,
       "family": "Place",
-      "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
+      "instructionText": "Insert both Z-front guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If a rod won't slide in, loosen the idler bolts slightly until it does, then re-tighten.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "z2_spacer",
-        "z2_spacer_2"
+        "z_front_rod_a",
+        "z_front_rod_b"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
-          "id": "z2_spacer",
+          "id": "z_front_rod_a",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -1217,7 +1291,7 @@
         },
         {
           "kind": "part",
-          "id": "z2_spacer_2",
+          "id": "z_front_rod_b",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -1255,13 +1329,24 @@
       "partGroupId": "partGroup_z_front_rod_assembly",
       "sequenceIndex": 199,
       "family": "Place",
-      "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
+      "instructionText": "Slide the already-assembled Z-front carriage onto the rods with the long bolt ends closer to the idler. The carriage was built earlier in the batch carriage stage \u2014 no new parts to place.",
       "removePersistentToolIds": [],
       "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_z_front_motor_onto_rods",
+      "name": "Push motor holder onto rods",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_rod_assembly",
+      "sequenceIndex": 200,
+      "family": "Place",
+      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on.",
       "requiredPartIds": [
         "motor_piece"
       ],
-      "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
@@ -1286,15 +1371,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "step_z_front_motor_onto_rods",
-      "name": "Push motor holder onto rods",
-      "assemblyId": "assembly_d3d_z_front_bench",
-      "partGroupId": "partGroup_z_front_rod_assembly",
-      "sequenceIndex": 200,
-      "family": "Place",
-      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
     },
     {
       "id": "step_z_front_rods_qc",
