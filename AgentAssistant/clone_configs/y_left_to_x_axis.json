@@ -1,0 +1,30 @@
+{
+  "_comment": "Clone Y-Left motor + belt + rod to X-Axis. Skip idler_build (X uses a structurally different idler — 5 bolts + half-bearings, not the Y/Z 6-step IdlerHalves). Skip carriage_build for now: X carriage halves don't yet exist as parts. Skip endstop_build (X-only). Those will be authored separately from the manual.",
+  "package_id": "d3d_v18_10",
+  "source_assembly": "assembly_d3d_y_left_bench",
+  "target_assembly": "assembly_d3d_x_axis_bench",
+  "target_axis": "x_axis",
+  "clone_partGroups": ["motor_build", "belt_threading", "rod_assembly"],
+  "id_map": {
+    "motor002": "motor004",
+    "rod_005": "rod_009",
+    "rod_006": "rod_010",
+    "y_left_m6x18_b": "x_axis_idler_m6x18_inner"
+  },
+  "skip_part_ids": [
+    "y1_bracket",
+    "pocket039",
+    "pocket040"
+  ],
+  "staging_offset": {
+    "x": -0.85,
+    "y": 0.0,
+    "z": 1.85
+  },
+  "text_substitutions": {
+    "Y-left": "X-axis",
+    "Y-Left": "X-Axis",
+    "y-left": "x-axis",
+    "y_left": "x_axis"
+  }
+}

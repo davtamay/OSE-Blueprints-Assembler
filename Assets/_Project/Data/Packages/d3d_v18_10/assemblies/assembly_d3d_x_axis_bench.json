@@ -25,6 +25,14 @@
         "step_x_axis_idler_insert_bearings",
         "step_x_axis_idler_align_halves",
         "step_x_axis_idler_bolt",
+        "step_x_axis_endstop_gather",
+        "step_x_axis_endstop_slide",
+        "step_x_axis_endstop_glue_board",
+        "step_x_axis_endstop_prep_motor",
+        "step_x_axis_endstop_attach",
+        "step_x_axis_endstop_reinforce",
+        "step_x_axis_compose_axis",
+        "step_qc_x_axis_bench",
         "step_x_axis_motor_pulley",
         "step_x_axis_motor_pulley_pop",
         "step_x_axis_motor_half_nuts",
@@ -33,6 +41,7 @@
         "step_x_axis_motor_belt_test",
         "step_x_axis_motor_screws",
         "step_x_axis_motor_m6_bolts",
+        "step_x_axis_motor_m6_bolts_tighten",
         "step_x_axis_motor_dangle_test",
         "step_x_axis_rods_into_idler",
         "step_x_axis_idler_tighten_rods",
@@ -46,15 +55,7 @@
         "step_x_axis_belt_first_peg",
         "step_x_axis_belt_second_peg",
         "step_x_axis_belt_travel_test",
-        "step_x_axis_label_axis",
-        "step_x_axis_endstop_gather",
-        "step_x_axis_endstop_slide",
-        "step_x_axis_endstop_glue_board",
-        "step_x_axis_endstop_prep_motor",
-        "step_x_axis_endstop_attach",
-        "step_x_axis_endstop_reinforce",
-        "step_x_axis_compose_axis",
-        "step_qc_x_axis_bench"
+        "step_x_axis_label_axis"
       ],
       "dependencyAssemblyIds": [
         "assembly_d3d_frame"
@@ -93,55 +94,6 @@
       "milestoneMessage": "X-axis idler assembled with nuts in place for Y-carriage attachment."
     },
     {
-      "id": "partGroup_x_axis_motor_build",
-      "name": "X-Axis Motor Holder Assembly",
-      "stepIds": [
-        "step_x_axis_motor_pulley",
-        "step_x_axis_motor_pulley_pop",
-        "step_x_axis_motor_half_nuts",
-        "step_x_axis_motor_belt_channel",
-        "step_x_axis_motor_close_halves",
-        "step_x_axis_motor_belt_test",
-        "step_x_axis_motor_screws",
-        "step_x_axis_motor_m6_bolts",
-        "step_x_axis_motor_dangle_test"
-      ],
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "description": "Sets two nuts in motor half-piece. Places belt toothed-side inward in channel. Closes half-pieces aligned. Inserts 4 nuts (no bolts yet). Pulley on motor with set screws. Motor placed on top with cable plug pointing toward belt. 4 M3x25 screws then 3 M6x18 bolts and 1 M6x30 bolt \u2014 note long bolt position relative to belt hole.",
-      "milestoneMessage": "X-axis motor holder assembled."
-    },
-    {
-      "id": "partGroup_x_axis_rod_assembly",
-      "name": "X-Axis Rod Assembly",
-      "stepIds": [
-        "step_x_axis_rods_into_idler",
-        "step_x_axis_idler_tighten_rods",
-        "step_x_axis_carriage_onto_rods",
-        "step_x_axis_motor_onto_rods",
-        "step_x_axis_rods_qc"
-      ],
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "description": "Inserts rods into completed idler flush with bottom. Slides carriage onto rods. Pushes motor holder onto rods in correct orientation. Checks rods still flush at idler.",
-      "milestoneMessage": "X-axis guide rods threaded. Carriage slides smoothly."
-    },
-    {
-      "id": "partGroup_x_axis_belt_threading",
-      "name": "X-Axis Belt Threading",
-      "stepIds": [
-        "step_x_axis_belt_large_hole",
-        "step_x_axis_belt_around_idler",
-        "step_x_axis_belt_small_hole",
-        "step_x_axis_belt_peg_orient",
-        "step_x_axis_belt_first_peg",
-        "step_x_axis_belt_second_peg",
-        "step_x_axis_belt_travel_test",
-        "step_x_axis_label_axis"
-      ],
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "description": "Routes belt from large carriage hole, around idler bearing (slight curve helps), through idler belt-catcher side, through first peg (foot away from axis center), locks first peg. Second peg placed loosely \u2014 tightened after fitting to Y axes.",
-      "milestoneMessage": "X-axis belt routed and first peg locked. Second peg loose for Y-fitting tensioning."
-    },
-    {
       "id": "partGroup_x_axis_endstop_build",
       "name": "X-Axis Endstop Attachment",
       "assemblyId": "assembly_d3d_x_axis_bench",
@@ -178,6 +130,61 @@
       "stepIds": [
         "step_x_axis_compose_axis"
       ],
+      "isAggregate": true
+    },
+    {
+      "id": "partGroup_x_axis_motor_build",
+      "name": "X-Axis Motor Holder Assembly",
+      "stepIds": [
+        "step_x_axis_motor_pulley",
+        "step_x_axis_motor_pulley_pop",
+        "step_x_axis_motor_half_nuts",
+        "step_x_axis_motor_belt_channel",
+        "step_x_axis_motor_close_halves",
+        "step_x_axis_motor_belt_test",
+        "step_x_axis_motor_screws",
+        "step_x_axis_motor_m6_bolts",
+        "step_x_axis_motor_m6_bolts_tighten",
+        "step_x_axis_motor_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "description": "Places pulley on motor shaft with thin spacer, tightens first set screw, removes spacer, tightens second set screw until pop. Preps motor half-piece with one M6x30 bolt (bottom-left hole, poking up) and three nuts. Places belt toothed-side inward in belt channel of other half. Closes halves gently. Inserts motor with cable plug facing bottom-right. Tightens 4 M3x25 motor screws \u00c2\u00be tight then 3 M6x18 bolts. Performs dangle test.",
+      "milestoneMessage": "X-axis motor holder assembled and dangle-tested."
+    },
+    {
+      "id": "partGroup_x_axis_rod_assembly",
+      "name": "X-Axis Axis Rod Assembly",
+      "stepIds": [
+        "step_x_axis_rods_into_idler",
+        "step_x_axis_idler_tighten_rods",
+        "step_x_axis_carriage_onto_rods",
+        "step_x_axis_motor_onto_rods",
+        "step_x_axis_rods_qc"
+      ],
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "description": "Inserts the two guide rods into the completed idler (rods flush with idler bottom), slides the carriage onto the rods (long bolt ends closer to idler), then pushes the motor holder onto the rods (motor facing the carriage bolt heads). Tightens the idler's two shorter bolts. Checks rods are still flush with idler bottom.",
+      "milestoneMessage": "X-axis guide rods threaded through idler \u00e2\u2020\u2019 carriage \u00e2\u2020\u2019 motor holder with rods flush at idler."
+    },
+    {
+      "id": "partGroup_x_axis_belt_threading",
+      "name": "X-Axis Belt Threading",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "description": "Inserts one belt end through the larger carriage belt hole, routes it around the idler bearing (slight curve helps), pulls through the smaller carriage belt hole. Threads through first peg (foot facing away from axis center), inserts belt end ~\u00c2\u00be inch and pushes peg into ribbed hole. Places second peg loosely \u00e2\u20ac\u201d it will be tightened after frame mounting when the full belt length is confirmed.",
+      "partIds": [
+        "idler002",
+        "idler002_half_b"
+      ],
+      "stepIds": [
+        "step_x_axis_belt_large_hole",
+        "step_x_axis_belt_around_idler",
+        "step_x_axis_belt_small_hole",
+        "step_x_axis_belt_peg_orient",
+        "step_x_axis_belt_first_peg",
+        "step_x_axis_belt_second_peg",
+        "step_x_axis_belt_travel_test",
+        "step_x_axis_label_axis"
+      ],
+      "milestoneMessage": "X-axis belt routed and first peg locked. Second peg loose for frame-side tensioning.",
       "isAggregate": true
     }
   ],
@@ -430,6 +437,524 @@
       "partGroupIds": [
         "partGroup_x_axis_rod_assembly"
       ]
+    },
+    {
+      "id": "x_axis_gt2_pulley",
+      "displayName": "X-Axis GT2 Pulley",
+      "name": "X-Axis Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.19999999999999996,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.78,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_m3x25_d",
+      "displayName": "X-Axis M3x25 D",
+      "name": "X-Axis Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.5499999999999999,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_m3x25_b",
+      "displayName": "X-Axis M3x25 B",
+      "name": "X-Axis Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.39,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "idler002_half_b",
+      "displayName": "Idler002 Half B",
+      "assetRef": "idler_approved.glb",
+      "name": "X-Axis Belt Idler Clamping Half",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.0,
+          "y": 0.55,
+          "z": 2.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_idler_build"
+      ]
+    },
+    {
+      "id": "x_axis_motor_holder_m6x18_c",
+      "displayName": "X-Axis Motor Holder M6x18 Bolt C",
+      "name": "X-Axis Motor Holder M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.10999999999999999,
+          "y": 0.6,
+          "z": 1.832
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_motor_holder_m6x18_b",
+      "displayName": "X-Axis Motor Holder M6x18 Bolt B",
+      "name": "X-Axis Motor Holder M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.08999999999999997,
+          "y": 0.6,
+          "z": 1.832
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_m3x25_a",
+      "displayName": "X-Axis M3x25 A",
+      "name": "X-Axis Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.30999999999999994,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_m3x25_c",
+      "displayName": "X-Axis M3x25 C",
+      "name": "X-Axis Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.4700000000000001,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_m6x18_c",
+      "displayName": "X-Axis M6x18 C",
+      "name": "X-Axis M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.65,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "idler002",
+      "displayName": "Idler002",
+      "assetRef": "idler_approved.glb",
+      "name": "X-Axis Belt Idler",
+      "category": "custom",
+      "material": "Belt idler pulley with bearing",
+      "function": "Redirects the X-axis axis drive belt at the front end of travel.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.036799999999999944,
+          "y": 0.55,
+          "z": 1.9527
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_idler_build"
+      ]
+    },
+    {
+      "id": "x_axis_gt2_belt",
+      "displayName": "X-Axis GT2 Belt",
+      "name": "X-Axis Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.06999999999999995,
+          "y": 0.55,
+          "z": 2.15
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.12,
+          "g": 0.12,
+          "b": 0.12,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_motor_m6_nut_c",
+      "displayName": "X-Axis Motor M6 Nut C",
+      "name": "X-Axis Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.35,
+          "y": 0.55,
+          "z": 2.0100000000000002
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_motor_m6_nut_a",
+      "displayName": "X-Axis Motor M6 Nut A",
+      "name": "X-Axis Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.35,
+          "y": 0.55,
+          "z": 1.9500000000000002
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
+    },
+    {
+      "id": "x_axis_motor_m6_nut_b",
+      "displayName": "X-Axis Motor M6 Nut B",
+      "name": "X-Axis Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.35,
+          "y": 0.55,
+          "z": 1.98
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
+      ]
     }
   ],
   "steps": [
@@ -617,23 +1142,181 @@
       "instructionText": "Secure the idler with an M6x18 bolt through the top and one M6x30 bolt in the belt-side hole. Tighten until firm."
     },
     {
+      "id": "step_x_axis_endstop_gather",
+      "name": "Gather endstop switch and holder piece",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 169,
+      "family": "Confirm",
+      "instructionText": "Gather the endstop microswitch and its 3D-printed holder piece. This endstop step applies to this axis only.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "d3d_x_axis_carriage_side"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_x_axis_carriage_side",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "confirm_action",
+          "id": "confirm",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_x_axis_endstop_slide",
+      "name": "Slide endstop board into holder crevice",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 170,
+      "family": "Place",
+      "instructionText": "Slide the endstop board into the crevice of the holder piece. The switch arm must face toward the arrowhead direction of the holder, away from the mounting legs. The bottom of the board should be flush with the bottom of the holder."
+    },
+    {
+      "id": "step_x_axis_endstop_glue_board",
+      "name": "Super glue endstop into holder",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 171,
+      "family": "Confirm",
+      "instructionText": "Dab super glue along the side edges of the crevice. Do not apply glue to the metal switch arm or any board contacts."
+    },
+    {
+      "id": "step_x_axis_endstop_prep_motor",
+      "name": "Prep motor holder holes for endstop",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 172,
+      "family": "Confirm",
+      "instructionText": "Dab super glue into the two motor holder holes facing the belt (top-left and bottom-left when the motor faces you)."
+    },
+    {
+      "id": "step_x_axis_endstop_attach",
+      "name": "Press endstop holder onto motor holder",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 173,
+      "family": "Place",
+      "instructionText": "Press and hold the endstop holder piece firmly against the motor holder piece for at least 30 seconds until bonded."
+    },
+    {
+      "id": "step_x_axis_endstop_reinforce",
+      "name": "Reinforce endstop joint with super glue",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 174,
+      "family": "Confirm",
+      "instructionText": "Add super glue along all joint edges between the endstop holder and the motor holder to strengthen the connection."
+    },
+    {
+      "id": "step_x_axis_compose_axis",
+      "name": "Stage completed X axis on bench",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_bench_unit",
+      "family": "Place",
+      "requiredPartGroupId": "partGroup_x_axis_bench_unit",
+      "targetIds": [
+        "target_x_axis_bench_staged"
+      ],
+      "instructionText": "The X axis is fully assembled \u2014 carriage sides, idler, motor holder, rods, belt, and endstop are complete. Place the assembled X axis at the staging position on your bench. Label it before setting down.",
+      "sequenceIndex": 218
+    },
+    {
+      "id": "step_qc_x_axis_bench",
+      "name": "X-axis bench QC, dry-fit to Y axes, and label",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_endstop_build",
+      "sequenceIndex": 219,
+      "instructionText": "QC checklist: carriage moves smoothly along axis rods; rods flush with idler bottom; idler and carriage bolt heads on same side; toothed side of belt inward; belt pegs in correct holes; belt peg holes line up. Dry-fit the X-axis against the completed Y axes and confirm it will fit. Label axis X-Axis with masking tape.",
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "targetIds": [
+        "target_bench_x_qc"
+      ],
+      "hintIds": [
+        "hint_qc_x_axis_bench"
+      ]
+    },
+    {
       "id": "step_x_axis_motor_pulley",
       "name": "Mount pulley on motor shaft with spacer",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 169,
+      "sequenceIndex": 220,
       "family": "Place",
-      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u2014 the spacer keeps the pulley off the housing.",
+      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u00e2\u20ac\u201d the spacer keeps the pulley off the housing.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "motor004"
+        "motor004",
+        "x_axis_gt2_pulley"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
           "id": "motor004",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_gt2_pulley",
           "endTransform": {
             "position": {
               "x": 0.0,
@@ -660,79 +1343,382 @@
       "name": "Lock pulley set screw until it pops",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 170,
+      "sequenceIndex": 221,
       "family": "Use",
-      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can."
+      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_motor_half_nuts",
       "name": "Load motor holder half with nuts and M6x30 bolt",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 171,
+      "sequenceIndex": 222,
       "family": "Place",
-      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u2014 the motor will cover them and block access later."
+      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u00e2\u20ac\u201d the motor will cover them and block access later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "x_axis_motor_m6_nut_a",
+        "x_axis_motor_m6_nut_b",
+        "x_axis_motor_m6_nut_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "x_axis_motor_m6_nut_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_motor_m6_nut_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_motor_m6_nut_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
     },
     {
       "id": "step_x_axis_motor_belt_channel",
       "name": "Insert belt in motor holder channel",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 172,
+      "sequenceIndex": 223,
       "family": "Place",
-      "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit."
+      "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "x_axis_gt2_belt"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "x_axis_gt2_belt",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
     },
     {
       "id": "step_x_axis_motor_close_halves",
       "name": "Close motor holder halves together",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 173,
+      "sequenceIndex": 224,
       "family": "Place",
-      "instructionText": "Press the two motor holder halves together with the belt seated in the channel."
+      "instructionText": "Press the two motor holder halves together with the belt seated in the channel.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_motor_belt_test",
       "name": "Confirm belt runs smoothly on pulley",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 174,
+      "sequenceIndex": 225,
       "family": "Confirm",
-      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u2014 it should slide along the motor pulley. If it does not, reseat the belt in the channel."
+      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u00e2\u20ac\u201d it should slide along the motor pulley. If it does not, reseat the belt in the channel.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_motor_screws",
       "name": "Attach motor with 4 M3x25 screws",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 175,
-      "family": "Use",
-      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u2014 leave slightly loose so the motor retains flex for belt tensioning later."
+      "sequenceIndex": 226,
+      "family": "Place",
+      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u00e2\u20ac\u201d leave slightly loose so the motor retains flex for belt tensioning later.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "x_axis_m3x25_a",
+        "x_axis_m3x25_b",
+        "x_axis_m3x25_c",
+        "x_axis_m3x25_d"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "x_axis_m3x25_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_m3x25_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_m3x25_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_m3x25_d",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
     },
     {
       "id": "step_x_axis_motor_m6_bolts",
       "name": "Insert M6x18 bolts into motor holder",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 176,
+      "sequenceIndex": 227,
+      "family": "Place",
+      "instructionText": "Insert M6x18 bolts into the three remaining holes of the motor holder, threading each into its embedded nut. Hand-snug for now \u2014 the next step uses the drill.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "x_axis_m6x18_c",
+        "x_axis_motor_holder_m6x18_b",
+        "x_axis_motor_holder_m6x18_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "x_axis_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_motor_holder_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "x_axis_motor_holder_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_x_axis_motor_m6_bolts_tighten",
+      "name": "Tighten motor holder M6x18 bolts with drill",
+      "assemblyId": "assembly_d3d_x_axis_bench",
+      "partGroupId": "partGroup_x_axis_motor_build",
+      "sequenceIndex": 228,
       "family": "Use",
-      "instructionText": "Insert M6x18 bolts into the three remaining motor holder holes and tighten each into the nuts with an electric drill."
+      "profile": "Torque",
+      "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill. The motor holder is now fully clamped to the holder pieces.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_power_drill"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": []
     },
     {
       "id": "step_x_axis_motor_dangle_test",
       "name": "Dangle test: motor holder hangs securely",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_motor_build",
-      "sequenceIndex": 177,
+      "sequenceIndex": 229,
       "family": "Confirm",
-      "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion."
+      "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_rods_into_idler",
       "name": "Insert rods into idler, ends flush",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_rod_assembly",
-      "sequenceIndex": 178,
+      "sequenceIndex": 230,
       "family": "Place",
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
       "removePersistentToolIds": [],
@@ -794,348 +1780,124 @@
       "name": "Tighten short idler bolts onto rods",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_rod_assembly",
-      "sequenceIndex": 179,
+      "sequenceIndex": 231,
       "family": "Use",
-      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
+      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u00e2\u20ac\u201d it will be used to attach the axis to the frame.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_carriage_onto_rods",
       "name": "Slide carriage onto rods",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_rod_assembly",
-      "sequenceIndex": 180,
+      "sequenceIndex": 232,
       "family": "Place",
-      "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
+      "instructionText": "Slide the already-assembled X-axis carriage onto the rods with the long bolt ends closer to the idler. The carriage was built earlier in the X-axis carriage stage \u2014 no new parts to place.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "d3d_x_axis_rod_pair",
-        "d3d_x_axis_carriage_side"
-      ],
+      "requiredPartIds": [],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_x_axis_rod_pair",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "d3d_x_axis_carriage_side",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
+      "taskOrder": []
     },
     {
       "id": "step_x_axis_motor_onto_rods",
       "name": "Push motor holder onto rods",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_rod_assembly",
-      "sequenceIndex": 181,
+      "sequenceIndex": 233,
       "family": "Place",
-      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
+      "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_rods_qc",
       "name": "QC: rods flush, carriage slides freely",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_rod_assembly",
-      "sequenceIndex": 182,
+      "sequenceIndex": 234,
       "family": "Confirm",
-      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
+      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u00e2\u20ac\u201d it should move with only slight bearing resistance.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_large_hole",
       "name": "Thread belt through large carriage hole",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 183,
+      "sequenceIndex": 235,
       "family": "Place",
-      "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward."
+      "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_around_idler",
       "name": "Route belt around idler bearing",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 184,
+      "sequenceIndex": 236,
       "family": "Place",
-      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u2014 it navigates around the bearing more easily."
+      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u00e2\u20ac\u201d it navigates around the bearing more easily.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_small_hole",
       "name": "Thread belt back through small carriage hole",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 185,
+      "sequenceIndex": 237,
       "family": "Place",
-      "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole."
+      "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_peg_orient",
       "name": "Confirm belt peg orientation before locking",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 186,
+      "sequenceIndex": 238,
       "family": "Confirm",
       "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "fastener_x_axis_belt_peg"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "fastener_x_axis_belt_peg",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_first_peg",
       "name": "Lock first belt peg",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 187,
+      "sequenceIndex": 239,
       "family": "Use",
-      "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks."
+      "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_second_peg",
       "name": "Insert second peg loosely",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 188,
+      "sequenceIndex": 240,
       "family": "Place",
-      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u2014 it will be fully tensioned after mounting to the frame."
+      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u00e2\u20ac\u201d it will be fully tensioned after mounting to the frame.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_belt_travel_test",
       "name": "Travel test: carriage moves smoothly with belt",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 189,
+      "sequenceIndex": 241,
       "family": "Confirm",
-      "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded."
+      "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded.",
+      "requiredPartIds": []
     },
     {
       "id": "step_x_axis_label_axis",
-      "name": "Label completed X Axis and set aside",
+      "name": "Label completed X-Axis Axis and set aside",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "partGroupId": "partGroup_x_axis_belt_threading",
-      "sequenceIndex": 190,
+      "sequenceIndex": 242,
       "family": "Confirm",
-      "instructionText": "Use masking tape and a marker to label this assembly as \"X Axis\". Set it aside in a safe place. It is complete and ready for frame mounting."
-    },
-    {
-      "id": "step_x_axis_endstop_gather",
-      "name": "Gather endstop switch and holder piece",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 191,
-      "family": "Confirm",
-      "instructionText": "Gather the endstop microswitch and its 3D-printed holder piece. This endstop step applies to this axis only.",
-      "removePersistentToolIds": [],
-      "targetIds": [],
-      "requiredPartIds": [
-        "d3d_x_axis_carriage_side"
-      ],
-      "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "d3d_x_axis_carriage_side",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm",
-          "endTransform": {
-            "position": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            },
-            "rotation": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0,
-              "w": 0.0
-            },
-            "scale": {
-              "x": 0.0,
-              "y": 0.0,
-              "z": 0.0
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "step_x_axis_endstop_slide",
-      "name": "Slide endstop board into holder crevice",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 192,
-      "family": "Place",
-      "instructionText": "Slide the endstop board into the crevice of the holder piece. The switch arm must face toward the arrowhead direction of the holder, away from the mounting legs. The bottom of the board should be flush with the bottom of the holder."
-    },
-    {
-      "id": "step_x_axis_endstop_glue_board",
-      "name": "Super glue endstop into holder",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 193,
-      "family": "Confirm",
-      "instructionText": "Dab super glue along the side edges of the crevice. Do not apply glue to the metal switch arm or any board contacts."
-    },
-    {
-      "id": "step_x_axis_endstop_prep_motor",
-      "name": "Prep motor holder holes for endstop",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 194,
-      "family": "Confirm",
-      "instructionText": "Dab super glue into the two motor holder holes facing the belt (top-left and bottom-left when the motor faces you)."
-    },
-    {
-      "id": "step_x_axis_endstop_attach",
-      "name": "Press endstop holder onto motor holder",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 195,
-      "family": "Place",
-      "instructionText": "Press and hold the endstop holder piece firmly against the motor holder piece for at least 30 seconds until bonded."
-    },
-    {
-      "id": "step_x_axis_endstop_reinforce",
-      "name": "Reinforce endstop joint with super glue",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 196,
-      "family": "Confirm",
-      "instructionText": "Add super glue along all joint edges between the endstop holder and the motor holder to strengthen the connection."
-    },
-    {
-      "id": "step_x_axis_compose_axis",
-      "name": "Stage completed X axis on bench",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_bench_unit",
-      "family": "Place",
-      "requiredPartGroupId": "partGroup_x_axis_bench_unit",
-      "targetIds": [
-        "target_x_axis_bench_staged"
-      ],
-      "instructionText": "The X axis is fully assembled \u2014 carriage sides, idler, motor holder, rods, belt, and endstop are complete. Place the assembled X axis at the staging position on your bench. Label it before setting down.",
-      "sequenceIndex": 240
-    },
-    {
-      "id": "step_qc_x_axis_bench",
-      "name": "X-axis bench QC, dry-fit to Y axes, and label",
-      "assemblyId": "assembly_d3d_x_axis_bench",
-      "partGroupId": "partGroup_x_axis_endstop_build",
-      "sequenceIndex": 241,
-      "instructionText": "QC checklist: carriage moves smoothly along axis rods; rods flush with idler bottom; idler and carriage bolt heads on same side; toothed side of belt inward; belt pegs in correct holes; belt peg holes line up. Dry-fit the X-axis against the completed Y axes and confirm it will fit. Label axis X-Axis with masking tape.",
-      "family": "Confirm",
-      "viewMode": "Inspect",
-      "targetIds": [
-        "target_bench_x_qc"
-      ],
-      "hintIds": [
-        "hint_qc_x_axis_bench"
-      ]
+      "instructionText": "Use masking tape and a marker to label this assembly as \"X-Axis Axis\". Set it aside in a safe place. It is complete and ready for frame mounting.",
+      "requiredPartIds": []
     }
   ],
   "targets": [
