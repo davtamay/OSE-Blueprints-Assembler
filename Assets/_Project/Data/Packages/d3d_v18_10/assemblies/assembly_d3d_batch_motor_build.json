@@ -1,0 +1,3994 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_batch_motor_build",
+      "name": "Batch Motor Build",
+      "description": "Builds all four belt-drive motors (Y-Left, Y-Right, Z-Back, Z-Front) in one production-line session. Manual \u00a74 (pulley) and \u00a75 (motor holder + screws + drill-tighten + dangle test). X-Axis motor stays in assembly_d3d_x_axis_bench.",
+      "machineId": "d3d_v18_10",
+      "partGroupIds": [
+        "partGroup_motor_batch_all",
+        "partGroup_motor_y_left",
+        "partGroup_motor_y_right",
+        "partGroup_motor_z_back",
+        "partGroup_motor_z_front"
+      ],
+      "stepIds": [
+        "step_batch_motor_layout",
+        "step_batch_motor_clean_holes",
+        "step_batch_motor_qc_plastic",
+        "step_batch_m1_pulley",
+        "step_batch_m1_pulley_pop",
+        "step_batch_m1_half_nuts",
+        "step_batch_m1_belt_channel",
+        "step_batch_m1_close_halves",
+        "step_batch_m1_belt_test",
+        "step_batch_m1_attach_motor_screws",
+        "step_batch_m1_attach_motor_holder_bolts",
+        "step_batch_m1_drill_tighten_holder",
+        "step_batch_m1_dangle_test",
+        "step_batch_m2_pulley",
+        "step_batch_m2_pulley_pop",
+        "step_batch_m2_half_nuts",
+        "step_batch_m2_belt_channel",
+        "step_batch_m2_close_halves",
+        "step_batch_m2_belt_test",
+        "step_batch_m2_attach_motor_screws",
+        "step_batch_m2_attach_motor_holder_bolts",
+        "step_batch_m2_drill_tighten_holder",
+        "step_batch_m2_dangle_test",
+        "step_batch_m3_pulley",
+        "step_batch_m3_pulley_pop",
+        "step_batch_m3_half_nuts",
+        "step_batch_m3_belt_channel",
+        "step_batch_m3_close_halves",
+        "step_batch_m3_belt_test",
+        "step_batch_m3_attach_motor_screws",
+        "step_batch_m3_attach_motor_holder_bolts",
+        "step_batch_m3_drill_tighten_holder",
+        "step_batch_m3_dangle_test",
+        "step_batch_m4_pulley",
+        "step_batch_m4_pulley_pop",
+        "step_batch_m4_half_nuts",
+        "step_batch_m4_belt_channel",
+        "step_batch_m4_close_halves",
+        "step_batch_m4_belt_test",
+        "step_batch_m4_attach_motor_screws",
+        "step_batch_m4_attach_motor_holder_bolts",
+        "step_batch_m4_drill_tighten_holder",
+        "step_batch_m4_dangle_test"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_frame",
+        "assembly_d3d_batch_carriage_build",
+        "assembly_d3d_batch_idler_build"
+      ],
+      "learningFocus": "Production-line motor assembly: pulley pop check, motor-holder nut bedding, belt-in-channel toothed-side-inward, drill-tighten on lowest torque, dangle-test verification."
+    }
+  ],
+  "partGroups": [
+    {
+      "id": "partGroup_motor_batch_all",
+      "name": "Batch Motor Build (all 4 axes)",
+      "stepIds": [
+        "step_batch_motor_layout",
+        "step_batch_motor_clean_holes",
+        "step_batch_motor_qc_plastic",
+        "step_batch_m1_pulley",
+        "step_batch_m1_pulley_pop",
+        "step_batch_m1_half_nuts",
+        "step_batch_m1_belt_channel",
+        "step_batch_m1_close_halves",
+        "step_batch_m1_belt_test",
+        "step_batch_m1_attach_motor_screws",
+        "step_batch_m1_attach_motor_holder_bolts",
+        "step_batch_m1_drill_tighten_holder",
+        "step_batch_m1_dangle_test",
+        "step_batch_m2_pulley",
+        "step_batch_m2_pulley_pop",
+        "step_batch_m2_half_nuts",
+        "step_batch_m2_belt_channel",
+        "step_batch_m2_close_halves",
+        "step_batch_m2_belt_test",
+        "step_batch_m2_attach_motor_screws",
+        "step_batch_m2_attach_motor_holder_bolts",
+        "step_batch_m2_drill_tighten_holder",
+        "step_batch_m2_dangle_test",
+        "step_batch_m3_pulley",
+        "step_batch_m3_pulley_pop",
+        "step_batch_m3_half_nuts",
+        "step_batch_m3_belt_channel",
+        "step_batch_m3_close_halves",
+        "step_batch_m3_belt_test",
+        "step_batch_m3_attach_motor_screws",
+        "step_batch_m3_attach_motor_holder_bolts",
+        "step_batch_m3_drill_tighten_holder",
+        "step_batch_m3_dangle_test",
+        "step_batch_m4_pulley",
+        "step_batch_m4_pulley_pop",
+        "step_batch_m4_half_nuts",
+        "step_batch_m4_belt_channel",
+        "step_batch_m4_close_halves",
+        "step_batch_m4_belt_test",
+        "step_batch_m4_attach_motor_screws",
+        "step_batch_m4_attach_motor_holder_bolts",
+        "step_batch_m4_drill_tighten_holder",
+        "step_batch_m4_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "description": "Production-line motor assembly: build all four belt-drive motors (Y-Left, Y-Right, Z-Back, Z-Front) in parallel from manual \u00a74-\u00a75. Mirrors batch_carriage_build and batch_idler_build.",
+      "milestoneMessage": "All four motor units assembled with belts in channels."
+    },
+    {
+      "id": "partGroup_motor_y_left",
+      "name": "Motor 1 (Y-Left)",
+      "stepIds": [
+        "step_batch_motor_layout",
+        "step_batch_motor_clean_holes",
+        "step_batch_motor_qc_plastic",
+        "step_batch_m1_pulley",
+        "step_batch_m1_pulley_pop",
+        "step_batch_m1_half_nuts",
+        "step_batch_m1_belt_channel",
+        "step_batch_m1_close_halves",
+        "step_batch_m1_belt_test",
+        "step_batch_m1_attach_motor_screws",
+        "step_batch_m1_attach_motor_holder_bolts",
+        "step_batch_m1_drill_tighten_holder",
+        "step_batch_m1_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "description": "Build the Y-Left motor: pulley with pop check, holder half with 3 nuts, belt in channel, close halves, attach motor with M3x25 screws, install + drill-tighten 3\u00d7 M6x18 bolts, dangle test.",
+      "milestoneMessage": "Y-Left motor unit complete; passes dangle test."
+    },
+    {
+      "id": "partGroup_motor_y_right",
+      "name": "Motor 2 (Y-Right)",
+      "stepIds": [
+        "step_batch_motor_layout",
+        "step_batch_motor_clean_holes",
+        "step_batch_motor_qc_plastic",
+        "step_batch_m2_pulley",
+        "step_batch_m2_pulley_pop",
+        "step_batch_m2_half_nuts",
+        "step_batch_m2_belt_channel",
+        "step_batch_m2_close_halves",
+        "step_batch_m2_belt_test",
+        "step_batch_m2_attach_motor_screws",
+        "step_batch_m2_attach_motor_holder_bolts",
+        "step_batch_m2_drill_tighten_holder",
+        "step_batch_m2_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "description": "Build the Y-Right motor: pulley with pop check, holder half with 3 nuts, belt in channel, close halves, attach motor with M3x25 screws, install + drill-tighten 3\u00d7 M6x18 bolts, dangle test.",
+      "milestoneMessage": "Y-Right motor unit complete; passes dangle test."
+    },
+    {
+      "id": "partGroup_motor_z_back",
+      "name": "Motor 3 (Z-Back)",
+      "stepIds": [
+        "step_batch_motor_layout",
+        "step_batch_motor_clean_holes",
+        "step_batch_motor_qc_plastic",
+        "step_batch_m3_pulley",
+        "step_batch_m3_pulley_pop",
+        "step_batch_m3_half_nuts",
+        "step_batch_m3_belt_channel",
+        "step_batch_m3_close_halves",
+        "step_batch_m3_belt_test",
+        "step_batch_m3_attach_motor_screws",
+        "step_batch_m3_attach_motor_holder_bolts",
+        "step_batch_m3_drill_tighten_holder",
+        "step_batch_m3_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "description": "Build the Z-Back motor: pulley with pop check, holder half with 3 nuts, belt in channel, close halves, attach motor with M3x25 screws, install + drill-tighten 3\u00d7 M6x18 bolts, dangle test.",
+      "milestoneMessage": "Z-Back motor unit complete; passes dangle test."
+    },
+    {
+      "id": "partGroup_motor_z_front",
+      "name": "Motor 4 (Z-Front)",
+      "stepIds": [
+        "step_batch_motor_layout",
+        "step_batch_motor_clean_holes",
+        "step_batch_motor_qc_plastic",
+        "step_batch_m4_pulley",
+        "step_batch_m4_pulley_pop",
+        "step_batch_m4_half_nuts",
+        "step_batch_m4_belt_channel",
+        "step_batch_m4_close_halves",
+        "step_batch_m4_belt_test",
+        "step_batch_m4_attach_motor_screws",
+        "step_batch_m4_attach_motor_holder_bolts",
+        "step_batch_m4_drill_tighten_holder",
+        "step_batch_m4_dangle_test"
+      ],
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "description": "Build the Z-Front motor: pulley with pop check, holder half with 3 nuts, belt in channel, close halves, attach motor with M3x25 screws, install + drill-tighten 3\u00d7 M6x18 bolts, dangle test.",
+      "milestoneMessage": "Z-Front motor unit complete; passes dangle test."
+    }
+  ],
+  "parts": [
+    {
+      "id": "motor002",
+      "displayName": "motor002",
+      "assetRef": "motor002_approved.glb",
+      "name": "Y-Left Stepper Motor",
+      "category": "custom",
+      "material": "NEMA 17 stepper motor",
+      "function": "Drives the Y-left axis belt for front-to-back bed motion.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.07,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_gt2_pulley",
+      "displayName": "Y-Left GT2 Pulley",
+      "name": "Y-Left Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.02,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.78,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_gt2_belt",
+      "displayName": "Y-Left GT2 Belt",
+      "name": "Y-Left Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.1,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.12,
+          "g": 0.12,
+          "b": 0.12,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_m6x18_c",
+      "displayName": "Y-Left M6x18 C",
+      "name": "Y-Left M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.03,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_m3x25_a",
+      "displayName": "Y-Left M3x25 A",
+      "name": "Y-Left Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.01,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_m3x25_b",
+      "displayName": "Y-Left M3x25 B",
+      "name": "Y-Left Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.05,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_m3x25_c",
+      "displayName": "Y-Left M3x25 C",
+      "name": "Y-Left Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.09,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_m3x25_d",
+      "displayName": "Y-Left M3x25 D",
+      "name": "Y-Left Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.13,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_motor_m6_nut_a",
+      "displayName": "Y-Left Motor M6 Nut A",
+      "name": "Y-Left Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.02,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_motor_m6_nut_b",
+      "displayName": "Y-Left Motor M6 Nut B",
+      "name": "Y-Left Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.07,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_motor_m6_nut_c",
+      "displayName": "Y-Left Motor M6 Nut C",
+      "name": "Y-Left Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.12,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_motor_holder_m6x18_b",
+      "displayName": "Y-Left Motor Holder M6x18 Bolt B",
+      "name": "Y-Left Motor Holder M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.08,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "y_left_motor_holder_m6x18_c",
+      "displayName": "Y-Left Motor Holder M6x18 Bolt C",
+      "name": "Y-Left Motor Holder M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.03,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_left"
+      ]
+    },
+    {
+      "id": "motor003",
+      "displayName": "motor003",
+      "assetRef": "motor003_approved.glb",
+      "name": "Y-Right Stepper Motor",
+      "category": "custom",
+      "material": "NEMA 17 stepper motor",
+      "function": "Drives the Y-right axis belt for front-to-back bed motion.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.25,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_motor_m6_nut_b",
+      "displayName": "Y-Right Motor M6 Nut B",
+      "name": "Y-Right Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.25,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_motor_m6_nut_c",
+      "displayName": "Y-Right Motor M6 Nut C",
+      "name": "Y-Right Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.3,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_m3x25_d",
+      "displayName": "Y-Right M3x25 D",
+      "name": "Y-Right Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.31,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_gt2_belt",
+      "displayName": "Y-Right GT2 Belt",
+      "name": "Y-Right Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.28,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.12,
+          "g": 0.12,
+          "b": 0.12,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_motor_holder_m6x18_b",
+      "displayName": "Y-Right Motor Holder M6x18 Bolt B",
+      "name": "Y-Right Motor Holder M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.26,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_motor_m6_nut_a",
+      "displayName": "Y-Right Motor M6 Nut A",
+      "name": "Y-Right Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.2,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_m3x25_a",
+      "displayName": "Y-Right M3x25 A",
+      "name": "Y-Right Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.19,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_m6x18_c",
+      "displayName": "Y-Right M6x18 C",
+      "name": "Y-Right M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.21,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_m3x25_b",
+      "displayName": "Y-Right M3x25 B",
+      "name": "Y-Right Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.23,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_gt2_pulley",
+      "displayName": "Y-Right GT2 Pulley",
+      "name": "Y-Right Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.2,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.78,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_m3x25_c",
+      "displayName": "Y-Right M3x25 C",
+      "name": "Y-Right Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.27,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "y_right_motor_holder_m6x18_c",
+      "displayName": "Y-Right Motor Holder M6x18 Bolt C",
+      "name": "Y-Right Motor Holder M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.21,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_y_right"
+      ]
+    },
+    {
+      "id": "motor001",
+      "displayName": "motor001",
+      "assetRef": "motor001_approved.glb",
+      "name": "Z-Back Stepper Motor",
+      "category": "custom",
+      "material": "NEMA 17 stepper motor",
+      "function": "Drives the back Z-axis leadscrew for vertical X-gantry motion.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.43,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_gt2_belt",
+      "displayName": "Z-Back GT2 Belt",
+      "name": "Z-Back Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.46,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.12,
+          "g": 0.12,
+          "b": 0.12,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_m6x18_c",
+      "displayName": "Z-Back M6x18 C",
+      "name": "Z-Back M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.39,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_motor_holder_m6x18_b",
+      "displayName": "Z-Back Motor Holder M6x18 Bolt B",
+      "name": "Z-Back Motor Holder M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.44,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_m3x25_d",
+      "displayName": "Z-Back M3x25 D",
+      "name": "Z-Back Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.49,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_motor_holder_m6x18_c",
+      "displayName": "Z-Back Motor Holder M6x18 Bolt C",
+      "name": "Z-Back Motor Holder M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.39,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_motor_m6_nut_c",
+      "displayName": "Z-Back Motor M6 Nut C",
+      "name": "Z-Back Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.48,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_m3x25_c",
+      "displayName": "Z-Back M3x25 C",
+      "name": "Z-Back Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.45,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_m3x25_b",
+      "displayName": "Z-Back M3x25 B",
+      "name": "Z-Back Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.41,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_motor_m6_nut_b",
+      "displayName": "Z-Back Motor M6 Nut B",
+      "name": "Z-Back Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.43,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_motor_m6_nut_a",
+      "displayName": "Z-Back Motor M6 Nut A",
+      "name": "Z-Back Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.38,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_m3x25_a",
+      "displayName": "Z-Back M3x25 A",
+      "name": "Z-Back Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.37,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "z_back_gt2_pulley",
+      "displayName": "Z-Back GT2 Pulley",
+      "name": "Z-Back Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.38,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.78,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_back"
+      ]
+    },
+    {
+      "id": "motor",
+      "displayName": "motor",
+      "assetRef": "motor_approved.glb",
+      "name": "Z-Front Stepper Motor",
+      "category": "custom",
+      "material": "NEMA 17 stepper motor",
+      "function": "Drives the front Z-axis leadscrew for vertical X-gantry motion.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.61,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_motor_m6_nut_a",
+      "displayName": "Z-Front Motor M6 Nut A",
+      "name": "Z-Front Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.56,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_motor_holder_m6x18_c",
+      "displayName": "Z-Front Motor Holder M6x18 Bolt C",
+      "name": "Z-Front Motor Holder M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.57,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_gt2_belt",
+      "displayName": "Z-Front GT2 Belt",
+      "name": "Z-Front Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.64,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.12,
+          "g": 0.12,
+          "b": 0.12,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_motor_m6_nut_c",
+      "displayName": "Z-Front Motor M6 Nut C",
+      "name": "Z-Front Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.66,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_motor_m6_nut_b",
+      "displayName": "Z-Front Motor M6 Nut B",
+      "name": "Z-Front Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.61,
+          "y": 0.55,
+          "z": 0.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_b",
+      "displayName": "Z-Front M3x25 B",
+      "name": "Z-Front Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.59,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_c",
+      "displayName": "Z-Front M3x25 C",
+      "name": "Z-Front Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.63,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_d",
+      "displayName": "Z-Front M3x25 D",
+      "name": "Z-Front Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.67,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_motor_holder_m6x18_b",
+      "displayName": "Z-Front Motor Holder M6x18 Bolt B",
+      "name": "Z-Front Motor Holder M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel socket-head bolt",
+      "function": "Secures motor holder half-pieces. Tightened with electric drill into the embedded M6 nut.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.62,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_gt2_pulley",
+      "displayName": "Z-Front GT2 Pulley",
+      "name": "Z-Front Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.56,
+          "y": 0.55,
+          "z": 0.05
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.75,
+          "g": 0.75,
+          "b": 0.78,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_m3x25_a",
+      "displayName": "Z-Front M3x25 A",
+      "name": "Z-Front Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.55,
+          "y": 0.55,
+          "z": 0.13
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.35,
+          "g": 0.35,
+          "b": 0.38,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    },
+    {
+      "id": "z_front_m6x18_c",
+      "displayName": "Z-Front M6x18 C",
+      "name": "Z-Front M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.57,
+          "y": 0.55,
+          "z": 0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.6,
+          "b": 0.65,
+          "a": 1.0
+        }
+      },
+      "partGroupIds": [
+        "partGroup_motor_z_front"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_batch_motor_layout",
+      "name": "Lay out 4 motors and motor-holder hardware",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_batch_all",
+      "sequenceIndex": 108,
+      "family": "Confirm",
+      "instructionText": "Lay out the 4 stepper motors (Y-Left, Y-Right, Z-Back, Z-Front), 8 motor-holder half-pieces, 4 GT2 pulleys with set screws, 4 GT2 belts, 16 M3x25 motor screws, 12 M6 hex nuts, and 12 M6x18 holder bolts on your workbench. Group by axis.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_motor_clean_holes",
+      "name": "Clean excess plastic from motor holder holes",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_batch_all",
+      "sequenceIndex": 109,
+      "family": "Use",
+      "instructionText": "Use a 6 mm drill bit (or box cutter) to thresh out plastic covering the bolt holes on every motor-holder half. Each half should have clean M6 holes plus a recessed channel for the GT2 belt.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_motor_qc_plastic",
+      "name": "QC: verify all motor-holder holes are clean",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_batch_all",
+      "sequenceIndex": 110,
+      "family": "Confirm",
+      "instructionText": "Verify each motor-holder half has clean M6x18 bolt holes, clear M3x25 motor-screw holes, and a clean belt channel. Plastic flash here will prevent the motor from seating.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m1_pulley",
+      "name": "Motor 1 (Y-Left): mount pulley on motor shaft",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 111,
+      "family": "Place",
+      "instructionText": "Place the GT2 pulley on the Y-Left motor shaft using the thin spacer to keep the pulley off the housing. Tighten the first set screw with an Allen key.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor002",
+        "y_left_gt2_pulley"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor002",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_gt2_pulley",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m1_pulley_pop",
+      "name": "Motor 1: lock pulley set screw until pop",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 112,
+      "family": "Use",
+      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible. A soft \"pop\" means the screw is fully seated. Whether or not you hear it, tighten as hard as you can \u2014 the belt pulls 20 lbs and the screw cannot slip.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m1_half_nuts",
+      "name": "Motor 1: load motor-holder half with 3 nuts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 113,
+      "family": "Place",
+      "instructionText": "Lay one motor-holder half-piece flat with the rectangular belt channel away from you. Drop 3 M6 hex nuts into the embedded slots. Per manual \u00a75.1.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_motor_m6_nut_a",
+        "y_left_motor_m6_nut_b",
+        "y_left_motor_m6_nut_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_motor_m6_nut_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_motor_m6_nut_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_motor_m6_nut_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m1_belt_channel",
+      "name": "Motor 1: insert belt in motor-holder channel",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 114,
+      "family": "Place",
+      "instructionText": "Lay the GT2 belt in the holder channel with the toothed side facing INWARD (toward the motor pulley). Per manual \u00a75.2.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_gt2_belt"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_gt2_belt",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m1_close_halves",
+      "name": "Motor 1: close motor-holder halves",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 115,
+      "family": "Place",
+      "instructionText": "Press the second motor-holder half against the first, trapping the belt and nuts. Halves should align flush. Per manual \u00a75.3.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m1_belt_test",
+      "name": "Motor 1: confirm belt runs smooth on pulley",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 116,
+      "family": "Confirm",
+      "instructionText": "Hold the motor against the holder and pull the belt gently. Belt should glide smoothly on the pulley with no rub. If it rubs, reseat the belt in the channel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m1_attach_motor_screws",
+      "name": "Motor 1: attach motor with 4\u00d7 M3x25 screws",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 117,
+      "family": "Place",
+      "instructionText": "Insert the first M3x25 screw and tighten it \u00be tight with a screwdriver \u2014 leaves slight flexibility. Insert the 3 remaining M3x25 screws somewhat loose. Per manual \u00a75.4.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_m3x25_a",
+        "y_left_m3x25_b",
+        "y_left_m3x25_c",
+        "y_left_m3x25_d"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_m3x25_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m3x25_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m3x25_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m3x25_d",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m1_attach_motor_holder_bolts",
+      "name": "Motor 1: insert 3\u00d7 M6x18 holder bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 118,
+      "family": "Place",
+      "instructionText": "Insert 3 M6x18 bolts into the remaining motor-holder holes, threading each into its embedded nut. Hand-snug; the next step uses the drill. Per manual \u00a75.4-cont.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_left_m6x18_c",
+        "y_left_motor_holder_m6x18_b",
+        "y_left_motor_holder_m6x18_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_motor_holder_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_left_motor_holder_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m1_drill_tighten_holder",
+      "name": "Motor 1: drill-tighten holder M6x18 bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 119,
+      "family": "Use",
+      "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill on its lowest torque setting. The motor holder is now fully clamped.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_m1_dangle_test",
+      "name": "Motor 1: dangle test",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_left",
+      "sequenceIndex": 120,
+      "family": "Confirm",
+      "instructionText": "Hold the assembled motor unit by the belt \u2014 it should hang freely from the holder without the motor slipping out. Per manual \u00a75.5.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m2_pulley",
+      "name": "Motor 2 (Y-Right): mount pulley on motor shaft",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 121,
+      "family": "Place",
+      "instructionText": "Place the GT2 pulley on the Y-Right motor shaft using the thin spacer to keep the pulley off the housing. Tighten the first set screw with an Allen key.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor003",
+        "y_right_gt2_pulley"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor003",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_gt2_pulley",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m2_pulley_pop",
+      "name": "Motor 2: lock pulley set screw until pop",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 122,
+      "family": "Use",
+      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible. A soft \"pop\" means the screw is fully seated. Whether or not you hear it, tighten as hard as you can \u2014 the belt pulls 20 lbs and the screw cannot slip.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m2_half_nuts",
+      "name": "Motor 2: load motor-holder half with 3 nuts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 123,
+      "family": "Place",
+      "instructionText": "Lay one motor-holder half-piece flat with the rectangular belt channel away from you. Drop 3 M6 hex nuts into the embedded slots. Per manual \u00a75.1.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_motor_m6_nut_a",
+        "y_right_motor_m6_nut_b",
+        "y_right_motor_m6_nut_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_motor_m6_nut_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_motor_m6_nut_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_motor_m6_nut_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m2_belt_channel",
+      "name": "Motor 2: insert belt in motor-holder channel",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 124,
+      "family": "Place",
+      "instructionText": "Lay the GT2 belt in the holder channel with the toothed side facing INWARD (toward the motor pulley). Per manual \u00a75.2.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_gt2_belt"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_gt2_belt",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m2_close_halves",
+      "name": "Motor 2: close motor-holder halves",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 125,
+      "family": "Place",
+      "instructionText": "Press the second motor-holder half against the first, trapping the belt and nuts. Halves should align flush. Per manual \u00a75.3.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m2_belt_test",
+      "name": "Motor 2: confirm belt runs smooth on pulley",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 126,
+      "family": "Confirm",
+      "instructionText": "Hold the motor against the holder and pull the belt gently. Belt should glide smoothly on the pulley with no rub. If it rubs, reseat the belt in the channel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m2_attach_motor_screws",
+      "name": "Motor 2: attach motor with 4\u00d7 M3x25 screws",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 127,
+      "family": "Place",
+      "instructionText": "Insert the first M3x25 screw and tighten it \u00be tight with a screwdriver \u2014 leaves slight flexibility. Insert the 3 remaining M3x25 screws somewhat loose. Per manual \u00a75.4.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_m3x25_a",
+        "y_right_m3x25_b",
+        "y_right_m3x25_c",
+        "y_right_m3x25_d"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_m3x25_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_m3x25_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_m3x25_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_m3x25_d",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m2_attach_motor_holder_bolts",
+      "name": "Motor 2: insert 3\u00d7 M6x18 holder bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 128,
+      "family": "Place",
+      "instructionText": "Insert 3 M6x18 bolts into the remaining motor-holder holes, threading each into its embedded nut. Hand-snug; the next step uses the drill. Per manual \u00a75.4-cont.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "y_right_m6x18_c",
+        "y_right_motor_holder_m6x18_b",
+        "y_right_motor_holder_m6x18_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_right_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_motor_holder_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "y_right_motor_holder_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m2_drill_tighten_holder",
+      "name": "Motor 2: drill-tighten holder M6x18 bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 129,
+      "family": "Use",
+      "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill on its lowest torque setting. The motor holder is now fully clamped.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_m2_dangle_test",
+      "name": "Motor 2: dangle test",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_y_right",
+      "sequenceIndex": 130,
+      "family": "Confirm",
+      "instructionText": "Hold the assembled motor unit by the belt \u2014 it should hang freely from the holder without the motor slipping out. Per manual \u00a75.5.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m3_pulley",
+      "name": "Motor 3 (Z-Back): mount pulley on motor shaft",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 131,
+      "family": "Place",
+      "instructionText": "Place the GT2 pulley on the Z-Back motor shaft using the thin spacer to keep the pulley off the housing. Tighten the first set screw with an Allen key.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor001",
+        "z_back_gt2_pulley"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor001",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_gt2_pulley",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m3_pulley_pop",
+      "name": "Motor 3: lock pulley set screw until pop",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 132,
+      "family": "Use",
+      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible. A soft \"pop\" means the screw is fully seated. Whether or not you hear it, tighten as hard as you can \u2014 the belt pulls 20 lbs and the screw cannot slip.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m3_half_nuts",
+      "name": "Motor 3: load motor-holder half with 3 nuts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 133,
+      "family": "Place",
+      "instructionText": "Lay one motor-holder half-piece flat with the rectangular belt channel away from you. Drop 3 M6 hex nuts into the embedded slots. Per manual \u00a75.1.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_motor_m6_nut_a",
+        "z_back_motor_m6_nut_b",
+        "z_back_motor_m6_nut_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_motor_m6_nut_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_motor_m6_nut_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_motor_m6_nut_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m3_belt_channel",
+      "name": "Motor 3: insert belt in motor-holder channel",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 134,
+      "family": "Place",
+      "instructionText": "Lay the GT2 belt in the holder channel with the toothed side facing INWARD (toward the motor pulley). Per manual \u00a75.2.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_gt2_belt"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_gt2_belt",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m3_close_halves",
+      "name": "Motor 3: close motor-holder halves",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 135,
+      "family": "Place",
+      "instructionText": "Press the second motor-holder half against the first, trapping the belt and nuts. Halves should align flush. Per manual \u00a75.3.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m3_belt_test",
+      "name": "Motor 3: confirm belt runs smooth on pulley",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 136,
+      "family": "Confirm",
+      "instructionText": "Hold the motor against the holder and pull the belt gently. Belt should glide smoothly on the pulley with no rub. If it rubs, reseat the belt in the channel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m3_attach_motor_screws",
+      "name": "Motor 3: attach motor with 4\u00d7 M3x25 screws",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 137,
+      "family": "Place",
+      "instructionText": "Insert the first M3x25 screw and tighten it \u00be tight with a screwdriver \u2014 leaves slight flexibility. Insert the 3 remaining M3x25 screws somewhat loose. Per manual \u00a75.4.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_m3x25_a",
+        "z_back_m3x25_b",
+        "z_back_m3x25_c",
+        "z_back_m3x25_d"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_m3x25_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_m3x25_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_m3x25_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_m3x25_d",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m3_attach_motor_holder_bolts",
+      "name": "Motor 3: insert 3\u00d7 M6x18 holder bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 138,
+      "family": "Place",
+      "instructionText": "Insert 3 M6x18 bolts into the remaining motor-holder holes, threading each into its embedded nut. Hand-snug; the next step uses the drill. Per manual \u00a75.4-cont.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_back_m6x18_c",
+        "z_back_motor_holder_m6x18_b",
+        "z_back_motor_holder_m6x18_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_back_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_motor_holder_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_back_motor_holder_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m3_drill_tighten_holder",
+      "name": "Motor 3: drill-tighten holder M6x18 bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 139,
+      "family": "Use",
+      "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill on its lowest torque setting. The motor holder is now fully clamped.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_m3_dangle_test",
+      "name": "Motor 3: dangle test",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_back",
+      "sequenceIndex": 140,
+      "family": "Confirm",
+      "instructionText": "Hold the assembled motor unit by the belt \u2014 it should hang freely from the holder without the motor slipping out. Per manual \u00a75.5.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m4_pulley",
+      "name": "Motor 4 (Z-Front): mount pulley on motor shaft",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 141,
+      "family": "Place",
+      "instructionText": "Place the GT2 pulley on the Z-Front motor shaft using the thin spacer to keep the pulley off the housing. Tighten the first set screw with an Allen key.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "motor",
+        "z_front_gt2_pulley"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_gt2_pulley",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m4_pulley_pop",
+      "name": "Motor 4: lock pulley set screw until pop",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 142,
+      "family": "Use",
+      "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible. A soft \"pop\" means the screw is fully seated. Whether or not you hear it, tighten as hard as you can \u2014 the belt pulls 20 lbs and the screw cannot slip.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m4_half_nuts",
+      "name": "Motor 4: load motor-holder half with 3 nuts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 143,
+      "family": "Place",
+      "instructionText": "Lay one motor-holder half-piece flat with the rectangular belt channel away from you. Drop 3 M6 hex nuts into the embedded slots. Per manual \u00a75.1.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_motor_m6_nut_a",
+        "z_front_motor_m6_nut_b",
+        "z_front_motor_m6_nut_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_motor_m6_nut_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_m6_nut_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_m6_nut_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m4_belt_channel",
+      "name": "Motor 4: insert belt in motor-holder channel",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 144,
+      "family": "Place",
+      "instructionText": "Lay the GT2 belt in the holder channel with the toothed side facing INWARD (toward the motor pulley). Per manual \u00a75.2.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_gt2_belt"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_gt2_belt",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m4_close_halves",
+      "name": "Motor 4: close motor-holder halves",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 145,
+      "family": "Place",
+      "instructionText": "Press the second motor-holder half against the first, trapping the belt and nuts. Halves should align flush. Per manual \u00a75.3.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m4_belt_test",
+      "name": "Motor 4: confirm belt runs smooth on pulley",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 146,
+      "family": "Confirm",
+      "instructionText": "Hold the motor against the holder and pull the belt gently. Belt should glide smoothly on the pulley with no rub. If it rubs, reseat the belt in the channel.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    },
+    {
+      "id": "step_batch_m4_attach_motor_screws",
+      "name": "Motor 4: attach motor with 4\u00d7 M3x25 screws",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 147,
+      "family": "Place",
+      "instructionText": "Insert the first M3x25 screw and tighten it \u00be tight with a screwdriver \u2014 leaves slight flexibility. Insert the 3 remaining M3x25 screws somewhat loose. Per manual \u00a75.4.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_m3x25_a",
+        "z_front_m3x25_b",
+        "z_front_m3x25_c",
+        "z_front_m3x25_d"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_a",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_m3x25_d",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m4_attach_motor_holder_bolts",
+      "name": "Motor 4: insert 3\u00d7 M6x18 holder bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 148,
+      "family": "Place",
+      "instructionText": "Insert 3 M6x18 bolts into the remaining motor-holder holes, threading each into its embedded nut. Hand-snug; the next step uses the drill. Per manual \u00a75.4-cont.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [
+        "z_front_m6x18_c",
+        "z_front_motor_holder_m6x18_b",
+        "z_front_motor_holder_m6x18_c"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z_front_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_holder_m6x18_b",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        },
+        {
+          "kind": "part",
+          "id": "z_front_motor_holder_m6x18_c",
+          "endTransform": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_batch_m4_drill_tighten_holder",
+      "name": "Motor 4: drill-tighten holder M6x18 bolts",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 149,
+      "family": "Use",
+      "instructionText": "Tighten each of the 3 motor-holder M6x18 bolts into its embedded nut using the electric drill on its lowest torque setting. The motor holder is now fully clamped.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [],
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_power_drill"
+      ]
+    },
+    {
+      "id": "step_batch_m4_dangle_test",
+      "name": "Motor 4: dangle test",
+      "assemblyId": "assembly_d3d_batch_motor_build",
+      "partGroupId": "partGroup_motor_z_front",
+      "sequenceIndex": 150,
+      "family": "Confirm",
+      "instructionText": "Hold the assembled motor unit by the belt \u2014 it should hang freely from the holder without the motor slipping out. Per manual \u00a75.5.",
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": []
+    }
+  ],
+  "targets": [],
+  "hints": []
+}

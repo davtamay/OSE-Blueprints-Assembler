@@ -1,9 +1,10 @@
-﻿{
+{
     "file":  "d3d_extruder_mount_top_plate_approved.glb",
-    "source":  "source_cad/extruder_stage02/exported/glb_candidates/Brackettop.glb",
+    "source":  "source_cad/extruder_stage02/exported/glb_candidates/Brackettop_top_plate_only.glb",
+    "splitNote":  "Brackettop.fcstd shipped 11 disconnected shells: shell 0 (7042 tris) was the plate body, shell 1 (896 tris) was a redundant duplicate deck on the back half, shells 2-7 (6x 92 tris) were hex bolt heads, shells 8-10 (3x 20 tris) were bolt shafts protruding below. Hardware was modeled into the source FreeCAD doc but never fused. Kept shell 0 only via tools/split_glb_shells.py. Note: shell 0 still contains 4 small integral side tabs (1 left, 3 right) connected to the main body in the source mesh. Removing them requires authored mesh surgery in Blender/FreeCAD; an automated slice at |x|=26mm cut into the main plate's side walls and was reverted.",
     "gltfpackArgs":  [
                          "-noq",
                          "-cc"
                      ],
-    "packedSizeBytes":  143312
+    "packedSizeBytes":  119788
 }

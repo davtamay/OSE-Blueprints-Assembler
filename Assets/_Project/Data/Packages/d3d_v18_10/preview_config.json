@@ -21060,7 +21060,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_y_left_motor_build",
+        "partGroupId": "partGroup_motor_y_left",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21268,7 +21268,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_y_right_motor_build",
+        "partGroupId": "partGroup_motor_y_right",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21424,7 +21424,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_z_back_motor_build",
+        "partGroupId": "partGroup_motor_z_back",
         "position": {
           "x": 0.0,
           "y": 0.0,
@@ -21632,7 +21632,7 @@
         "stepPoses": []
       },
       {
-        "partGroupId": "partGroup_z_front_motor_build",
+        "partGroupId": "partGroup_motor_z_front",
         "position": {
           "x": 0.0,
           "y": 0.0,
