@@ -176,10 +176,7 @@
       "name": "X-Axis Belt Threading",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Inserts one belt end through the larger carriage belt hole, routes it around the idler bearing (slight curve helps), pulls through the smaller carriage belt hole. Threads through first peg (foot facing away from axis center), inserts belt end ~\u00c2\u00be inch and pushes peg into ribbed hole. Places second peg loosely \u00e2\u20ac\u201d it will be tightened after frame mounting when the full belt length is confirmed.",
-      "partIds": [
-        "idler002",
-        "idler002_half_b"
-      ],
+      "partIds": [],
       "stepIds": [
         "step_x_axis_belt_large_hole",
         "step_x_axis_belt_around_idler",
@@ -556,43 +553,6 @@
       ]
     },
     {
-      "id": "idler002_half_b",
-      "displayName": "Idler002 Half B",
-      "assetRef": "idler_approved.glb",
-      "name": "X-Axis Belt Idler Clamping Half",
-      "category": "custom",
-      "material": "Printed idler half",
-      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": 2.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_x_axis_idler_build"
-      ]
-    },
-    {
       "id": "x_axis_motor_holder_m6x18_c",
       "displayName": "X-Axis Motor Holder M6x18 Bolt C",
       "name": "X-Axis Motor Holder M6x18 Bolt C",
@@ -775,43 +735,6 @@
       },
       "partGroupIds": [
         "partGroup_x_axis_motor_build"
-      ]
-    },
-    {
-      "id": "idler002",
-      "displayName": "Idler002",
-      "assetRef": "idler_approved.glb",
-      "name": "X-Axis Belt Idler",
-      "category": "custom",
-      "material": "Belt idler pulley with bearing",
-      "function": "Redirects the X-axis axis drive belt at the front end of travel.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": -0.036799999999999944,
-          "y": 0.55,
-          "z": 1.9527
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_x_axis_idler_build"
       ]
     },
     {
