@@ -1125,7 +1125,7 @@
       "name": "Tighten the Z-front idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_front_frame_mount",
-      "sequenceIndex": 286,
+      "sequenceIndex": 290,
       "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it will attach to the frame.",
       "profile": "Torque",
       "targetIds": [
@@ -1162,7 +1162,7 @@
       "name": "Mount the Z-front axis to the front frame face",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_front_frame_mount",
-      "sequenceIndex": 287,
+      "sequenceIndex": 291,
       "instructionText": "Pop the loose belt peg out and set aside. Tighten all 8 motor-piece bolts before mounting (they become inaccessible after). Lengthen the axis and fit the idler long bolt through the bottom hole of the front frame face; fit the motor long bolt through the top hole. Fasten both with nuts.",
       "hintIds": [
         "hint_mount_z_front_axis"
@@ -1231,7 +1231,7 @@
       "name": "Lock the Z-front motor holder bolts",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_front_frame_mount",
-      "sequenceIndex": 288,
+      "sequenceIndex": 292,
       "instructionText": "With the Z-front axis at the correct frame length, tighten the two motor-piece bolts fully. This locks the rods in place so the belt can be properly tensioned.",
       "profile": "Torque",
       "targetIds": [
@@ -1268,7 +1268,7 @@
       "name": "Tension the Z-front axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_front_frame_mount",
-      "sequenceIndex": 289,
+      "sequenceIndex": 293,
       "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten \u00e2\u20ac\u201d the belt can snap. Hold tension and proceed to insert the belt peg.",
       "profile": "Torque",
       "targetIds": [
@@ -1297,7 +1297,7 @@
       "name": "Reinsert the Z-front belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_front_frame_mount",
-      "sequenceIndex": 290,
+      "sequenceIndex": 294,
       "instructionText": "Insert the belt end approximately \u00c2\u00be inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
       "hintIds": [
         "hint_reinsert_z_front_belt_peg"
@@ -1342,7 +1342,7 @@
       "name": "Check Z-front axis travel and QC",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_front_frame_mount",
-      "sequenceIndex": 291,
+      "sequenceIndex": 295,
       "instructionText": "Run the Z-front QC checklist: carriage moves smoothly along full travel; rods flush with idler bottom; idler and carriage bolt heads on the same side; toothed side of belt faces inward.",
       "targetIds": [
         "target_z_front_carriage_travel_qc"
@@ -1358,7 +1358,7 @@
       "name": "Tighten the Z-back idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_back_frame_mount",
-      "sequenceIndex": 292,
+      "sequenceIndex": 296,
       "instructionText": "Tighten the two shorter M6x18 bolts on the Z-back idler using an electric drill on low torque. Leave the longer M6x30 bolt loose for frame attachment.",
       "profile": "Torque",
       "targetIds": [
@@ -1395,7 +1395,7 @@
       "name": "Mount the Z-back axis to the back frame face",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_back_frame_mount",
-      "sequenceIndex": 293,
+      "sequenceIndex": 297,
       "instructionText": "Tighten all 8 motor-piece bolts first. Lengthen the Z-back axis and fit the idler bolt through the bottom hole of the back frame face; fit the motor bolt through the top hole. Fasten both. Align directly behind Z-front.",
       "hintIds": [
         "hint_mount_z_back_axis"
@@ -1464,7 +1464,7 @@
       "name": "Lock the Z-back motor holder bolts",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_back_frame_mount",
-      "sequenceIndex": 294,
+      "sequenceIndex": 298,
       "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned \u00e2\u20ac\u201d Z-back carriage should be at the same height as Z-front carriage before locking.",
       "profile": "Torque",
       "targetIds": [
@@ -1501,7 +1501,7 @@
       "name": "Tension the Z-back axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_back_frame_mount",
-      "sequenceIndex": 295,
+      "sequenceIndex": 299,
       "instructionText": "Tension the Z-back belt with pliers until it twangs like a guitar string. Hold tension and proceed to the belt peg step.",
       "profile": "Torque",
       "targetIds": [
@@ -1530,7 +1530,7 @@
       "name": "Reinsert the Z-back belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_back_frame_mount",
-      "sequenceIndex": 296,
+      "sequenceIndex": 300,
       "instructionText": "Insert belt end ~\u00c2\u00be inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
       "hintIds": [
         "hint_reinsert_z_back_belt_peg"
@@ -1575,7 +1575,7 @@
       "name": "Check Z-back axis travel and QC",
       "assemblyId": "assembly_d3d_axes_mount",
       "partGroupId": "partGroup_z_back_frame_mount",
-      "sequenceIndex": 297,
+      "sequenceIndex": 301,
       "instructionText": "QC: carriage moves smoothly; rods flush; bolt heads same side; toothed belt faces inward; Z-back carriage level with Z-front carriage.",
       "targetIds": [
         "target_z_back_carriage_travel_qc"

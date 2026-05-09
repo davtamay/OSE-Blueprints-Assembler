@@ -2783,14 +2783,14 @@
         "target_y_left_bench_staged"
       ],
       "instructionText": "All Y-Left axis components are assembled \u00e2\u20ac\u201d carriage, idler, motor holder, rods, and belt are complete. Pick up the assembled axis unit and place it at the staging position on your bench. It will sit here until frame mounting.",
-      "sequenceIndex": 213
+      "sequenceIndex": 194
     },
     {
       "id": "step_qc_y_left_axis_bench",
       "name": "Y-left axis bench QC and label",
       "assemblyId": "assembly_d3d_y_left_bench",
       "partGroupId": "partGroup_y_left_endstop_build",
-      "sequenceIndex": 214,
+      "sequenceIndex": 195,
       "instructionText": "Run the full bench QC checklist before labeling and setting aside: belt moves smoothly along the full rod length; rod ends are flush with the idler bottom; the idler and carriage bolt heads are on the same side; the toothed side of the belt is facing inward. Label the axis Y-Left using masking tape and a marker.",
       "family": "Confirm",
       "viewMode": "Inspect",
