@@ -1,0 +1,51 @@
+assetRef,part_count,part_ids
+d3d_axis_m6x18_bolt.glb,52,z_back_m6x18_a; z_back_m6x18_b; z_back_m6x30_a; z_back_m6x30_b; z_front_m6x18_a; z_front_m6x18_b; z_front_m6x30_a; z_front_m6x30_b; y_left_m6x18_b; y_left_idler_m6x30_a; y_left_idler_m6x18_loose; y_right_idler_m6x30_a; y_right_idler_m6x18_loose; y_right_idler_m6x18_inner; z_back_idler_m6x18_inner; z_back_idler_m6x30_frame; z_back_idler_m6x18_loose; z_front_idler_m6x18_loose; z_front_idler_m6x30_a; z_front_idler_m6x18_inner; y_left_m6x18_c; y_left_motor_holder_m6x18_b; y_left_motor_holder_m6x18_c; y_right_motor_holder_m6x18_b; y_right_m6x18_c; y_right_motor_holder_m6x18_c; z_back_m6x18_c; z_back_motor_holder_m6x18_b; z_back_motor_holder_m6x18_c; z_front_motor_holder_m6x18_c; z_front_motor_holder_m6x18_b; z_front_m6x18_c; x_axis_motor_holder_m6x18_c; x_axis_motor_holder_m6x18_b; x_axis_m6x18_c; x_axis_m6x18_a; x_axis_carriage_m6x18_b; x_axis_m6x30_a; x_axis_m6x30_b; x_axis_idler_m6x18_inner; x_axis_idler_m6x18_y_attach_a; x_axis_idler_m6x18_y_attach_b; x_axis_idler_m6x18_clamp_a; x_axis_idler_m6x18_clamp_b; y_left_m6x18_a; y_left_m6x30_a; y_left_m6x30_b; y_left_carriage_m6x18_b; y_right_m6x18_a; y_right_m6x18_b; y_right_m6x30_a; y_right_m6x30_b
+<none>,50,d3d_y_left_axis_unit; d3d_y_right_axis_unit; fastener_x_axis_belt_peg; fastener_x_axis_idler_mount_m6x30_a; fastener_x_axis_idler_mount_m6x30_b; fastener_x_axis_motor_mount_m6x30_a; fastener_x_axis_motor_mount_m6x30_b; fastener_z_front_idler_frame_bolt; fastener_z_front_motor_frame_bolt; fastener_z_front_belt_peg; fastener_z_back_idler_frame_bolt; fastener_z_back_motor_frame_bolt; fastener_z_back_belt_peg; d3d_extruder_nozzle_assembly; d3d_titan_aero_core; d3d_extruder_5015_blower; d3d_extruder_sensor_holder; d3d_extruder_mount_bracket; d3d_extruder_simplified_carriage; d3d_extruder_mount_top_plate; d3d_frame_bottom_bottom_bar; d3d_frame_bottom_left_bar; d3d_frame_bottom_right_bar; d3d_frame_bottom_top_bar; d3d_frame_front_bottom_bar; d3d_frame_front_left_bar; d3d_frame_front_right_bar; d3d_frame_front_top_bar; d3d_frame_left_bottom_bar; d3d_frame_left_left_bar; d3d_frame_left_right_bar; d3d_frame_left_top_bar; d3d_frame_rear_bottom_bar; d3d_frame_rear_left_bar; d3d_frame_rear_right_bar; d3d_frame_rear_top_bar; d3d_frame_right_bottom_bar; d3d_frame_right_left_bar; d3d_frame_right_right_bar; d3d_frame_right_top_bar; d3d_frame_top_bottom_bar; d3d_frame_top_left_bar; d3d_frame_top_right_bar; d3d_frame_top_top_bar; d3d_x_axis_motor_holder_unit; d3d_heatbed_body; d3d_x_axis_carriage_side; d3d_x_axis_half_carriage; d3d_x_axis_idler_unit; d3d_x_axis_rod_pair
+d3d_axis_m6_nut.glb,50,z_back_m6_nut_a; z_back_m6_nut_b; z_back_m6_nut_c; z_back_m6_nut_d; z_front_m6_nut_a; z_front_m6_nut_b; z_front_m6_nut_c; z_front_m6_nut_d; y_left_idler_m6_nut_inner; y_left_idler_m6_nut_frame; y_left_idler_m6_nut_loose; y_right_idler_m6_nut_loose; y_right_idler_m6_nut_frame; y_right_idler_m6_nut_inner; z_back_idler_m6_nut_inner; z_back_idler_m6_nut_frame; z_back_idler_m6_nut_loose; z_front_idler_m6_nut_inner; z_front_idler_m6_nut_frame; z_front_idler_m6_nut_loose; y_left_motor_m6_nut_a; y_left_motor_m6_nut_b; y_left_motor_m6_nut_c; y_right_motor_m6_nut_b; y_right_motor_m6_nut_c; y_right_motor_m6_nut_a; z_back_motor_m6_nut_c; z_back_motor_m6_nut_b; z_back_motor_m6_nut_a; z_front_motor_m6_nut_a; z_front_motor_m6_nut_c; z_front_motor_m6_nut_b; x_axis_motor_m6_nut_c; x_axis_motor_m6_nut_a; x_axis_motor_m6_nut_b; x_axis_carriage_m6_nut_a; x_axis_carriage_m6_nut_b; x_axis_carriage_m6_nut_c; x_axis_carriage_m6_nut_d; x_axis_idler_m6_nut_y_attach_a; x_axis_idler_m6_nut_y_attach_b; x_axis_idler_m6_nut_clamp; y_left_m6_nut_a; y_left_m6_nut_b; y_left_m6_nut_c; y_left_m6_nut_d; y_right_m6_nut_a; y_right_m6_nut_b; y_right_m6_nut_c; y_right_m6_nut_d
+d3d_axis_lm8uu_bearing.glb,20,z_back_lm8uu_a; z_back_lm8uu_b; z_back_lm8uu_c; z_back_lm8uu_d; z_front_lm8uu_a; z_front_lm8uu_b; z_front_lm8uu_c; z_front_lm8uu_d; x_axis_lm8uu_a; x_axis_lm8uu_b; x_axis_lm8uu_c; x_axis_lm8uu_d; y_left_lm8uu_a; y_left_lm8uu_b; y_left_lm8uu_c; y_left_lm8uu_d; y_right_lm8uu_a; y_right_lm8uu_b; y_right_lm8uu_c; y_right_lm8uu_d
+d3d_axis_m3x25_shcs.glb,20,y_left_m3x25_a; y_left_m3x25_b; y_left_m3x25_c; y_left_m3x25_d; y_right_m3x25_d; y_right_m3x25_a; y_right_m3x25_b; y_right_m3x25_c; z_back_m3x25_d; z_back_m3x25_c; z_back_m3x25_b; z_back_m3x25_a; z_front_m3x25_b; z_front_m3x25_c; z_front_m3x25_d; z_front_m3x25_a; x_axis_m3x25_d; x_axis_m3x25_b; x_axis_m3x25_a; x_axis_m3x25_c
+d3d_axis_625zz_bearing.glb,10,y_left_625zz_a; y_left_625zz_b; y_right_625zz_b; y_right_625zz_a; z_back_625zz_a; z_back_625zz_b; z_front_625zz_a; z_front_625zz_b; x_axis_idler_half_bearing_a; x_axis_idler_half_bearing_b
+idler_approved.glb,8,idler002; idler002_half_b; idler003; idler003_half_b; idler001; idler001_half_b; idler; idler_half_b
+compound007_approved.glb,8,compound007_lower_fl; compound007_lower_fr; compound007_lower_rl; compound007_lower_rr; compound007_upper_fl; compound007_upper_fr; compound007_upper_rl; compound007_upper_rr
+heatbed_raisers_combined.glb,6,bed_raiser; bed_raiser001; bed_raiser002; bed_raiser003; bed_raiser004; bed_raiser005
+d3d_axis_gt2_pulley_19t.glb,5,y_left_gt2_pulley; y_right_gt2_pulley; z_back_gt2_pulley; z_front_gt2_pulley; x_axis_gt2_pulley
+d3d_axis_gt2_belt.glb,5,y_left_gt2_belt; y_right_gt2_belt; z_back_gt2_belt; z_front_gt2_belt; x_axis_gt2_belt
+y_left_carriage_half_a.glb,4,z_back_carriage_half_a; z_front_carriage_half_a; y_left_carriage_half_a; y_right_carriage_half_a
+y_left_carriage_half_b.glb,4,z_back_carriage_half_b; z_front_carriage_half_b; y_left_carriage_half_b; y_right_carriage_half_b
+rod_005_approved.glb,4,batch_test_rod; rod_005; z_back_rod_a; z_front_rod_a
+rod_006_approved.glb,3,rod_006; z_back_rod_b; z_front_rod_b
+y_endstop_approved.glb,2,x_endstop; y_endstop
+motor002_approved.glb,1,motor002
+motor003_approved.glb,1,motor003
+motor001_approved.glb,1,motor001
+motor_approved.glb,1,motor
+pocket039_approved.glb,1,pocket039
+pocket040_approved.glb,1,pocket040
+y1_bracket_approved.glb,1,y1_bracket
+rod_007_approved.glb,1,rod_007
+rod_008_approved.glb,1,rod_008
+y2_bracket_approved.glb,1,y2_bracket
+motor_piece001_approved.glb,1,motor_piece001
+z1_half_carriage_approved.glb,1,z1_half_carriage
+z1_spacer_002_approved.glb,1,z1_spacer_002
+z1_spacer_1_approved.glb,1,z1_spacer_1
+motor_piece_approved.glb,1,motor_piece
+z2_half_carriage_approved.glb,1,z2_half_carriage
+z2_spacer_approved.glb,1,z2_spacer
+z2_spacer_2_approved.glb,1,z2_spacer_2
+cable_chain_approved.glb,1,cable_chain
+cable_chain_bracket_approved.glb,1,cable_chain_bracket
+cable_chain_y_approved.glb,1,cable_chain_y
+ramps_14_board_approved.glb,1,d3d_ramps_14_board
+d3d_control_panel_approved.glb,1,d3d_control_panel
+d3d_extruder_8mm_sensor_approved.glb,1,d3d_extruder_8mm_sensor
+d3d_heatbed_snapbuckle_left_approved.glb,1,d3d_heatbed_snapbuckle_left
+d3d_heatbed_snapbuckle_right_approved.glb,1,d3d_heatbed_snapbuckle_right
+bed_rod_002_approved.glb,1,bed_rod_002
+bed_rod_1_approved.glb,1,bed_rod_1
+rod_003_approved.glb,1,rod_003
+rod_004_approved.glb,1,rod_004
+rod_2_approved.glb,1,rod_2
+motor004_approved.glb,1,motor004
+rod_009_approved.glb,1,rod_009
+rod_010_approved.glb,1,rod_010
