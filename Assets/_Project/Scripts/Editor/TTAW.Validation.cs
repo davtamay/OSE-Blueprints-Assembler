@@ -80,6 +80,74 @@ namespace OSE.Editor
             _validationLastRunUtc   = DateTime.UtcNow;
         }
 
+        // ── Clipboard export ──────────────────────────────────────────────────
+        //
+        // Copies the current validation issue list to the system clipboard as
+        // plain text. Format mirrors what the dashboard rows display, prefixed
+        // with severity and grouped error-first so handing the log off (chat,
+        // ticket, IM) doesn't require screenshots.
+        private void CopyValidationIssuesToClipboard()
+        {
+            // Run validation first so what's copied matches what's shown.
+            // If _pkg is null this is a no-op and we still emit a header.
+            if (_pkg != null && (_validationIssues == null
+                || (_validationLastRunPkgId != _pkgId)))
+            {
+                RunValidation();
+                RefreshValidationDashboard();
+            }
+
+            var issues = _validationIssues ?? Array.Empty<MachinePackageValidationIssue>();
+            int errorCount = 0, warnCount = 0;
+            for (int i = 0; i < issues.Length; i++)
+            {
+                if (issues[i].Severity == MachinePackageIssueSeverity.Error) errorCount++;
+                else warnCount++;
+            }
+
+            var sb = new System.Text.StringBuilder(1024);
+            sb.Append("Validation log — package: ").Append(_pkgId ?? "<none>").Append('\n');
+            sb.Append("Total: ").Append(issues.Length)
+              .Append(" (").Append(errorCount).Append(" error, ")
+              .Append(warnCount).Append(" warning)\n");
+            sb.Append("Generated: ").Append(DateTime.UtcNow.ToString("u")).Append('\n');
+            sb.Append('\n');
+
+            // Errors first
+            if (errorCount > 0)
+            {
+                sb.Append("ERRORS\n");
+                for (int i = 0; i < issues.Length; i++)
+                {
+                    var x = issues[i];
+                    if (x.Severity != MachinePackageIssueSeverity.Error) continue;
+                    AppendIssueLine(sb, x);
+                }
+                sb.Append('\n');
+            }
+            if (warnCount > 0)
+            {
+                sb.Append("WARNINGS\n");
+                for (int i = 0; i < issues.Length; i++)
+                {
+                    var x = issues[i];
+                    if (x.Severity == MachinePackageIssueSeverity.Error) continue;
+                    AppendIssueLine(sb, x);
+                }
+            }
+
+            EditorGUIUtility.systemCopyBuffer = sb.ToString();
+            OseLog.Info($"[TTAW.Validation] Copied {issues.Length} issue(s) to clipboard ({errorCount}E/{warnCount}W).");
+        }
+
+        private static void AppendIssueLine(System.Text.StringBuilder sb,
+                                            MachinePackageValidationIssue x)
+        {
+            sb.Append(x.Severity == MachinePackageIssueSeverity.Error ? "  ✗ " : "  ⚠ ");
+            if (!string.IsNullOrEmpty(x.Path)) sb.Append(x.Path).Append(" — ");
+            sb.Append(x.Message ?? "").Append('\n');
+        }
+
         // ── UITK build ────────────────────────────────────────────────────────
 
         private void BuildValidationDashboard(VisualElement parent)
@@ -114,6 +182,15 @@ namespace OSE.Editor
             runBtn.style.marginLeft  = 2;
             runBtn.style.marginRight = 2;
             actionRow.Add(runBtn);
+
+            var copyBtn = new Button(CopyValidationIssuesToClipboard) { text = "Copy log" };
+            copyBtn.style.flexGrow    = 0;
+            copyBtn.style.minWidth    = 80;
+            copyBtn.style.marginLeft  = 2;
+            copyBtn.style.marginRight = 2;
+            copyBtn.tooltip = "Copy all validation issues to clipboard as plain text";
+            actionRow.Add(copyBtn);
+
             _validationFoldout.contentContainer.Add(actionRow);
 
             // Issue list

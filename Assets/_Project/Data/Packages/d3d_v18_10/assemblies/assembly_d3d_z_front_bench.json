@@ -806,43 +806,6 @@
       ]
     },
     {
-      "id": "z_front_m6x18_b",
-      "displayName": "Z-Front M6x18 B",
-      "name": "Z-Front M6x18 Bolt B",
-      "assetRef": "d3d_axis_m6x18_bolt.glb",
-      "category": "fastener",
-      "material": "M6x18 hex bolt, zinc-plated",
-      "function": "Secures idler halves together.",
-      "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": -0.7799999999999999,
-          "y": 0.6,
-          "z": 1.682
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
-      "partGroupIds": [
-        "partGroup_z_front_idler_build"
-      ]
-    },
-    {
       "id": "z_front_m3x25_d",
       "displayName": "Z-Front M3x25 D",
       "name": "Z-Front Motor Screw D",
