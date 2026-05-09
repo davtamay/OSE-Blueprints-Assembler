@@ -41,7 +41,8 @@
         "step_z_front_belt_first_peg",
         "step_z_front_belt_second_peg",
         "step_z_front_belt_travel_test",
-        "step_z_front_label_axis"
+        "step_z_front_label_axis",
+        "step_qc_z_front_axis_bench"
       ],
       "dependencyAssemblyIds": [
         "assembly_d3d_frame",
@@ -135,7 +136,8 @@
         "step_z_front_belt_first_peg",
         "step_z_front_belt_second_peg",
         "step_z_front_belt_travel_test",
-        "step_z_front_label_axis"
+        "step_z_front_label_axis",
+        "step_qc_z_front_axis_bench"
       ],
       "milestoneMessage": "Z-front belt routed and first peg locked. Second peg loose for frame-side tensioning.",
       "isAggregate": true
@@ -2275,6 +2277,22 @@
       "family": "Confirm",
       "instructionText": "Use masking tape and a marker to label this assembly as \"Z-Front Axis\". Set it aside in a safe place. It is complete and ready for frame mounting.",
       "requiredPartIds": []
+    },
+    {
+      "id": "step_qc_z_front_axis_bench",
+      "name": "Z-Front axis bench QC and label",
+      "assemblyId": "assembly_d3d_z_front_bench",
+      "partGroupId": "partGroup_z_front_belt_threading",
+      "sequenceIndex": 324,
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "instructionText": "Run the full bench QC checklist before labeling and setting aside: belt moves smoothly along the full rod length; rod ends are flush with the idler bottom; the idler and carriage bolt heads are on the same side; the toothed side of the belt is facing inward. Label the axis Z-Front using masking tape and a marker.",
+      "targetIds": [
+        "target_bench_z_front_qc"
+      ],
+      "hintIds": [
+        "hint_qc_z_front_axis_bench"
+      ]
     }
   ],
   "targets": [

@@ -41,7 +41,8 @@
         "step_y_right_belt_first_peg",
         "step_y_right_belt_second_peg",
         "step_y_right_belt_travel_test",
-        "step_y_right_label_axis"
+        "step_y_right_label_axis",
+        "step_qc_y_right_axis_bench"
       ],
       "dependencyAssemblyIds": [
         "assembly_d3d_frame",
@@ -135,7 +136,8 @@
         "step_y_right_belt_first_peg",
         "step_y_right_belt_second_peg",
         "step_y_right_belt_travel_test",
-        "step_y_right_label_axis"
+        "step_y_right_label_axis",
+        "step_qc_y_right_axis_bench"
       ],
       "milestoneMessage": "Y-right belt routed and first peg locked. Second peg loose for frame-side tensioning.",
       "isAggregate": true
@@ -2598,6 +2600,22 @@
       "family": "Confirm",
       "instructionText": "Use masking tape and a marker to label this assembly as \"Y-Right Axis\". Set it aside in a safe place. It is complete and ready for frame mounting.",
       "requiredPartIds": []
+    },
+    {
+      "id": "step_qc_y_right_axis_bench",
+      "name": "Y-Right axis bench QC and label",
+      "assemblyId": "assembly_d3d_y_right_bench",
+      "partGroupId": "partGroup_y_right_belt_threading",
+      "sequenceIndex": 322,
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "instructionText": "Run the full bench QC checklist before labeling and setting aside: belt moves smoothly along the full rod length; rod ends are flush with the idler bottom; the idler and carriage bolt heads are on the same side; the toothed side of the belt is facing inward. Label the axis Y-Right using masking tape and a marker.",
+      "targetIds": [
+        "target_bench_y_right_qc"
+      ],
+      "hintIds": [
+        "hint_qc_y_right_axis_bench"
+      ]
     }
   ],
   "targets": [
