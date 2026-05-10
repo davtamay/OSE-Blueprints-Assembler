@@ -1546,9 +1546,9 @@
       {
         "partId": "idler",
         "startPosition": {
-          "x": -0.9,
+          "x": 1.68,
           "y": 0.55,
-          "z": 3.2
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,
@@ -1601,9 +1601,9 @@
       {
         "partId": "idler001",
         "startPosition": {
-          "x": -0.9,
+          "x": 1.5,
           "y": 0.55,
-          "z": 3.6
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,
@@ -1656,9 +1656,9 @@
       {
         "partId": "idler002",
         "startPosition": {
-          "x": 0.8132,
+          "x": 1.14,
           "y": 0.55,
-          "z": 0.1027
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,
@@ -1711,9 +1711,9 @@
       {
         "partId": "idler002_half_b",
         "startPosition": {
-          "x": 0.85,
-          "y": 0.55,
-          "z": 0.15
+          "x": 1.14,
+          "y": 0.58,
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,
@@ -1766,9 +1766,9 @@
       {
         "partId": "idler003",
         "startPosition": {
-          "x": -0.45,
+          "x": 1.32,
           "y": 0.55,
-          "z": 2.4
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,

@@ -170,7 +170,7 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.1,
+          "x": 1.14,
           "y": 0.55,
           "z": 0.0
         },
@@ -207,8 +207,8 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.18,
-          "y": 0.55,
+          "x": 1.14,
+          "y": 0.58,
           "z": 0.0
         },
         "rotation": {
@@ -540,7 +540,7 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.28,
+          "x": 1.32,
           "y": 0.55,
           "z": 0.0
         },
@@ -651,8 +651,8 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.36,
-          "y": 0.55,
+          "x": 1.32,
+          "y": 0.58,
           "z": 0.0
         },
         "rotation": {
@@ -910,7 +910,7 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.46,
+          "x": 1.5,
           "y": 0.55,
           "z": 0.0
         },
@@ -947,8 +947,8 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.54,
-          "y": 0.55,
+          "x": 1.5,
+          "y": 0.58,
           "z": 0.0
         },
         "rotation": {
@@ -1280,7 +1280,7 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.64,
+          "x": 1.68,
           "y": 0.55,
           "z": 0.0
         },
@@ -1354,8 +1354,8 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 1.72,
-          "y": 0.55,
+          "x": 1.68,
+          "y": 0.58,
           "z": 0.0
         },
         "rotation": {
