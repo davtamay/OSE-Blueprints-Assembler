@@ -531,7 +531,7 @@ namespace OSE.Editor
             Action showAddTaskMenu = () =>
             {
                 var menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.AddItem(new GUIContent("Part"),           false, () => { _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); OpenPartBrowserForStep(step); });
                 menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                 menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                 menu.AddItem(new GUIContent("Part (Group)"), false, () => { _addTaskPicker = AddTaskPicker.Group; _addPickerGroupIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
@@ -954,22 +954,11 @@ namespace OSE.Editor
         /// </summary>
         private void StripEmptyLabelStepPoses()
         {
-            var placements = _pkg?.previewConfig?.partPlacements;
-            if (placements == null) return;
-            foreach (var pp in placements)
-            {
-                if (pp == null || pp.stepPoses == null || pp.stepPoses.Length == 0) continue;
-                var keep = new List<StepPoseEntry>(pp.stepPoses.Length);
-                foreach (var sp in pp.stepPoses)
-                {
-                    if (sp == null) continue;
-                    // Keep if label is non-empty (author-created) — legacy
-                    // empty-label entries get dropped.
-                    if (!string.IsNullOrEmpty(sp.label)) keep.Add(sp);
-                }
-                if (keep.Count != pp.stepPoses.Length)
-                    pp.stepPoses = keep.ToArray();
-            }
+            var (rescued, orphans) = StepPoseLoadHealer.RescueEmptyLabelStepPoses(_pkg);
+            if (rescued > 0)
+                OseLog.Info($"[TTAW.StripEmptyLabel] Rescued {rescued} NoTask-backed stepPose(s) by promoting label to 'Custom'.");
+            if (orphans > 0)
+                OseLog.Info($"[TTAW.StripEmptyLabel] {orphans} legacy empty-label stepPose(s) detected (no current visualPartIds backing). Kept on disk — run a future opt-in cleanup tool if you want to remove them.");
         }
 
         /// <summary>
@@ -1102,12 +1091,25 @@ namespace OSE.Editor
                         if (_parts[i].def?.id == partId) return _parts[i].isDirty;
                 return false;
             }
-            // wire, tool, target — check the backing target
+            // wire, toolAction, target — check the backing target. For
+            // kind="toolAction" the entry.id is the ACTION id; indirect via
+            // step.requiredToolActions to get the actual targetId before the
+            // _targets lookup, else the row never matches and the inline
+            // "● Unsaved Changes" + Save button never appears even though
+            // the toolbar's global dirty count includes the step.
+            string lookupTargetId = entry.id;
+            if (entry.kind == "toolAction" && step?.requiredToolActions != null)
+            {
+                foreach (var a in step.requiredToolActions)
+                    if (a?.id == entry.id) { lookupTargetId = a.targetId; break; }
+            }
             if (_targets != null)
                 for (int i = 0; i < _targets.Length; i++)
-                    if (_targets[i].def?.id == entry.id) return _targets[i].isDirty;
-            // Wire steps also dirty when polarity/step fields changed
-            if (entry.kind == "wire") return _dirtyStepIds.Contains(step?.id ?? "");
+                    if (_targets[i].def?.id == lookupTargetId) { if (_targets[i].isDirty) return true; break; }
+            // Tool-task pose drags flag the specific entry; wire polarity
+            // edits flag the whole step.
+            if (entry.kind == "toolAction" && _dirtyTaskEntryIds.Contains(entry.id)) return true;
+            if (entry.kind == "wire" && _dirtyStepIds.Contains(step?.id ?? "")) return true;
             return false;
         }
 
@@ -1266,6 +1268,68 @@ namespace OSE.Editor
             _redoStack.Clear();
             SceneView.RepaintAll();
             Repaint();
+        }
+
+        /// <summary>
+        /// Multi-select batch save/revert affordance. Walks every entry in
+        /// the row-list multi-selection, counts how many are dirty, and
+        /// renders a "● N Unsaved Changes / Save All / Revert All" header
+        /// when any are. One-click Save All persists every dirty selected
+        /// entry by calling <see cref="SaveTaskEntry"/> in sequence;
+        /// Revert All restores each via the kind-appropriate revert helper
+        /// (<see cref="RevertPartEntry"/> / <see cref="RevertTargetEntry"/>).
+        /// No-op when nothing is dirty.
+        /// </summary>
+        private void DrawBatchUnsavedHeader(StepDefinition step, List<TaskOrderEntry> order)
+        {
+            if (step == null || order == null || _multiSelectedTaskSeqIdxs == null) return;
+
+            // Snapshot the dirty entries — we need a stable list because
+            // SaveTaskEntry / Revert* mutate the underlying state.
+            var dirtyEntries = new List<TaskOrderEntry>();
+            foreach (int idx in _multiSelectedTaskSeqIdxs)
+            {
+                if (idx < 0 || idx >= order.Count) continue;
+                var e = order[idx];
+                if (e == null) continue;
+                if (IsTaskEntryDirty(e, step)) dirtyEntries.Add(e);
+            }
+            if (dirtyEntries.Count == 0) return;
+
+            EditorGUILayout.BeginHorizontal();
+            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+            EditorGUILayout.LabelField($"● {dirtyEntries.Count} Unsaved Changes", ds);
+            if (GUILayout.Button(new GUIContent("Save All",
+                    "Persist every unsaved entry in this multi-selection. Equivalent to clicking Save on each task individually."),
+                    EditorStyles.miniButton, GUILayout.Width(64)))
+            {
+                foreach (var e in dirtyEntries) SaveTaskEntry(e, step);
+            }
+            if (GUILayout.Button(new GUIContent("Revert All",
+                    "Discard every unsaved edit in this multi-selection by reloading each entry from disk."),
+                    EditorStyles.miniButton, GUILayout.Width(80)))
+            {
+                foreach (var e in dirtyEntries)
+                {
+                    if (e.kind == "part")
+                    {
+                        RevertPartEntry(TaskInstanceId.ToPartId(e.id));
+                    }
+                    else
+                    {
+                        // Indirect action.id → action.targetId for toolAction.
+                        string revertTargetId = e.id;
+                        if (e.kind == "toolAction" && step.requiredToolActions != null)
+                        {
+                            foreach (var a in step.requiredToolActions)
+                                if (a?.id == e.id) { revertTargetId = a.targetId; break; }
+                        }
+                        RevertTargetEntry(revertTargetId);
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
         }
 
         private static readonly Color _seqColorWire    = new Color(0.2f, 0.9f, 0.9f, 1f);
@@ -1878,6 +1942,20 @@ namespace OSE.Editor
 
                     float dirtyW = entryDirty ? 14f : 0f;
 
+                    // Pose-state badge — for toolAction rows, surface the
+                    // last-viewed pose pill so the author sees Start vs. End
+                    // at a glance from the task list. Without it, tracking
+                    // pose state requires clicking the row and reading the
+                    // pill, which is exactly the surface that the user said
+                    // misled them. Reuses the same accent colors as the pill
+                    // (PoseAccentStart / PoseAccentAssembled) for visual
+                    // continuity.
+                    bool showsPoseBadge = entry.kind == "toolAction";
+                    float poseBadgeW = showsPoseBadge ? 16f : 0f;
+                    InteractionPosePill rowPill = showsPoseBadge
+                        ? GetPillForEntry(entry.id)
+                        : InteractionPosePill.Start;
+
                     // Slice ME-A: "NO TASK" pill retired. The N chip (pale-
                     // cyan tri-state toggle) already conveys visualPartIds
                     // membership via its letter + color + tooltip; showing a
@@ -1896,7 +1974,7 @@ namespace OSE.Editor
                     // rows skip it, freeing horizontal room for the id label).
                     float setFieldReserve = showsSetField ? (setFieldW + 2f) : 0f;
                     float idX    = rect.x + 80f + reqOptW + setFieldReserve + indent;
-                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - indent;
+                    float idW    = rect.width - 110f - tagW - dirtyW - poseBadgeW - reqOptW - setFieldReserve - indent;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     // Show group display name + member count for [G] tasks, raw id for everything else.
                     // The count badge ("14 parts") makes group scope visible at a glance so authors
@@ -2198,6 +2276,31 @@ namespace OSE.Editor
                     }
 
 
+                    // Pose-state badge: draw before the dirty dot so the dot
+                    // (when present) sits at the row's far right and the badge
+                    // stays anchored at a stable column position regardless of
+                    // dirty state.
+                    float poseBadgeX = (totalGroups > 0 ? idRect.xMax + tagW + 4f : idRect.xMax + 2f);
+                    if (showsPoseBadge)
+                    {
+                        bool isEnd = rowPill == InteractionPosePill.End;
+                        Color poseFg = isEnd ? PoseAccentAssembled : PoseAccentStart;
+                        Color poseBg = new Color(poseFg.r, poseFg.g, poseFg.b, 0.22f);
+                        var poseBadgeRect = new Rect(poseBadgeX, rect.y + 3f, poseBadgeW - 2f, rect.height - 4f);
+                        EditorGUI.DrawRect(poseBadgeRect, poseBg);
+                        var poseStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            normal    = { textColor = poseFg },
+                            fontStyle = FontStyle.Bold,
+                            alignment = TextAnchor.MiddleCenter,
+                            fontSize  = 9,
+                        };
+                        string tip = isEnd
+                            ? "Currently viewing END pose. Drag the gizmo to author endTransform."
+                            : "Currently viewing START pose (read-only inherited unless an override is authored).";
+                        GUI.Label(poseBadgeRect, new GUIContent(isEnd ? "E" : "S", tip), poseStyle);
+                    }
+
                     if (entryDirty)
                     {
                         var dotStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -2206,7 +2309,7 @@ namespace OSE.Editor
                             fontStyle = FontStyle.Bold,
                             alignment = TextAnchor.MiddleLeft,
                         };
-                        float dotX = totalGroups > 0 ? idRect.xMax + tagW + 4f : idRect.xMax + 2f;
+                        float dotX = poseBadgeX + (showsPoseBadge ? poseBadgeW : 0f);
                         EditorGUI.LabelField(new Rect(dotX, rect.y + 1f, 14f, rect.height), "●", dotStyle);
                     }
 
@@ -2979,10 +3082,19 @@ namespace OSE.Editor
             // and the tool preview / target dot rely on them to resolve
             // pillPos. Without this pre-set, the tool falls back to end-aligned
             // for one paint cycle on every task switch — visible flicker.
+            //
+            // The eager stamp also short-circuits DrawInteractionPosePillRow's
+            // entryChanged detection (refs already match by the next render),
+            // so the per-task _pillByEntry restoration MUST happen here too.
+            // Otherwise re-clicking a task that was last viewed in End mode
+            // shows Start in the pill while the part is still snapped End —
+            // the exact "pose pill state doesn't reflect what's in the scene"
+            // bug.
             if (string.Equals(entry.kind, "toolAction", System.StringComparison.Ordinal))
             {
                 _activePosePillStepId   = step?.id;
                 _activePosePillEntryRef = entry.id;
+                _activePosePill         = GetPillForEntry(entry.id);
             }
             _canvasSelectedSubId = null; // clear partGroup selection when a task is clicked
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5; // suppress false dirty from handle re-init after selection change
@@ -3400,37 +3512,104 @@ namespace OSE.Editor
 
         // ── Add-task inline pickers ───────────────────────────────────────────
 
-        private void DrawAddPartPicker()
+        /// <summary>
+        /// Opens the Part Browser scoped to <paramref name="step"/> and wires
+        /// its commit callback to the three add-paths
+        /// (NoTask → AddVisualPartToStep, Task → CommitAddPart, Group →
+        /// CommitAddPartGroupTask). Called directly from the +/Part menu item
+        /// so authors don't see an intermediate panel — one click and the
+        /// Browser is up.
+        /// </summary>
+        private void OpenPartBrowserForStep(StepDefinition step)
         {
             if (_pkg?.GetParts() == null) return;
-            var step = _stepFilterIdx > 0 ? FindStep(_stepIds[_stepFilterIdx]) : null;
-            var existing = new HashSet<string>(step?.requiredPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
-            var available = new List<PartDefinition>();
-            foreach (var p in _pkg.GetParts())
-                if (p != null && !string.IsNullOrEmpty(p.id) && !existing.Contains(p.id))
-                    available.Add(p);
+            if (step == null) return;
+            var existing = new HashSet<string>(step.requiredPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
 
+            var capturedStep = step;
+            BeginPartPickMulti(
+                label:       $"Add part(s) to step '{capturedStep.id}'",
+                excludeIds:  existing,
+                allowGroup:  true,
+                onPicked:    (pickedIds, mode, groupId) =>
+                {
+                    if (capturedStep == null || pickedIds == null || pickedIds.Count == 0)
+                    {
+                        _addTaskPicker = AddTaskPicker.None;
+                        return;
+                    }
+                    switch (mode)
+                    {
+                        case PartCommitMode.Group:
+                            // Single mutation — Group helper also calls LoadPkg
+                            // internally, so don't wrap in BatchStepMutations.
+                            CommitAddPartGroupTask(capturedStep, pickedIds, groupId);
+                            break;
+                        case PartCommitMode.Task:
+                            // Batch N CommitAddPart calls so exactly ONE
+                            // BuildPartList/BuildTargetList/RespawnScene/Sync
+                            // fires after the loop, not per-iteration.
+                            BatchStepMutations(capturedStep, () =>
+                            {
+                                foreach (var pid in pickedIds)
+                                    if (!string.IsNullOrEmpty(pid)) CommitAddPart(capturedStep, pid);
+                            });
+                            break;
+                        case PartCommitMode.NoTask:
+                        default:
+                            BatchStepMutations(capturedStep, () =>
+                            {
+                                foreach (var pid in pickedIds)
+                                    if (!string.IsNullOrEmpty(pid)) AddVisualPartToStep(capturedStep, pid);
+                            });
+                            break;
+                    }
+                    // Force-activate just-committed partIds. RespawnScene
+                    // (called by RefreshAfterStepPartChange in the helper)
+                    // already repositions parts based on partStepSeq, but
+                    // some live GOs come up inactive on the first frame —
+                    // walking them here closes that gap. Note: do NOT call
+                    // LoadPkg here — the mutations are in-memory only and a
+                    // reload would discard them.
+                    EnsurePartIdsActiveInScene(pickedIds);
+                    _addTaskPicker = AddTaskPicker.None;
+                });
+        }
+
+        private void EnsurePartIdsActiveInScene(IReadOnlyList<string> partIds)
+        {
+            if (partIds == null) return;
+            foreach (var pid in partIds)
+            {
+                if (string.IsNullOrEmpty(pid)) continue;
+                var go = FindLivePartGO(pid);
+                if (go != null && !go.activeSelf) go.SetActive(true);
+            }
+            SceneView.RepaintAll();
+        }
+
+        private void DrawAddPartPicker()
+        {
+            // Legacy intermediate panel. Kept so anything that still sets
+            // _addTaskPicker = AddTaskPicker.Part renders something sensible,
+            // but the canonical entry point is the +/Part menu which calls
+            // OpenPartBrowserForStep directly.
+            if (_pkg?.GetParts() == null) return;
+            var step = _stepFilterIdx > 0 ? FindStep(_stepIds[_stepFilterIdx]) : null;
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Add Part to Step", EditorStyles.boldLabel);
-            if (available.Count == 0)
-            {
-                EditorGUILayout.LabelField("  All parts already assigned.", EditorStyles.miniLabel);
-            }
-            else
-            {
-                string[] opts = available.Select(p => $"{p.id}{(string.IsNullOrEmpty(p.name) ? "" : " — " + p.name)}").ToArray();
-                _addPickerPartIdx = Mathf.Clamp(_addPickerPartIdx, 0, opts.Length - 1);
-                _addPickerPartIdx = EditorGUILayout.Popup("Part", _addPickerPartIdx, opts);
-            }
             EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginDisabledGroup(available.Count == 0);
-            if (GUILayout.Button("Add", GUILayout.Width(60)))
+            if (GUILayout.Button(new GUIContent("📂  Open Browser",
+                        "Open the Part Browser to pick part(s) for this step."),
+                    GUILayout.Height(24)))
             {
-                CommitAddPart(step, available[_addPickerPartIdx].id);
+                OpenPartBrowserForStep(step);
+            }
+            if (GUILayout.Button("Cancel", GUILayout.Width(60), GUILayout.Height(24)))
+            {
+                if (IsPartBrowserOpen) CancelPartPick();
                 _addTaskPicker = AddTaskPicker.None;
             }
-            EditorGUI.EndDisabledGroup();
-            if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
         }
@@ -3570,6 +3749,102 @@ namespace OSE.Editor
             EditorGUILayout.EndVertical();
         }
 
+        /// <summary>
+        /// Multi-select Browser commit-as-group path. Creates a new
+        /// PartGroupDefinition containing <paramref name="partIds"/>, inserts
+        /// it into the assembly JSON file that owns <paramref name="step"/>,
+        /// reloads the package, then wires the step to the new group via
+        /// <see cref="CommitAddGroup"/>. Mirror of <see cref="CreatePartGroupForStep"/>
+        /// but with an explicit member list and an author-supplied groupId.
+        /// </summary>
+        private void CommitAddPartGroupTask(StepDefinition step, IReadOnlyList<string> partIds, string groupId)
+        {
+            if (step == null || partIds == null || partIds.Count == 0) return;
+            if (string.IsNullOrEmpty(_pkgId) || _pkg == null) return;
+
+            // Sanitize / fall back to auto-generated id if author left it blank.
+            string subId = (groupId ?? "").Trim();
+            if (string.IsNullOrEmpty(subId))
+                subId = string.IsNullOrEmpty(step.assemblyId)
+                    ? $"group_{step.id}"
+                    : $"{step.assemblyId}_group_{step.id}";
+
+            // Reject invalid characters.
+            for (int i = 0; i < subId.Length; i++)
+            {
+                char c = subId[i];
+                bool ok = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+                if (!ok)
+                {
+                    EditorUtility.DisplayDialog("Invalid group id",
+                        $"'{subId}' contains invalid characters. Use lowercase letters, digits, and underscore only.",
+                        "OK");
+                    return;
+                }
+            }
+
+            // Auto-uniquify on collision.
+            if (_pkg.TryGetPartGroup(subId, out _))
+            {
+                string baseId = subId;
+                for (int n = 2; n < 1000; n++)
+                {
+                    string candidate = $"{baseId}_{n}";
+                    if (!_pkg.TryGetPartGroup(candidate, out _)) { subId = candidate; break; }
+                }
+            }
+
+            string assemblyId = step.assemblyId ?? "";
+            var newSub = new PartGroupDefinition
+            {
+                id         = subId,
+                name       = subId,
+                assemblyId = assemblyId,
+                partIds    = new List<string>(partIds).ToArray(),
+                stepIds    = new[] { step.id },
+            };
+
+            // Pick target file (assembly file for split layouts, else machine.json).
+            string targetFile;
+            if (PackageJsonUtils.IsSplitLayout(_pkgId) && !string.IsNullOrEmpty(assemblyId))
+            {
+                targetFile = System.IO.Path.Combine(
+                    PackageJsonUtils.AuthoringRoot, _pkgId, "assemblies", $"{assemblyId}.json");
+                if (!System.IO.File.Exists(targetFile))
+                    targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+            else
+            {
+                targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+
+            if (string.IsNullOrEmpty(targetFile) || !System.IO.File.Exists(targetFile))
+            {
+                EditorUtility.DisplayDialog("Error", "Could not locate target JSON file for the new partGroup.", "OK");
+                return;
+            }
+
+            try
+            {
+                PackageJsonUtils.InsertPartGroup(targetFile, newSub);
+            }
+            catch (System.Exception ex)
+            {
+                EditorUtility.DisplayDialog("Error", $"Failed to insert partGroup:\n{ex.Message}", "OK");
+                return;
+            }
+
+            // Reload + re-find the step (LoadPkg replaces _pkg.steps refs).
+            string capturedStepId = step.id;
+            try { LoadPkg(_pkgId); }
+            catch (System.Exception ex) { OseLog.Warn($"[TTAW] LoadPkg failed after group insert: {ex}"); }
+            var reloadedStep = FindStep(capturedStepId);
+            if (reloadedStep == null) return;
+
+            CommitAddGroup(reloadedStep, subId);
+            ShowNotification(new GUIContent($"Created group '{subId}' with {partIds.Count} parts"));
+        }
+
         private void CommitAddGroup(StepDefinition step, string subId)
         {
             if (step == null || string.IsNullOrEmpty(subId)) return;
@@ -3705,10 +3980,7 @@ namespace OSE.Editor
             string entryId = TaskInstanceId.Build(partId, existingInstances + 1);
             order.Add(new TaskOrderEntry { kind = "part", id = entryId });
             step.taskOrder = order.ToArray();
-            InvalidateTaskOrderCache();
-            _dirtyStepIds.Add(step.id);
-            BuildPartList();
-            Repaint();
+            RefreshAfterStepPartChange(step);
             return true;
         }
 
@@ -4143,6 +4415,11 @@ namespace OSE.Editor
             if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelectedParts.Count > 1)
             {
                 DrawUnifiedSectionHeader($"BATCH — {_multiSelectedParts.Count} parts", 0);
+                // Save All / Revert All header for the part-batch path.
+                // Mirrors the targets-batch branch which already had this —
+                // both batch paths now expose the same header so authors can
+                // commit / discard in one place regardless of selection kind.
+                DrawBatchUnsavedHeader(step, order);
                 DrawPartPoseToggle();
                 DrawPartBatchPanel();
                 return;
@@ -4150,6 +4427,15 @@ namespace OSE.Editor
             if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelected.Count > 1)
             {
                 DrawUnifiedSectionHeader($"BATCH — {_multiSelected.Count} targets", 0);
+
+                // Batch unsaved-changes header — mirrors the single-task
+                // "● Unsaved Changes / Save / Revert" affordance. Counts
+                // every dirty entry in the multi-selection (parts, targets,
+                // tool actions) and exposes one-click Save All / Revert All
+                // so authors don't have to click each row individually after
+                // a multi-drag or batch field edit. No-op when nothing in
+                // the selection is dirty.
+                DrawBatchUnsavedHeader(step, order);
 
                 // Pose pill row for tool×part interactions — shown when any
                 // selected target backs a followPart tool action. The pill's
@@ -4160,6 +4446,16 @@ namespace OSE.Editor
                     DrawInteractionPosePillRow(step, primaryAction, primaryEntry);
                     EditorGUILayout.Space(4);
                 }
+
+                // Batch followPart toggle for tool×part interactions in
+                // the multi-selection. Per-task DrawFollowPartField is
+                // single-select only — without this row, authors who
+                // multi-select tool tasks have no way to set
+                // interaction.followPart for the whole selection. Reads
+                // shared state ("Mixed" when entries disagree) and on
+                // change writes the chosen value to every selected tool
+                // task's interaction.followPart.
+                DrawBatchFollowPartToggle(step);
 
                 DrawBatchPanel();
                 return;
@@ -4435,11 +4731,27 @@ namespace OSE.Editor
                     {
                         EditorGUILayout.BeginHorizontal();
                         var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
-                        EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                        // Surface which pose was edited so the author cannot
+                        // mistake an end-pose drag for a start-override edit
+                        // (or vice versa) at save time.
+                        string poseSuffix = selEntry.kind == "toolAction"
+                            ? (GetPillForEntry(selEntry.id) == InteractionPosePill.End ? " (END pose)" : " (START pose)")
+                            : string.Empty;
+                        EditorGUILayout.LabelField($"● Unsaved Changes{poseSuffix}", ds);
                         if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
                             SaveTaskEntry(selEntry, step);
                         if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
-                            RevertTargetEntry(selEntry.id);
+                        {
+                            // entry.id is the ACTION id for kind="toolAction"; indirect via
+                            // requiredToolActions to find the backing target before reverting.
+                            string revertTargetId = selEntry.id;
+                            if (selEntry.kind == "toolAction" && step.requiredToolActions != null)
+                            {
+                                foreach (var a in step.requiredToolActions)
+                                    if (a?.id == selEntry.id) { revertTargetId = a.targetId; break; }
+                            }
+                            RevertTargetEntry(revertTargetId);
+                        }
                         EditorGUILayout.EndHorizontal();
                     }
 
@@ -4560,8 +4872,20 @@ namespace OSE.Editor
 
                     DrawPersistentToolRemovalRows();
 
-                    // Target transform detail
+                    // Target transform detail. For kind="toolAction" the
+                    // selEntry.id is the ACTION id, not the target id —
+                    // indirect through requiredToolActions to find the
+                    // backing targetId. Without this, DrawDetailPanel never
+                    // matched for tool tasks and weld axis / weld length /
+                    // position / rotation fields silently disappeared in
+                    // single-select (only the multi-select BATCH panel
+                    // surfaced them, because it pre-resolved indices).
                     string toolTargetId = selEntry.id;
+                    if (selEntry.kind == "toolAction" && step.requiredToolActions != null)
+                    {
+                        foreach (var a in step.requiredToolActions)
+                            if (a?.id == selEntry.id) { toolTargetId = a.targetId; break; }
+                    }
                     if (_targets != null)
                         for (int i = 0; i < _targets.Length; i++)
                             if (_targets[i].def?.id == toolTargetId)
@@ -4629,22 +4953,10 @@ namespace OSE.Editor
 
         private void DrawUnifiedActions()
         {
-            bool anyDirty = AnyDirty();
-            EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginDisabledGroup(!anyDirty);
-            GUI.backgroundColor = anyDirty ? new Color(0.3f, 0.9f, 0.4f) : Color.white;
-            if (GUILayout.Button("Write to machine.json", GUILayout.Height(26))) WriteJson();
-            GUI.backgroundColor = Color.white;
-            EditorGUI.EndDisabledGroup();
-            if (GUILayout.Button("↺", EditorStyles.miniButton, GUILayout.Width(22), GUILayout.Height(26)))
-                RevertAllChanges();
-            EditorGUILayout.EndHorizontal();
+            // Save / Revert moved to the toolbar dirty banner (top of window).
+            // The auto-save toggle stays here because it's a session-level
+            // preference, not a one-shot action.
 
-            // Auto-save toggle. When on, the lifecycle tick auto-commits dirty
-            // edits to JSON at natural commit points — gizmo release + no
-            // active hotControl + debounce after last change — so the JSON is
-            // always the source of truth with no "unsaved state" window. The
-            // explicit Write button stays as a "flush now" affordance.
             EditorGUILayout.BeginHorizontal();
             bool newAuto = EditorGUILayout.ToggleLeft(
                 new GUIContent("Auto-save (on release)",
@@ -4657,7 +4969,7 @@ namespace OSE.Editor
                 _autoSaveEnabled = newAuto;
                 _lastEditTime = EditorApplication.timeSinceStartup;
             }
-            if (_autoSaveEnabled && anyDirty)
+            if (_autoSaveEnabled && AnyDirty())
             {
                 var pendStyle = new GUIStyle(EditorStyles.miniLabel)
                 {

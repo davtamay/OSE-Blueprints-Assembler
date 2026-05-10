@@ -95,12 +95,183 @@ namespace OSE.Editor
         private void SnapshotAllStepsForRevert()
         {
             _stepDiskSnapshots.Clear();
+            _stepTaskSnapshots.Clear();
             if (_pkg?.steps == null) return;
             foreach (var s in _pkg.steps)
             {
                 if (s == null || string.IsNullOrEmpty(s.id)) continue;
                 _stepDiskSnapshots[s.id] = JsonUtility.ToJson(s);
+
+                if (s.taskOrder == null || s.taskOrder.Length == 0) continue;
+                var bucket = new Dictionary<string, string>(StringComparer.Ordinal);
+                for (int i = 0; i < s.taskOrder.Length; i++)
+                {
+                    var e = s.taskOrder[i];
+                    if (e == null) continue;
+                    string key = MakeTaskKey(e.kind, e.id);
+                    if (string.IsNullOrEmpty(key)) continue;
+                    bucket[key] = JsonUtility.ToJson(e);
+                }
+                _stepTaskSnapshots[s.id] = bucket;
             }
+        }
+
+        /// <summary>
+        /// Stable identity for a TaskOrderEntry within a step's taskOrder.
+        /// Within one step's array, (kind, id) is unique by construction —
+        /// taskOrder reconciliation collapses duplicates at load. Empty
+        /// inputs produce an empty key, which callers treat as unsnappable.
+        /// </summary>
+        internal static string MakeTaskKey(string kind, string id)
+        {
+            if (string.IsNullOrEmpty(kind) || string.IsNullOrEmpty(id)) return string.Empty;
+            return kind + "::" + id;
+        }
+
+        /// <summary>
+        /// Returns true iff the task row identified by (kind, id) on
+        /// <paramref name="stepId"/> differs from its on-disk snapshot
+        /// (or was added/removed since the last save). Compares by JSON
+        /// equality of the TaskOrderEntry — the same form
+        /// SnapshotAllStepsForRevert captures — so any field that survives
+        /// JsonUtility round-trip counts (kind, id, isOptional,
+        /// endTransform, etc.). Step-level taskOrder dirtiness alone is
+        /// not sufficient: reordering marks every row dirty, but only the
+        /// moved row's content actually changed.
+        /// </summary>
+        internal bool IsTaskDirty(string stepId, string kind, string id)
+        {
+            if (string.IsNullOrEmpty(stepId)) return false;
+            string key = MakeTaskKey(kind, id);
+            if (string.IsNullOrEmpty(key)) return false;
+
+            string currentJson = null;
+            var step = FindStep(stepId);
+            if (step?.taskOrder != null)
+            {
+                for (int i = 0; i < step.taskOrder.Length; i++)
+                {
+                    var e = step.taskOrder[i];
+                    if (e == null) continue;
+                    if (string.Equals(e.kind, kind, StringComparison.Ordinal)
+                        && string.Equals(e.id,   id,   StringComparison.Ordinal))
+                    { currentJson = JsonUtility.ToJson(e); break; }
+                }
+            }
+
+            string snapJson = null;
+            if (_stepTaskSnapshots.TryGetValue(stepId, out var bucket))
+                bucket.TryGetValue(key, out snapJson);
+
+            // Both absent → the row never existed, so by definition not dirty.
+            if (currentJson == null && snapJson == null) return false;
+            // Either one absent → added or removed since save.
+            if (currentJson == null || snapJson == null) return true;
+            return !string.Equals(currentJson, snapJson, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Restores a single TaskOrderEntry to its on-disk state without
+        /// touching the rest of the step. Three cases:
+        ///   • Snapshot present + row present → in-place replace.
+        ///   • Snapshot present + row absent  → re-insert at end (its prior
+        ///     index is meaningless once neighbours have shifted).
+        ///   • Snapshot absent  + row present → row was added since save;
+        ///     remove it.
+        /// Pose / target placement edits are deliberately untouched —
+        /// matches RevertStepOnly's scope contract. The save/normalize
+        /// pipeline owns reconciliation against requiredPartIds /
+        /// requiredToolActions, so a re-inserted row will be placed in
+        /// canonical order on the next WriteJson.
+        /// </summary>
+        private void RevertTaskOnly(string stepId, string kind, string id)
+        {
+            if (string.IsNullOrEmpty(stepId)) return;
+            string key = MakeTaskKey(kind, id);
+            if (string.IsNullOrEmpty(key)) return;
+            var step = FindStep(stepId);
+            if (step == null) return;
+            if (!IsTaskDirty(stepId, kind, id))
+            {
+                ShowNotification(new GUIContent($"'{id}' has no unsaved changes"));
+                return;
+            }
+
+            string snapJson = null;
+            if (_stepTaskSnapshots.TryGetValue(stepId, out var bucket))
+                bucket.TryGetValue(key, out snapJson);
+
+            int currentIdx = -1;
+            if (step.taskOrder != null)
+                for (int i = 0; i < step.taskOrder.Length; i++)
+                {
+                    var e = step.taskOrder[i];
+                    if (e == null) continue;
+                    if (string.Equals(e.kind, kind, StringComparison.Ordinal)
+                        && string.Equals(e.id,   id,   StringComparison.Ordinal))
+                    { currentIdx = i; break; }
+                }
+
+            string prompt;
+            string confirm;
+            if (snapJson != null && currentIdx >= 0)
+            {
+                prompt  = $"Discard unsaved changes on task '{id}' and restore it to the last saved state?\n\nNote: pose and target placement edits on this task are tracked separately and will not be reverted here.";
+                confirm = "Revert task";
+            }
+            else if (snapJson != null)
+            {
+                prompt  = $"Task '{id}' was removed since the last save. Re-add it from the saved snapshot?\n\nNote: it will be appended to the task list — neighbouring rows have shifted.";
+                confirm = "Re-add task";
+            }
+            else
+            {
+                prompt  = $"Task '{id}' was added since the last save. Remove it?";
+                confirm = "Remove task";
+            }
+            if (!EditorUtility.DisplayDialog("Revert task?", prompt, confirm, "Cancel"))
+                return;
+
+            var list = step.taskOrder != null
+                ? new List<TaskOrderEntry>(step.taskOrder)
+                : new List<TaskOrderEntry>();
+
+            if (snapJson != null)
+            {
+                TaskOrderEntry fresh;
+                try { fresh = JsonUtility.FromJson<TaskOrderEntry>(snapJson); }
+                catch (Exception e)
+                {
+                    OseLog.Error($"[TTAW.RevertTaskOnly] Failed to deserialize snapshot for '{stepId}/{key}': {e.Message}");
+                    return;
+                }
+                if (fresh == null) return;
+                if (currentIdx >= 0) list[currentIdx] = fresh;
+                else                 list.Add(fresh);
+            }
+            else
+            {
+                if (currentIdx < 0) return;
+                list.RemoveAt(currentIdx);
+            }
+            step.taskOrder = list.ToArray();
+
+            // Mark the step touched so the next save flushes the row, but
+            // recompute IsStepDirty afterwards: if every other row matches
+            // disk and the step body is unchanged, this revert may have
+            // returned the step to clean. The next paint of IsStepDirty
+            // will reflect that automatically (it sums dirty channels).
+            _dirtyTaskOrderStepIds.Add(step.id);
+            _dirtyStepIds.Add(step.id);
+            InvalidateTaskOrderCache();
+            BuildStepOptions();
+            BuildPartList();
+            BuildTargetList();
+            RespawnScene();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+            ShowNotification(new GUIContent($"Reverted task '{id}'"));
         }
 
         /// <summary>
@@ -155,6 +326,19 @@ namespace OSE.Editor
 
             _dirtyStepIds.Remove(stepId);
             _dirtyTaskOrderStepIds.Remove(stepId);
+            // Drop any per-entry dirty marks belonging to this reverted step.
+            // Step body was just replaced from disk, so taskOrder overrides
+            // on entries within it are already at their saved state.
+            if (_pkg?.steps != null)
+            {
+                foreach (var s in _pkg.steps)
+                {
+                    if (s == null || s.id != stepId || s.taskOrder == null) continue;
+                    foreach (var e in s.taskOrder)
+                        if (e != null) _dirtyTaskEntryIds.Remove(e.id);
+                    break;
+                }
+            }
             InvalidateTaskOrderCache();
             BuildStepOptions();
             BuildPartList();
@@ -227,6 +411,13 @@ namespace OSE.Editor
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             EditorApplication.update += TickLoadCleanWatch;
             EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            Selection.selectionChanged += OnUnitySelectionChanged;
+            // Domain-reload safety: Unity wipes NonSerialized state when .cs
+            // recompiles. Without flushing first, in-memory edits (Browser
+            // adds, captured stepPoses, role-toggle role-array changes) die
+            // silently — the user sees their work disappear after a save of
+            // any code file. Mirror FlushDirtyEditsBeforePlay's pattern.
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             RuntimeEventBus.Subscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
             // Play → TTAW step sync. The runtime publishes StepActivated when
             // the trainee navigates (toolbar, in-app input field, auto-advance
@@ -288,6 +479,8 @@ namespace OSE.Editor
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             EditorApplication.update -= TickLoadCleanWatch;
             EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            Selection.selectionChanged -= OnUnitySelectionChanged;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
             RuntimeEventBus.Unsubscribe<StepActivated>(OnRuntimeStepActivated);
             // Destroy scene objects but do NOT reset serialized state (_selectedIdx,
@@ -304,6 +497,12 @@ namespace OSE.Editor
             RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
             ClearWirePreview();
+            // Part Browser cleanup: cancel any in-flight pick + remove ghost
+            // GOs + dispose the cached transparent material so we never leak
+            // an editor-only GO across domain reload or into Play mode.
+            CancelPartPick();
+            TearDownBrowserGhosts();
+            DisposeGhostMaterial();
         }
 
         private void OnPlayModeChanged(PlayModeStateChange state)
@@ -330,6 +529,11 @@ namespace OSE.Editor
 
                 StopAllPreviews();
                 StopParticlePreview();
+                // Cancel any open Part Browser pick + destroy ghost GOs before
+                // Play starts so editor-only ghosts never leak into the runtime
+                // scene.
+                CancelPartPick();
+                TearDownBrowserGhosts();
                 // Destroy the tool/wire preview meshes too — without this
                 // the editor-spawned tool GO (HideAndDontSave) carries
                 // into the Play scene and the user sees the authored
@@ -374,6 +578,63 @@ namespace OSE.Editor
             {
                 OseLog.Warn($"[TTAW.Lifecycle] FlushDirtyEditsBeforePlay threw '{e.Message}'. Play will start with stale JSON for this window.");
             }
+        }
+
+        /// <summary>
+        /// Domain-reload counterpart to <see cref="FlushDirtyEditsBeforePlay"/>.
+        /// Fires when Unity is about to recompile .cs files and reload the
+        /// editor's managed domain. Without this hook, every in-memory edit
+        /// (Browser adds, captured stepPoses, role-toggle changes) dies
+        /// silently because <c>_pkg</c> is reloaded from disk on the other
+        /// side and <c>_parts</c> (NonSerialized) is wiped. Surfaces a
+        /// transparent log line + Unity notification so the author knows
+        /// a save happened on their behalf.
+        /// </summary>
+        private void OnBeforeAssemblyReload()
+        {
+            try
+            {
+                if (_pkg == null)
+                {
+                    OseLog.Info("[TTAW.Lifecycle] OnBeforeAssemblyReload: _pkg is null — nothing to save.");
+                    return;
+                }
+                if (!AnyDirty())
+                {
+                    OseLog.Info("[TTAW.Lifecycle] OnBeforeAssemblyReload: AnyDirty=false — nothing to flush. Already-saved data persists via disk.");
+                    return;
+                }
+                int dirtyCount = TotalDirtyCount();
+                OseLog.Info($"[TTAW.Lifecycle] Auto-saving {dirtyCount} dirty edit(s) before assembly reload — domain-reload safety.");
+                ShowNotification(new GUIContent($"Auto-saved {dirtyCount} edit(s) before recompile"));
+                WriteJson(reloadAfter: false);
+            }
+            catch (Exception e)
+            {
+                OseLog.Warn($"[TTAW.Lifecycle] OnBeforeAssemblyReload threw '{e.Message}'. Edits may be lost on reload.");
+            }
+        }
+
+        /// <summary>
+        /// Sum of all dirty-tracking sets — used for the toolbar banner +
+        /// the auto-save notification. Mirrors what <c>AnyDirty()</c>
+        /// checks, so the badge count agrees with whether a save will fire.
+        /// </summary>
+        private int TotalDirtyCount()
+        {
+            int n = 0;
+            if (_dirtyStepIds          != null) n += _dirtyStepIds.Count;
+            if (_dirtyPartIds          != null) n += _dirtyPartIds.Count;
+            if (_dirtyToolIds          != null) n += _dirtyToolIds.Count;
+            if (_dirtyPartGroupIds     != null) n += _dirtyPartGroupIds.Count;
+            if (_dirtyTaskOrderStepIds != null) n += _dirtyTaskOrderStepIds.Count;
+            if (_dirtyPartAssetRefIds  != null) n += _dirtyPartAssetRefIds.Count;
+            if (_dirtyPrefabInstanceIds != null) n += _dirtyPrefabInstanceIds.Count;
+            if (_dirtyHintIds          != null) n += _dirtyHintIds.Count;
+            if (_newHintDefs           != null) n += _newHintDefs.Count;
+            if (_targets != null) foreach (var t in _targets) if (t.isDirty) n++;
+            if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) n++;
+            return n;
         }
 
         /// <summary>
@@ -582,6 +843,21 @@ namespace OSE.Editor
             _dirtyToolIds.Clear();
             _dirtyStepIds.Clear();
             _dirtyTaskOrderStepIds.Clear();
+            _dirtyTaskEntryIds.Clear();
+            // Drop InteractionPosePill caches. _locks holds Original*Pos captures
+            // and per-render ApplyAllLockedPoses re-applies them — without a
+            // clear, a Discard-All re-pins the part at the modified pose the
+            // moment the inspector renders. _inheritedStartCache and the active
+            // pose pill identity are keyed by entry.id (action id); after
+            // LoadPkg those entries are fresh instances, so any captured pose
+            // is stale by definition.
+            _locks.Clear();
+            _locksStepId = null;
+            _inheritedStartCache.Clear();
+            _pillByEntry.Clear();
+            _activePosePillStepId   = null;
+            _activePosePillEntryRef = null;
+            _activePosePill         = InteractionPosePill.Start;
             _dirtyPartAssetRefIds.Clear();
             _dirtyPartGroupIds.Clear();
             _dirtyPartIds.Clear();
@@ -624,6 +900,7 @@ namespace OSE.Editor
             _dirtyStepIds.Clear();
             _dirtyToolIds.Clear();
             _dirtyTaskOrderStepIds.Clear();
+            _dirtyTaskEntryIds.Clear();
             _dirtyPartAssetRefIds.Clear();
             _dirtyPartGroupIds.Clear();
             _dirtyPartIds.Clear();

@@ -259,7 +259,8 @@ namespace OSE.Editor
             EditorGUILayout.LabelField("INSPECTOR", EditorStyles.boldLabel);
             EditorGUILayout.Space(2);
 
-            _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
+            _detailScroll = EditorGUILayout.BeginScrollView(
+                _detailScroll, GUIStyle.none, GUI.skin.verticalScrollbar);
 
             // Editor/runtime isolation: same DisabledScope as the canvas pane.
             // All editable detail panels (transforms, animation cues, particle
@@ -1171,44 +1172,68 @@ namespace OSE.Editor
 
             if (fieldProfile.ShowWeldAxis && ShowWeldGroup())
             {
-                // Weld gizmo toggle — places two draggable handles in SceneView
-                EditorGUI.BeginChangeCheck();
-                bool newGizmo = EditorGUILayout.ToggleLeft(
-                    new GUIContent("Use scene gizmo (drag two handles)",
-                        "Places an orange (A) and yellow (B) handle in SceneView.\n" +
-                        "The direction A→B defines the weld axis; the distance defines the weld length."),
-                    t.weldGizmoActive);
-                if (EditorGUI.EndChangeCheck() && newGizmo != t.weldGizmoActive)
-                {
-                    t.weldGizmoActive = newGizmo;
-                    if (newGizmo) InitWeldGizmo(ref t);
-                    SceneView.RepaintAll();
-                }
-
-                if (t.weldGizmoActive)
-                {
-                    // Show live-computed values as read-only
-                    EditorGUI.BeginDisabledGroup(true);
-                    Vector3FieldClip("Weld Axis (A→B)", t.weldAxis);
-                    FloatFieldClip("Weld Length (|A→B|)", t.weldLength);
-                    EditorGUI.EndDisabledGroup();
-                }
-                else
+                // Tool drift speed (m/s) + derived axis/length read-out.
+                // Replaces the legacy weldAxis/weldLength editable rows —
+                // direction and length now come from the entry's
+                // (endTransform - startTransform) pose pair, authored via
+                // the existing pose pill. weldGizmoActive A/B handles are
+                // also retired; the pill's PositionHandle IS the gizmo.
+                if (TryResolveActiveTaskEntryForTarget(t.def?.id,
+                        out StepDefinition wstep, out TaskOrderEntry wentry))
                 {
                     EditorGUI.BeginChangeCheck();
-                    Vector3 newAxis = Vector3FieldClip("Weld Axis (direction)", t.weldAxis);
+                    float newSpeed = FloatFieldClip(
+                        "Speed (m/s)", wentry.speed);
                     if (EditorGUI.EndChangeCheck())
                     {
                         BeginEdit();
-                        t.weldAxis = newAxis.sqrMagnitude > 0.001f ? newAxis.normalized : newAxis;
-                        t.isDirty  = true;
+                        wentry.speed = Mathf.Max(0f, newSpeed);
+                        _dirtyStepIds.Add(wstep.id);
+                        _dirtyTaskEntryIds.Add(wentry.id);
                         EndEdit();
-                        SceneView.RepaintAll();
                     }
 
-                    EditorGUI.BeginChangeCheck();
-                    float newLen = FloatFieldClip("Weld Length", t.weldLength);
-                    if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.weldLength = Mathf.Max(0f, newLen); t.isDirty = true; EndEdit(); }
+                    Vector3 startPR = wentry.startTransform != null
+                        ? new Vector3(
+                            wentry.startTransform.position.x,
+                            wentry.startTransform.position.y,
+                            wentry.startTransform.position.z)
+                        : Vector3.zero;
+                    Vector3 endPR = wentry.endTransform != null
+                        ? new Vector3(
+                            wentry.endTransform.position.x,
+                            wentry.endTransform.position.y,
+                            wentry.endTransform.position.z)
+                        : Vector3.zero;
+                    Vector3 delta = endPR - startPR;
+                    float   length = delta.magnitude;
+                    Vector3 axis   = length > 1e-5f ? delta / length : Vector3.zero;
+
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        Vector3FieldClip("Work axis (derived)", axis);
+                        FloatFieldClip("Work length (m)", length);
+                    }
+                    var hint = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
+                    EditorGUILayout.LabelField(
+                        wentry.speed > 0f
+                            ? $"Drift duration: {(length / wentry.speed):F3}s ({length * 1000f:F1} mm @ {wentry.speed:F3} m/s)"
+                            : $"Drift duration: system default (~0.5s for {length * 1000f:F1} mm). Set Speed > 0 to pin.",
+                        hint);
+                }
+                else if (t.weldLength > 0.0001f)
+                {
+                    // Legacy fallback for orphan targets with no resolvable
+                    // entry — kept as read-only so the data isn't lost.
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        Vector3FieldClip("Legacy weld axis (deprecated)", t.weldAxis);
+                        FloatFieldClip("Legacy weld length (deprecated)", t.weldLength);
+                    }
+                    EditorGUILayout.HelpBox(
+                        "This target has legacy weldAxis/weldLength data but isn't bound to a tool task. " +
+                        "Wire it up via the task list to migrate to the pose-pair encoding.",
+                        MessageType.Info);
                 }
             }
 
@@ -1317,29 +1342,43 @@ namespace OSE.Editor
             }
             EditorGUILayout.Space(4);
 
-            // ── Weld ──────────────────────────────────────────────────────────
+            // ── Speed (all selected) ───────────────────────────────────
+            // Drift speed in m/s for the tool's working motion. Writes
+            // entry.speed on every selected tool task. Direction and
+            // length come from each entry's pose pair (authored via the
+            // pose pill); they're NOT batch-edited here because each
+            // target's bolt sits at a different pose. Replaces the
+            // legacy weldAxis/weldLength batch rows.
             if (ShowWeldGroup())
             {
-                EditorGUILayout.LabelField("Weld (all selected)", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Speed (all selected)", EditorStyles.boldLabel);
+
+                float repSpeed = 0f;
+                if (TryResolveActiveTaskEntryForTarget(rep.def?.id, out var repStep, out var repEntry))
+                    repSpeed = repEntry.speed;
 
                 EditorGUI.BeginChangeCheck();
-                Vector3 newAxis = Vector3FieldClip("Weld Axis (direction)", rep.weldAxis);
+                float newSpeed = FloatFieldClip("Speed (m/s)", repSpeed);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Vector3 norm = newAxis.sqrMagnitude > 0.001f ? newAxis.normalized : newAxis;
+                    float clamped = Mathf.Max(0f, newSpeed);
+                    BeginEdit();
                     foreach (int idx in _multiSelected)
-                    { ref var t = ref _targets[idx]; t.weldAxis = norm; t.isDirty = true; }
-                    SceneView.RepaintAll();
+                    {
+                        if (idx < 0 || idx >= _targets.Length) continue;
+                        if (!TryResolveActiveTaskEntryForTarget(_targets[idx].def?.id,
+                                out var s, out var e)) continue;
+                        e.speed = clamped;
+                        _dirtyStepIds.Add(s.id);
+                        _dirtyTaskEntryIds.Add(e.id);
+                    }
+                    EndEdit();
                 }
-
-                EditorGUI.BeginChangeCheck();
-                float newLen = FloatFieldClip("Weld Length", rep.weldLength);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    float clamped = Mathf.Max(0f, newLen);
-                    foreach (int idx in _multiSelected)
-                    { ref var t = ref _targets[idx]; t.weldLength = clamped; t.isDirty = true; }
-                }
+                var hint = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
+                EditorGUILayout.LabelField(
+                    "0 = use system default (~0.5s for the approach span). " +
+                    "Direction and length are per-task and come from the pose pill.",
+                    hint);
                 EditorGUILayout.Space(4);
             }
 
@@ -1414,6 +1453,42 @@ namespace OSE.Editor
         // legitimately want to set the action's travel direction.
         private bool ShowWeldGroup()    => true;
 
+        /// <summary>
+        /// Resolves the tool task entry that owns the given target id on
+        /// the currently-viewed step. Returns the step + entry so callers
+        /// can mutate <c>entry.speed</c> / <c>entry.startTransform</c> /
+        /// <c>entry.endTransform</c> and dirty the step in lockstep.
+        /// Returns false when no step is selected, no taskOrder reaches
+        /// this target, or the target id is empty.
+        /// </summary>
+        private bool TryResolveActiveTaskEntryForTarget(
+            string targetId, out StepDefinition step, out TaskOrderEntry entry)
+        {
+            step = null;
+            entry = null;
+            if (string.IsNullOrEmpty(targetId)) return false;
+            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return false;
+            step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step?.taskOrder == null || step.requiredToolActions == null) return false;
+
+            string actionId = null;
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a == null) continue;
+                if (string.Equals(a.targetId, targetId, StringComparison.Ordinal))
+                { actionId = a.id; break; }
+            }
+            if (string.IsNullOrEmpty(actionId)) return false;
+
+            foreach (var e in step.taskOrder)
+            {
+                if (e == null) continue;
+                if (e.kind == "toolAction" && e.id == actionId)
+                { entry = e; return true; }
+            }
+            return false;
+        }
+
         // portA/portB are wire/pipe endpoints — visible only for Connect-family steps.
         private bool ShowPortGroup()    => _activeStepIsConnect;
 
@@ -1421,17 +1496,11 @@ namespace OSE.Editor
 
         private void DrawActions()
         {
-            bool anyDirty = AnyDirty();
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginDisabledGroup(!anyDirty);
-            GUI.backgroundColor = anyDirty ? new Color(0.3f, 0.9f, 0.4f) : Color.white;
-            if (GUILayout.Button("Write to machine.json", GUILayout.Height(28))) WriteJson();
-            GUI.backgroundColor = Color.white;
-            EditorGUI.EndDisabledGroup();
-            if (GUILayout.Button("↺", EditorStyles.miniButton, GUILayout.Width(22), GUILayout.Height(28)))
-                RevertAllChanges();
-            EditorGUILayout.EndHorizontal();
+            // Save + Revert moved to the toolbar dirty banner (top of window).
+            // Both share the same "show only when dirty" rule and live as
+            // siblings so the author has discoverable, non-destructive
+            // (Save) and confirm-gated destructive (Revert) actions in one
+            // place — see TTAW.Shell.OnToolbarSaveClicked / OnToolbarRevertClicked.
 
             if (GUILayout.Button("Extract from GLB Anchors"))
                 ExtractFromGlbAnchors();
@@ -1616,6 +1685,11 @@ namespace OSE.Editor
             }
         }
 
+        // Diagnostic key — only re-logs the NO TASK detection result when
+        // the (partId, stepId, detected-idx) tuple changes. Without the
+        // dedupe, OnGUI would dump the same line every repaint.
+        [System.NonSerialized] private string _lastNoTaskDetectKey;
+
         private void DrawPartPoseToggle()
         {
             string currentStepId = GetCurrentStepId();
@@ -1632,15 +1706,28 @@ namespace OSE.Editor
             if (hasPart && !string.IsNullOrEmpty(currentStepId))
             {
                 var curStep = FindStep(currentStepId);
-                if (curStep != null && curStep.visualPartIds != null
-                    && Array.IndexOf(curStep.visualPartIds, _parts[_selectedPartIdx].def?.id) >= 0
-                    && poses != null)
+                string activePartId = _parts[_selectedPartIdx].def?.id;
+                bool inVisualPartIds = curStep?.visualPartIds != null
+                                       && Array.IndexOf(curStep.visualPartIds, activePartId) >= 0;
+                bool hasPoses = poses != null && poses.Count > 0;
+                if (curStep != null && inVisualPartIds && hasPoses)
                 {
                     for (int i = 0; i < poses.Count; i++)
                     {
                         var e = poses[i];
                         if (e == null) continue;
                         if (string.Equals(e.stepId, currentStepId, StringComparison.Ordinal)) { noTaskAutoIdx = i; break; }
+                    }
+                }
+                // Diagnostic: when the NO TASK pose tab is expected but not
+                // detected, log why. Throttled so it doesn't spam every
+                // repaint — only fires when state actually changes.
+                if (!string.Equals(_lastNoTaskDetectKey, $"{activePartId}|{currentStepId}|{noTaskAutoIdx}", StringComparison.Ordinal))
+                {
+                    _lastNoTaskDetectKey = $"{activePartId}|{currentStepId}|{noTaskAutoIdx}";
+                    if (noTaskAutoIdx < 0 && curStep != null)
+                    {
+                        OseLog.Info($"[TTAW.PoseInspector] NO TASK detect MISSED for part='{activePartId}' step='{currentStepId}': inVisualPartIds={inVisualPartIds}, hasPoses={hasPoses}, posesCount={(poses?.Count ?? 0)}, visualPartIds=[{string.Join(",", curStep.visualPartIds ?? Array.Empty<string>())}]");
                     }
                 }
             }

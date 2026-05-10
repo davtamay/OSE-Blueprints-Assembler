@@ -25,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OSE.Content;
+using OSE.Core;
 using OSE.Runtime.Preview;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -47,7 +48,8 @@ namespace OSE.Editor
         private ToolbarButton        _toolbarNextStepBtn;
         private ToolbarButton        _toolbarLastStepBtn;
         private Label                _toolbarStepTitleLabel;
-        private Label                _toolbarDirtyLabel;
+        private ToolbarButton        _toolbarDirtyLabel;     // clickable: "● N unsaved · Save All"
+        private ToolbarButton        _toolbarRevertBtn;      // sibling of save: discard unsaved edits
         private ToolbarButton        _toolbarNewStepBtn;
         private ToolbarToggle        _toolbarInspectorBtn;
         private Label                _toolbarSelectionLabel;
@@ -224,15 +226,33 @@ namespace OSE.Editor
             _toolbarSelectionLabel.tooltip = "Currently selected entity in the authoring window";
             row1.Add(_toolbarSelectionLabel);
 
-            // Dirty indicator (right-aligned, blank when nothing dirty)
-            _toolbarDirtyLabel = new Label(string.Empty);
+            // Dirty indicator + Save All button (right-aligned, hidden when
+            // nothing dirty). Clicking writes every dirty edit to disk via
+            // WriteJson() — the same path the legacy footer "Write to
+            // machine.json" button used. Bringing the action up to the badge
+            // means the unsaved count IS the save trigger; no separate
+            // affordance to hunt for. Label flips to "Saved ✓" briefly post-
+            // save so the author has confirmation.
+            _toolbarDirtyLabel = new ToolbarButton(OnToolbarSaveClicked) { text = string.Empty };
             _toolbarDirtyLabel.style.unityTextAlign = TextAnchor.MiddleRight;
             _toolbarDirtyLabel.style.marginLeft  = 4;
             _toolbarDirtyLabel.style.marginRight = 6;
             _toolbarDirtyLabel.style.color = new Color(0.95f, 0.65f, 0.15f);
             _toolbarDirtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _toolbarDirtyLabel.tooltip = "Unsaved authoring changes";
+            _toolbarDirtyLabel.style.display = DisplayStyle.None;   // hidden when clean
+            _toolbarDirtyLabel.tooltip = "Click to save all unsaved authoring changes to JSON.";
             row1.Add(_toolbarDirtyLabel);
+
+            // Revert sibling — same hide-when-clean rule. Confirm dialog
+            // gates the destructive action so an accidental click doesn't
+            // wipe the author's session.
+            _toolbarRevertBtn = new ToolbarButton(OnToolbarRevertClicked) { text = "↺ Revert" };
+            _toolbarRevertBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _toolbarRevertBtn.style.color = new Color(0.95f, 0.45f, 0.35f);
+            _toolbarRevertBtn.style.marginRight = 6;
+            _toolbarRevertBtn.style.display = DisplayStyle.None;
+            _toolbarRevertBtn.tooltip = "Discard every unsaved edit and re-read the package from disk.";
+            row1.Add(_toolbarRevertBtn);
 
             // Validation badge — compact pill showing issue count. Click
             // expands the Navigator-pane Validation foldout so the full list
@@ -381,6 +401,58 @@ namespace OSE.Editor
             }
         }
 
+        private void OnToolbarRevertClicked()
+        {
+            if (_pkg == null || !AnyDirty())
+            {
+                ShowNotification(new GUIContent("Nothing to revert."));
+                return;
+            }
+            int n = TotalDirtyCount();
+            // Confirm dialog gates the destructive action. Default button is
+            // Cancel so an accidental Enter doesn't wipe edits.
+            bool ok = EditorUtility.DisplayDialog(
+                "Revert all unsaved changes?",
+                $"Discard {n} unsaved edit(s) and re-read the package from disk?\n\nThis cannot be undone.",
+                "Revert",
+                "Cancel");
+            if (!ok) return;
+            try
+            {
+                RevertAllChanges();
+                OseLog.Info($"[TTAW] Reverted {n} dirty edit(s) via toolbar.");
+                ShowNotification(new GUIContent($"Reverted {n} edit(s)"));
+            }
+            catch (Exception e)
+            {
+                OseLog.Warn($"[TTAW] Toolbar Revert threw: {e.Message}");
+                ShowNotification(new GUIContent("Revert failed — see console."));
+            }
+            Repaint();
+        }
+
+        private void OnToolbarSaveClicked()
+        {
+            if (_pkg == null || !AnyDirty())
+            {
+                ShowNotification(new GUIContent("Nothing to save."));
+                return;
+            }
+            int n = TotalDirtyCount();
+            try
+            {
+                WriteJson();
+                OseLog.Info($"[TTAW] Saved {n} dirty edit(s) to JSON via toolbar Save All.");
+                ShowNotification(new GUIContent($"Saved {n} edit(s) to JSON ✓"));
+            }
+            catch (Exception e)
+            {
+                OseLog.Warn($"[TTAW] Toolbar Save threw: {e.Message}");
+                ShowNotification(new GUIContent("Save failed — see console."));
+            }
+            Repaint();
+        }
+
         private void OnToolbarNewStepClicked()
         {
             _showNewStepForm    = !_showNewStepForm;
@@ -469,9 +541,47 @@ namespace OSE.Editor
                            + (_dirtyPrefabInstanceIds?.Count ?? 0)
                            + CountDirtyPartsForAutoSave()
                            + CountDirtyTargetsForAutoSave();
-            string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
+
+            // De-duplicate steps that are dirty solely because of per-task
+            // entry edits (e.g. multi-drag of 4 tool targets writes 4
+            // entry.endTransform values + adds the parent step to
+            // _dirtyStepIds → toolbar would show 4+1=5 even though the
+            // author moved 4 things). Subtract one per affected step so the
+            // count reflects logical work units. Independent step-body
+            // edits (instructionText, requiredPartIds, etc.) leave no
+            // matching task-entry mark and so still count.
+            if (_dirtyTaskEntryIds != null && _dirtyTaskEntryIds.Count > 0
+                && _dirtyStepIds != null && _dirtyStepIds.Count > 0
+                && _pkg?.steps != null)
+            {
+                int stepsCausedByEntryEdits = 0;
+                foreach (string sid in _dirtyStepIds)
+                {
+                    StepDefinition s = null;
+                    foreach (var step in _pkg.steps)
+                        if (step != null && step.id == sid) { s = step; break; }
+                    if (s?.taskOrder == null) continue;
+                    foreach (var e in s.taskOrder)
+                    {
+                        if (e == null || string.IsNullOrEmpty(e.id)) continue;
+                        if (_dirtyTaskEntryIds.Contains(e.id))
+                        { stepsCausedByEntryEdits++; break; }
+                    }
+                }
+                dirtyCount -= stepsCausedByEntryEdits;
+                if (dirtyCount < 0) dirtyCount = 0;
+            }
+            string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved · Save All" : string.Empty;
             if (_toolbarDirtyLabel.text != dirtyText)
                 _toolbarDirtyLabel.text = dirtyText;
+            // Hide entirely when there's nothing to save — keeps the toolbar
+            // visually quiet during browsing / read-only sessions. Revert
+            // sibling follows the same rule.
+            var desiredDisplay = dirtyCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_toolbarDirtyLabel.style.display != desiredDisplay)
+                _toolbarDirtyLabel.style.display = desiredDisplay;
+            if (_toolbarRevertBtn != null && _toolbarRevertBtn.style.display != desiredDisplay)
+                _toolbarRevertBtn.style.display = desiredDisplay;
 
             if (_toolbarInspectorBtn != null && _toolbarInspectorBtn.value != _inspectorVisible)
                 _toolbarInspectorBtn.SetValueWithoutNotify(_inspectorVisible);

@@ -621,9 +621,71 @@ namespace OSE.Editor
             // Add MeshColliders to live parts so click-to-snap works on their surfaces.
             AddMeshCollidersToLiveParts();
 
+            // Authored entry.startTransform overrides are re-applied at the
+            // end of SyncAllPartMeshesToActivePose (called by RespawnScene
+            // above), so we don't need a separate call here. The placement
+            // there is critical because subsequent ApplyStepFilter passes
+            // also call SyncAllPartMeshesToActivePose — every sync pass
+            // ends with the authored Start pose preserved.
+
             // Refresh tool preview using the spawner's PreviewRoot as coordinate space.
             if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
                 RefreshToolPreview(ref _targets[_selectedIdx]);
+        }
+
+        /// <summary>
+        /// Walks the active step's tool tasks and snaps every part backed
+        /// by an entry with an authored <c>startTransform</c> to that pose.
+        /// Bridges the gap between PoseResolver (which doesn't see Start
+        /// overrides) and the editor's display loop. No-op when no step
+        /// is selected or when no tasks have authored Start overrides.
+        /// </summary>
+        private void ApplyAuthoredStartOverridesForActiveStep()
+        {
+            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step?.taskOrder == null || step.requiredToolActions == null) return;
+            foreach (var entry in step.taskOrder)
+            {
+                if (entry == null
+                    || entry.kind != "toolAction"
+                    || string.IsNullOrEmpty(entry.id)
+                    || entry.startTransform == null) continue;
+                ToolActionDefinition action = null;
+                foreach (var a in step.requiredToolActions)
+                    if (a != null && a.id == entry.id) { action = a; break; }
+                if (action == null) continue;
+                string partId = ResolvePartIdForTarget(action.targetId);
+                if (string.IsNullOrEmpty(partId)) continue;
+                var partGo = FindLivePartGO(partId);
+                if (partGo == null) continue;
+                ApplyEndTransformToPartViaWorldPublic(partGo.transform, entry.startTransform);
+            }
+        }
+
+        /// <summary>Public-from-this-file proxy for the static helper in
+        /// TTAW.InteractionPosePill.cs. Avoids exposing the internal helper
+        /// across files.</summary>
+        private static void ApplyEndTransformToPartViaWorldPublic(
+            Transform partXform, OSE.Content.TaskEndTransform et)
+        {
+            Transform previewRoot = GetPreviewRoot();
+            Vector3 etPos = new Vector3(et.position.x, et.position.y, et.position.z);
+            Quaternion etRot = et.rotation.IsIdentity
+                ? Quaternion.identity
+                : new Quaternion(et.rotation.x, et.rotation.y, et.rotation.z, et.rotation.w);
+            if (previewRoot != null)
+            {
+                partXform.position = previewRoot.TransformPoint(etPos);
+                if (!et.rotation.IsIdentity)
+                    partXform.rotation = previewRoot.rotation * etRot;
+            }
+            else
+            {
+                partXform.localPosition = etPos;
+                if (!et.rotation.IsIdentity)
+                    partXform.localRotation = etRot;
+            }
         }
 
         /// <summary>

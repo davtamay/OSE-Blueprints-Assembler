@@ -918,13 +918,7 @@ namespace OSE.Editor
             if (list.Contains(partId)) return;
             list.Add(partId);
             step.requiredPartIds = list.ToArray();
-            _dirtyStepIds.Add(step.id);
-            InvalidateTaskOrderCache();
-            BuildPartList();
-            BuildTargetList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            RefreshAfterStepPartChange(step);
         }
 
         private void RemoveRequiredPartFromStep(StepDefinition step, string partId)
@@ -933,13 +927,7 @@ namespace OSE.Editor
             var list = new List<string>(step.requiredPartIds);
             if (!list.Remove(partId)) return;
             step.requiredPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-            _dirtyStepIds.Add(step.id);
-            InvalidateTaskOrderCache();
-            BuildPartList();
-            BuildTargetList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            RefreshAfterStepPartChange(step);
         }
 
         // ── Visual-only mutators (Phase 7) ────────────────────────────────────
@@ -953,14 +941,7 @@ namespace OSE.Editor
             if (list.Contains(partId)) return;
             list.Add(partId);
             step.optionalPartIds = list.ToArray();
-            _dirtyStepIds.Add(step.id);
-            // No task-order cache invalidation needed — visual-only parts do
-            // not affect the task sequence. We still rebuild the part list and
-            // respawn the scene so the new part shows up immediately.
-            BuildPartList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            RefreshAfterStepPartChange(step);
         }
 
         private void RemoveOptionalPartFromStep(StepDefinition step, string partId)
@@ -969,11 +950,7 @@ namespace OSE.Editor
             var list = new List<string>(step.optionalPartIds);
             if (!list.Remove(partId)) return;
             step.optionalPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-            _dirtyStepIds.Add(step.id);
-            BuildPartList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            RefreshAfterStepPartChange(step);
         }
 
         // ── No-Task (visualPartIds) mutators ──────────────────────────────────
@@ -992,12 +969,14 @@ namespace OSE.Editor
             if (list.Contains(partId)) return;
             list.Add(partId);
             step.visualPartIds = list.ToArray();
-            _dirtyStepIds.Add(step.id);
-            InvalidateTaskOrderCache();
-            BuildPartList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            // Capture must run AFTER BuildPartList because it reads _parts.
+            // Defer via the derived-action queue: in batched multi-add this
+            // collapses to ONE BuildPartList + N captures at unwind, instead
+            // of N BuildPartList + N captures interleaved.
+            string capturedPartId = partId;
+            StepDefinition capturedStep = step;
+            QueueDerivedAction(() => CaptureCurrentPoseAsStepPose(capturedStep, capturedPartId));
+            RefreshAfterStepPartChange(step);
         }
 
         /// <summary>
@@ -1027,13 +1006,7 @@ namespace OSE.Editor
             if (!vis.Contains(partId)) vis.Add(partId);
             step.visualPartIds = vis.ToArray();
 
-            _dirtyStepIds.Add(step.id);
-            InvalidateTaskOrderCache();
-            BuildPartList();
-            BuildTargetList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            RefreshAfterStepPartChange(step);
         }
 
         /// <summary>
@@ -1112,23 +1085,19 @@ namespace OSE.Editor
                     // where the author sees it and propagates forward by
                     // default. Without this, authoring NO TASK would require
                     // a second manual pose step.
-                    CaptureCurrentPoseAsStepPose(step, partId);
+                    string capturedPartIdRole = partId;
+                    StepDefinition capturedStepRole = step;
+                    QueueDerivedAction(() => CaptureCurrentPoseAsStepPose(capturedStepRole, capturedPartIdRole));
                     break;
                 }
             }
 
-            _dirtyStepIds.Add(step.id);
             // Keep taskOrder in sync with the role arrays we just mutated so
             // the part we promoted/demoted also appears (or disappears) in
             // the authoring task sequence — no more "invisibly Required"
             // drift between taskOrder and requiredPartIds.
             ReconcileStepTaskOrder(step);
-            InvalidateTaskOrderCache();
-            BuildPartList();
-            BuildTargetList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose();
-            Repaint();
+            RefreshAfterStepPartChange(step);
         }
 
         /// <summary>
@@ -1188,7 +1157,14 @@ namespace OSE.Editor
 
             if (target == null)
             {
-                target = new StepPoseEntry { stepId = step.id };
+                // label="Custom" is required so the entry survives
+                // StripEmptyLabelStepPoses (TTAW.PackageLoad.cs:60), which
+                // wipes every empty-label stepPose on load. The strip's
+                // contract is "empty label = never explicitly authored" —
+                // our captures ARE explicitly authored (Browser commit /
+                // role-toggle). Without this label, the user's NO TASK
+                // pose vanished on every recompile.
+                target = new StepPoseEntry { stepId = step.id, label = "Custom" };
                 p.stepPoses.Add(target);
             }
             target.position = PackageJsonUtils.ToFloat3(pos);
@@ -1200,14 +1176,28 @@ namespace OSE.Editor
             target.propagateThroughStep = "";
             // Mark the part as placed so SyncAllPartMeshesToActivePose no
             // longer skips it (the loop early-returns on !hasPlacement).
-            // Also seed assembled* fields with the captured pose so any
-            // fallback code path (editor or runtime) at least lands close
-            // to the right spot until the stepPose span resolver picks up.
-            p.hasPlacement       = true;
-            p.assembledPosition  = pos;
-            p.assembledRotation  = rot;
-            p.assembledScale     = scl;
-            p.isDirty            = true;
+            //
+            // CRITICAL: do NOT unconditionally overwrite p.assembledPosition
+            // with the captured pose. `pos` here is the CURRENT view pose
+            // (often the start pose at the current step), but
+            // p.assembledPosition is the part's CANONICAL assembled pose
+            // (Blender-baked, package-wide, persisted to
+            // previewConfig.partPlacements[].assembledPosition). Writing the
+            // start pose into the canonical slot caused the 28k-line
+            // preview_config corruption that wiped the user's authored
+            // assembled poses on multi-add. Only seed when the canonical pose
+            // is genuinely empty — i.e. the part has never had assembledPos
+            // authored — so we don't clobber Blender's intent.
+            p.hasPlacement = true;
+            bool canonicalEmpty = p.assembledPosition.sqrMagnitude < 1e-8f
+                                  && p.assembledScale.sqrMagnitude    < 1e-8f;
+            if (canonicalEmpty)
+            {
+                p.assembledPosition = pos;
+                p.assembledRotation = rot;
+                p.assembledScale    = scl;
+            }
+            p.isDirty = true;
 
             // Mirror the entry into the backing PartPreviewPlacement so a
             // subsequent BuildPartList() rebuild (which re-reads stepPoses

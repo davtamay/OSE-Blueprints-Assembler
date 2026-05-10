@@ -111,6 +111,36 @@ namespace OSE.Editor
             }
             _multiSelectedParts.Clear();
 
+            // Diagnostic — only fires when at least one part has stepPoses,
+            // so it's quiet on packages without per-step pose authoring.
+            // For every part with stepPoses, list count + scoped stepIds so
+            // we can verify BuildPartList is actually loading them after a
+            // domain reload (the symptom the user is hitting).
+            int withPoses = 0;
+            for (int i = 0; i < _parts.Length; i++)
+                if (_parts[i].stepPoses != null && _parts[i].stepPoses.Count > 0) withPoses++;
+            if (withPoses > 0)
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.Append($"[TTAW.BuildPartList] {withPoses}/{_parts.Length} parts have stepPoses after rebuild. ");
+                int shown = 0;
+                for (int i = 0; i < _parts.Length && shown < 6; i++)
+                {
+                    var p = _parts[i];
+                    if (p.stepPoses == null || p.stepPoses.Count == 0) continue;
+                    sb.Append($"{p.def.id}=[");
+                    for (int j = 0; j < p.stepPoses.Count; j++)
+                    {
+                        if (j > 0) sb.Append(',');
+                        sb.Append(p.stepPoses[j]?.stepId ?? "null");
+                    }
+                    sb.Append("] ");
+                    shown++;
+                }
+                if (withPoses > shown) sb.Append($"(+{withPoses - shown} more)");
+                OseLog.Info(sb.ToString());
+            }
+
             // Rebuild the ownership cache consumed by the proactive-guidance
             // surfaces (drop-zone pre-check, part inspector, step header, task
             // rows). Pinned to BuildPartList so every mutation path that
@@ -833,6 +863,15 @@ namespace OSE.Editor
 
                 SyncPartMeshToActivePose(ref _parts[i]);
             }
+
+            // Authored Start overrides override poseTable. PoseResolver
+            // doesn't consume entry.startTransform, so the loop above
+            // parks parts at the resolver's chosen pose (assembled).
+            // Re-apply Start overrides last so any subsequent sync pass
+            // (RespawnScene → SyncAllPartMeshesToActivePose, ApplyStepFilter
+            // tail passes, SyncSessionDriverStep, etc.) ends with parts
+            // visually at the authored Start pose. Idempotent.
+            ApplyAuthoredStartOverridesForActiveStep();
         }
 
         /// <summary>
@@ -997,39 +1036,10 @@ namespace OSE.Editor
                 Event.current.Use();
             }
 
-            // Scene selection → window selection sync (click GO in Hierarchy to select it).
-            // Skip when multi-selection is active — the user's batch selection takes priority.
-            if (spawner?.SpawnedParts != null && _multiSelectedParts.Count <= 1 && _multiSelectedTaskSeqIdxs.Count <= 1)
-            {
-                var activeGO = Selection.activeGameObject;
-                if (activeGO != null)
-                {
-                    foreach (var liveGO in spawner.SpawnedParts)
-                    {
-                        if (liveGO == null) continue;
-                        if (activeGO != liveGO && !activeGO.transform.IsChildOf(liveGO.transform)) continue;
-                        for (int si = 0; si < _parts.Length; si++)
-                        {
-                            if (_parts[si].def.id != liveGO.name) continue;
-                            if (_selectedPartIdx != si)
-                            {
-                                _selectedPartIdx = si;
-                                _selectedPartId  = liveGO.name;
-                                _multiSelectedParts.Clear();
-                                // Clear target selection
-                                _selectedIdx = -1;
-                                _multiSelected.Clear();
-                                // Suppress false dirty from polling the newly selected part
-                                _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5;
-                                SyncAllPartMeshesToActivePose();
-                                Repaint();
-                            }
-                            break;
-                        }
-                        break;
-                    }
-                }
-            }
+            // Hierarchy/Scene → TTAW selection sync now lives in
+            // OnUnitySelectionChanged (event-driven, multi-select aware).
+            // The legacy per-paint poll only handled single-select and
+            // explicitly bailed when any TTAW multi-select was active.
 
             // Indicator dots for NON-selected parts — drawn before gizmo handles.
             // Selected part indicator is drawn AFTER handles (end of method) so it
@@ -1286,6 +1296,103 @@ namespace OSE.Editor
                 Handles.Label(wA, " A", EditorStyles.boldLabel);
                 Handles.Label(wB, " B", EditorStyles.boldLabel);
             }
+        }
+
+        // ── Hierarchy/Scene → TTAW selection sync ────────────────────────────
+        // Event-driven mirror of Unity's Selection into the active step's
+        // task-sequence multi-select (`_multiSelectedTaskSeqIdxs`). Walking up
+        // each selected GameObject's parent chain and matching `transform.name`
+        // against the cached task order's part-kind entries means Group_*/
+        // _AnimCue_* containers fall through to the part child without
+        // hard-coding container prefixes.
+        //
+        // Loop guard is implicit: TTAW's own programmatic `Selection.activeGameObject`
+        // writes (e.g. `ApplyTaskEntrySelection`) update `_selectedTaskSeqIdx`
+        // BEFORE pushing to Selection, so when this handler fires in response
+        // it computes a matched set that already equals the current TTAW state
+        // and the no-change branch returns without re-applying.
+        private void OnUnitySelectionChanged()
+        {
+            if (_pkg == null) return;
+
+            // Part Browser two-way sync: when a pick request is open, mirror
+            // the active Hierarchy GO into the Browser's selection. Done BEFORE
+            // the task-row sync below so the Browser keeps tracking even when
+            // there is no active step / no taskOrder yet.
+            if (IsPartBrowserOpen) NotifyBrowserOfHierarchySelection();
+
+            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
+
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step == null) return;
+
+            var order = GetOrDeriveTaskOrder(step);
+            if (order == null || order.Count == 0) return;
+
+            var gos = Selection.gameObjects;
+            if (gos == null || gos.Length == 0) return;
+
+            // partId → first task index for kind=="part" entries in this step.
+            var partIdToTaskIdx = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int i = 0; i < order.Count; i++)
+            {
+                var e = order[i];
+                if (e == null || e.kind != "part" || string.IsNullOrEmpty(e.id)) continue;
+                string pid = TaskInstanceId.ToPartId(e.id);
+                if (!partIdToTaskIdx.ContainsKey(pid)) partIdToTaskIdx[pid] = i;
+            }
+            if (partIdToTaskIdx.Count == 0) return;
+
+            var matched = new HashSet<int>();
+            int anchorIdx = -1;
+            var anchorGO = Selection.activeGameObject;
+
+            foreach (var go in gos)
+            {
+                if (go == null) continue;
+                var t = go.transform;
+                while (t != null)
+                {
+                    if (partIdToTaskIdx.TryGetValue(t.name, out int taskIdx))
+                    {
+                        matched.Add(taskIdx);
+                        if (go == anchorGO) anchorIdx = taskIdx;
+                        break;
+                    }
+                    t = t.parent;
+                }
+            }
+
+            if (matched.Count == 0) return;
+
+            // No-change short-circuit doubles as the loopback guard.
+            bool sameAsCurrent =
+                (matched.Count == 1
+                    && _multiSelectedTaskSeqIdxs.Count == 0
+                    && _selectedTaskSeqIdx >= 0
+                    && matched.Contains(_selectedTaskSeqIdx))
+                || (matched.Count > 1
+                    && matched.Count == _multiSelectedTaskSeqIdxs.Count
+                    && matched.SetEquals(_multiSelectedTaskSeqIdxs));
+            if (sameAsCurrent) return;
+
+            if (matched.Count == 1)
+            {
+                int only = matched.First();
+                _selectedTaskSeqIdx = only;
+                _multiSelectedTaskSeqIdxs.Clear();
+                ApplyTaskEntrySelection(step, order[only]);
+            }
+            else
+            {
+                _multiSelectedTaskSeqIdxs.Clear();
+                foreach (int idx in matched) _multiSelectedTaskSeqIdxs.Add(idx);
+                _selectedTaskSeqIdx = anchorIdx >= 0 ? anchorIdx : matched.First();
+                ApplyTaskMultiSelection(step, order);
+            }
+
+            Repaint();
+            SceneView.RepaintAll();
         }
     }
 }

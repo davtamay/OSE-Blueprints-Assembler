@@ -207,6 +207,71 @@ namespace OSE.Editor
         private void WriteJson() => WriteJson(reloadAfter: true);
 
         /// <summary>
+        /// Looks up the tool task entry that binds <paramref name="targetId"/>
+        /// on any step in the loaded package, then returns the work-axis +
+        /// length derived from that entry's (endTransform - startTransform)
+        /// pose pair, expressed in the target's local frame (inverse of the
+        /// target's PreviewRoot rotation applied). Returns false when no
+        /// binding entry is found or the pose pair is trivial.
+        /// </summary>
+        private bool TryDeriveWorkPathFromEntry(
+            string targetId, out Vector3 axisLocal, out float length)
+        {
+            axisLocal = Vector3.zero;
+            length    = 0f;
+            if (string.IsNullOrEmpty(targetId) || _pkg?.steps == null) return false;
+
+            // Walk every step → tool action that targets this id, then
+            // find its taskOrder entry. First non-trivial pair wins (a
+            // target shouldn't be referenced by more than one tool action
+            // per step in practice; if it is, the first hit is fine
+            // since they all encode the same physical work path).
+            foreach (var s in _pkg.steps)
+            {
+                if (s?.requiredToolActions == null || s.taskOrder == null) continue;
+                string actionId = null;
+                foreach (var a in s.requiredToolActions)
+                {
+                    if (a == null) continue;
+                    if (string.Equals(a.targetId, targetId, StringComparison.Ordinal))
+                    { actionId = a.id; break; }
+                }
+                if (string.IsNullOrEmpty(actionId)) continue;
+
+                foreach (var e in s.taskOrder)
+                {
+                    if (e == null || e.kind != "toolAction" || e.id != actionId) continue;
+                    if (e.startTransform == null || e.endTransform == null) break;
+
+                    Vector3 startPR = new Vector3(
+                        e.startTransform.position.x,
+                        e.startTransform.position.y,
+                        e.startTransform.position.z);
+                    Vector3 endPR = new Vector3(
+                        e.endTransform.position.x,
+                        e.endTransform.position.y,
+                        e.endTransform.position.z);
+                    Vector3 deltaPR = endPR - startPR;
+                    if (deltaPR.sqrMagnitude < 1e-8f) break;
+
+                    // weldAxis is authored as PreviewRoot-local direction
+                    // (NOT target-local) — runtime ToolTargetSpawner does
+                    // `previewRoot.TransformDirection(axis)`. So the delta
+                    // is already in the right frame; no Inverse(targetRot)
+                    // multiplication needed. The earlier version applied
+                    // Inverse(targetRot) and produced legacy values whose
+                    // direction depended on the target's static rotation —
+                    // round-trip after migration produced inflated heights
+                    // on step 72/73 bolts.
+                    length    = deltaPR.magnitude;
+                    axisLocal = length > 1e-5f ? deltaPR / length : Vector3.zero;
+                    return length > 1e-5f;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Writes all dirty items to machine.json. When <paramref name="reloadAfter"/> is true
         /// (default), reloads the package and respawns the scene for a clean-slate state. When
         /// false, keeps the current in-memory state and only syncs dirty flags — use this for
@@ -305,6 +370,7 @@ namespace OSE.Editor
                     // MachinePackageNormalizer.BakeNoTaskWaypoints). They're
                     // recomputed on every load from visualPartIds + startPosition
                     // and must never round-trip to JSON.
+                    int incomingPoseCount = p.stepPoses?.Count ?? 0;
                     entry.stepPoses = null;
                     if (p.stepPoses != null && p.stepPoses.Count > 0)
                     {
@@ -325,6 +391,18 @@ namespace OSE.Editor
                             authored.Add(spEntry);
                         }
                         if (authored.Count > 0) entry.stepPoses = authored.ToArray();
+                    }
+                    int outgoingPoseCount = entry.stepPoses?.Length ?? 0;
+                    if (incomingPoseCount > 0 || outgoingPoseCount > 0)
+                    {
+                        var labels = new System.Text.StringBuilder();
+                        if (entry.stepPoses != null)
+                            for (int li = 0; li < entry.stepPoses.Length; li++)
+                            {
+                                if (li > 0) labels.Append(',');
+                                labels.Append("'").Append(entry.stepPoses[li]?.label ?? "<null>").Append("'");
+                            }
+                        OseLog.Info($"[TTAW.WriteJson] part='{pid}' isDirty=true stepPoses: incoming={incomingPoseCount} outgoing={outgoingPoseCount} labels=[{labels}]");
                     }
                     if (pidx >= 0) pp[pidx] = entry; else pp.Add(entry);
                 }
@@ -448,6 +526,21 @@ namespace OSE.Editor
                     && t.def != null
                     && t.def.useLocalOffsetFromPart
                     && !string.IsNullOrEmpty(t.def.associatedPartId);
+
+                // Skip clean-target auto-bake when ANY tool task has an
+                // active pose pill snapping the live part. The pose pill
+                // moves the live part to entry.startTransform or
+                // entry.endTransform via ApplyEndTransformToPartViaWorld,
+                // which makes partGO.transform.position diverge from the
+                // canonical assembled pose. Auto-baking against a snapped
+                // part bakes the snap-delta into localOffsetFromPart —
+                // each save+pill-flip cycle then compounds, drifting the
+                // marker further from the bolt. Only allow auto-bake when
+                // the part is at its canonical pose (no pose pill snap
+                // active for ANY task).
+                if (autoBakeOnly && !string.IsNullOrEmpty(_activePosePillStepId))
+                    autoBakeOnly = false;
+
                 if (!t.isDirty && !autoBakeOnly) continue;
                 if (autoBakeOnly)
                 {
@@ -465,11 +558,28 @@ namespace OSE.Editor
                     continue;
                 }
 
-                string axisJson = $"{{ \"x\": {R(t.weldAxis.x).ToString(inv)}, \"y\": {R(t.weldAxis.y).ToString(inv)}, \"z\": {R(t.weldAxis.z).ToString(inv)} }}";
+                // Dual-write back-compat: weldAxis/weldLength are no longer
+                // authored directly — they're derived from the bound tool
+                // task entry's (endTransform - startTransform) pose pair so
+                // any unmigrated runtime consumer (CutPreview etc.) still
+                // reads correct values. When no entry is bound (orphan
+                // target), fall back to the in-memory t.weldAxis/t.weldLength
+                // so legacy data isn't lost.
+                Vector3 derivedAxisLocal = t.weldAxis;
+                float   derivedLength   = t.weldLength;
+                if (TryDeriveWorkPathFromEntry(t.def?.id,
+                        out Vector3 axisLocalFromEntry, out float lengthFromEntry))
+                {
+                    derivedAxisLocal = axisLocalFromEntry;
+                    derivedLength    = lengthFromEntry;
+                }
+                string axisJson = $"{{ \"x\": {R(derivedAxisLocal.x).ToString(inv)}, \"y\": {R(derivedAxisLocal.y).ToString(inv)}, \"z\": {R(derivedAxisLocal.z).ToString(inv)} }}";
                 InjectField(t.def.id, "weldAxis", axisJson);
 
-                if (t.weldLength > 0.0001f)
-                    InjectField(t.def.id, "weldLength", R(t.weldLength).ToString(inv));
+                if (derivedLength > 0.0001f)
+                    InjectField(t.def.id, "weldLength", R(derivedLength).ToString(inv));
+                else
+                    RemoveField(t.def.id, "weldLength");
 
                 Quaternion worldRot   = GetPreviewRoot() is Transform wr
                     ? wr.rotation * t.rotation
@@ -488,9 +598,18 @@ namespace OSE.Editor
                 // at bake-time. Safe to skip when the part isn't currently
                 // spawned in the scene — the existing static placement
                 // remains valid as a fallback.
+                //
+                // Skip when ANY pose pill is active (snapping the live part
+                // away from canonical assembled pose). Same compounding bug
+                // as the autoBakeOnly branch above. Authors who explicitly
+                // dragged the target gizmo (t.isDirty=true) saved both
+                // t.position AND localOffsetFromPart in lockstep via
+                // ApplyDragToLocalOffset; preserving the in-memory value
+                // is correct here.
                 if (t.def != null
                     && t.def.useLocalOffsetFromPart
-                    && !string.IsNullOrEmpty(t.def.associatedPartId))
+                    && !string.IsNullOrEmpty(t.def.associatedPartId)
+                    && string.IsNullOrEmpty(_activePosePillStepId))
                 {
                     var partGO = FindLivePartGO(t.def.associatedPartId);
                     Transform prRoot = GetPreviewRoot();
@@ -507,6 +626,20 @@ namespace OSE.Editor
                     {
                         OseLog.Warn($"[ToolTargetAuthoring] Auto-bake skipped for target '{t.def.id}': associatedPart '{t.def.associatedPartId}' not currently in scene.");
                     }
+                }
+                else if (t.def != null
+                    && t.def.useLocalOffsetFromPart
+                    && !string.IsNullOrEmpty(t.def.associatedPartId)
+                    && !string.IsNullOrEmpty(_activePosePillStepId))
+                {
+                    // Pose pill is active — write the in-memory localOffset
+                    // (already updated by ApplyDragToLocalOffset for direct
+                    // edits, or unchanged for start-pose-only edits) without
+                    // recomputing from the snapped part position.
+                    var lof = t.def.localOffsetFromPart;
+                    InjectField(t.def.id, "useLocalOffsetFromPart", "true");
+                    string offsetJson = $"{{ \"x\": {R(lof.x).ToString(inv)}, \"y\": {R(lof.y).ToString(inv)}, \"z\": {R(lof.z).ToString(inv)} }}";
+                    InjectField(t.def.id, "localOffsetFromPart", offsetJson);
                 }
                 else if (t.def != null && !t.def.useLocalOffsetFromPart)
                 {
@@ -758,6 +891,12 @@ namespace OSE.Editor
             }
             _dirtyStepIds.Clear();
             _dirtyTaskOrderStepIds.Clear();
+            // Tool-task per-entry dirty mirrors _dirtyStepIds at write time:
+            // every dirty step's taskOrder is fully rewritten by the step
+            // serializer, so all per-entry overrides on those steps are
+            // persisted in lockstep. Clearing here keeps the row "● Unsaved"
+            // affordances honest without per-step bookkeeping.
+            _dirtyTaskEntryIds.Clear();
 
             // Step 5b-bis: Hint definitions touched by StepTextAuthoringWindow.
             // For existing hints (entry exists somewhere on disk) we inject
@@ -1114,6 +1253,18 @@ namespace OSE.Editor
             }
 
             OseLog.Info($"[ToolTargetAuthoring] Written {_pkgId} (backup: {firstBackup})");
+
+            // Rebuild derived data even on reloadAfter:false saves. Without
+            // this, the in-memory poseTable still reflects the pre-edit
+            // values — RespawnScene reads it on step navigation and parks
+            // parts at stale positions until the user flips the pose pill
+            // (which bypasses the poseTable and reads entry.startTransform
+            // / endTransform directly). Symptom: edit step 79, save, navigate
+            // step 80 → step 79, the OLD pose appears; flipping End→Start
+            // "fixes" it. Bake refreshes poseTable from the freshly authored
+            // entry data so navigation behavior matches the saved state.
+            if (_pkg != null)
+                OSE.Content.Loading.MachinePackageNormalizer.RebakeCueSynthesisAndPoseTable(_pkg);
 
             if (reloadAfter)
             {

@@ -26,6 +26,15 @@ namespace OSE.Editor
 
         private void OnSceneGUI(SceneView sv)
         {
+            // Part Browser — when an active pick request is open, paint hover +
+            // selection outlines for the live spawned parts and route MouseDown
+            // through SelectPartFromBrowser. Runs even during Play (read-only:
+            // we only paint outlines + read selection — no transform writes —
+            // and the pick callback is invoked from the Browser window's IMGUI,
+            // not from here). Runs BEFORE the rest of OnSceneGUI so Browser
+            // mode wins the click event over the existing target/handle gizmos.
+            HandleBrowserSceneGUI(sv);
+
             // Editor/runtime isolation: TTAW manipulates the live scene
             // GameObjects (PartHandles, WriteBackPartGroup*, hierarchy
             // polling, gizmo drags). During Play, those same GameObjects
@@ -126,18 +135,20 @@ namespace OSE.Editor
                 //      its sphere at the anchor part's resolved pose.
                 //   3. Static t.position — fallback for targets whose
                 //      placement was authored explicitly.
+                // Display position priority — offset/anchor paths take
+                // precedence over pill position so the SELECTED icon sits
+                // at the same offset-adjusted point as the UNSELECTED cyan
+                // ones. Pill position represents the part's center pose
+                // (useful for tool-tip gluing in UpdateToolPreview), but
+                // for the target marker we want part + localOffset to match
+                // the runtime spawner. Pill is only the fallback when the
+                // target has no offset / anchor data to drive it.
                 Vector3 localForDisplay = t.position;
                 bool selectionScope = i == _selectedIdx || _multiSelected.Contains(i);
-                if (selectionScope && TryGetActivePosePillPositionForTarget(t.def?.id, out Vector3 pillIconPos))
+                bool resolved = false;
+                if (t.def != null && t.def.useLocalOffsetFromPart
+                    && !string.IsNullOrEmpty(t.def.associatedPartId))
                 {
-                    localForDisplay = pillIconPos;
-                }
-                else if (t.def != null && t.def.useLocalOffsetFromPart
-                         && !string.IsNullOrEmpty(t.def.associatedPartId))
-                {
-                    // Live-part-anchored offset (preferred). Mirrors the
-                    // runtime resolver in ToolTargetSpawner so editor and
-                    // Play render the marker at identical positions.
                     var partGO = FindLivePartGO(t.def.associatedPartId);
                     if (partGO != null)
                     {
@@ -147,13 +158,22 @@ namespace OSE.Editor
                             t.def.localOffsetFromPart.z);
                         localForDisplay = root.InverseTransformPoint(
                             partGO.transform.TransformPoint(localOffset));
+                        resolved = true;
                     }
                 }
                 else if (t.def != null && !string.IsNullOrEmpty(t.def.anchorRef))
                 {
                     var anchorGO = FindLivePartGO(t.def.anchorRef);
                     if (anchorGO != null)
+                    {
                         localForDisplay = root.InverseTransformPoint(anchorGO.transform.position);
+                        resolved = true;
+                    }
+                }
+                if (!resolved && selectionScope
+                    && TryGetActivePosePillPositionForTarget(t.def?.id, out Vector3 pillIconPos))
+                {
+                    localForDisplay = pillIconPos;
                 }
                 Vector3 worldPos = root.TransformPoint(localForDisplay);
                 // Always derive gizmo size from camera distance so it stays readable
@@ -189,6 +209,20 @@ namespace OSE.Editor
                     Repaint();
                 }
 
+                // End-pose accent ring: targets whose backing tool-task is
+                // in End pill mode get a thin orange disc around their sphere.
+                // Mirrors the inspector's row "E" badge — same color, same
+                // semantics — so author can scan scene and task list
+                // interchangeably. _pillByEntry is per-active-step (cleared on
+                // step boundary), so only inspect the locked step's actions.
+                if (TargetIsInEndPill(t.def.id))
+                {
+                    Color ringPrev = Handles.color;
+                    Handles.color = PoseAccentAssembled;
+                    Handles.DrawWireDisc(worldPos, sv.camera.transform.forward, size * 1.6f);
+                    Handles.color = ringPrev;
+                }
+
                 if (sceneProfile.SceneWeldArrow)    DrawWeldAxisArrow(ref t, worldPos, 1f);
                 if (sceneProfile.ScenePortPoints)   DrawPortPoints(ref t, root, 1f);
                 if (sceneProfile.ScenePartConnector) DrawPartConnector(ref t, worldPos, 1f);
@@ -213,16 +247,16 @@ namespace OSE.Editor
             if (!isPlaying && _selectedIdx >= 0 && _selectedIdx < _targets.Length)
             {
                 ref TargetEditState sel     = ref _targets[_selectedIdx];
-                // Display priority — pill override → live anchor part →
-                // static placement. Same chain the per-target sphere icon
-                // loop uses, so the gizmo never desynchs from the icon.
+                // Display priority — offset/anchor (live part-derived) → pill
+                // position → static placement. Mirrors the icon loop above so
+                // the gizmo sits exactly where the cyan/white icon sits.
+                // Pill is the fallback because pill returns part-center pose,
+                // not target offset; offset/anchor paths produce the actual
+                // target marker location.
                 Vector3 displayLocal = sel.position;
-                if (TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillGizmoPos))
-                {
-                    displayLocal = pillGizmoPos;
-                }
-                else if (sel.def != null && sel.def.useLocalOffsetFromPart
-                         && !string.IsNullOrEmpty(sel.def.associatedPartId))
+                bool selResolved = false;
+                if (sel.def != null && sel.def.useLocalOffsetFromPart
+                    && !string.IsNullOrEmpty(sel.def.associatedPartId))
                 {
                     var partGO = FindLivePartGO(sel.def.associatedPartId);
                     if (partGO != null)
@@ -233,13 +267,73 @@ namespace OSE.Editor
                             sel.def.localOffsetFromPart.z);
                         displayLocal = root.InverseTransformPoint(
                             partGO.transform.TransformPoint(localOffset));
+                        selResolved = true;
                     }
                 }
                 else if (sel.def != null && !string.IsNullOrEmpty(sel.def.anchorRef))
                 {
                     var anchorGO = FindLivePartGO(sel.def.anchorRef);
                     if (anchorGO != null)
+                    {
                         displayLocal = root.InverseTransformPoint(anchorGO.transform.position);
+                        selResolved = true;
+                    }
+                }
+                if (!selResolved
+                    && TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillGizmoPos))
+                {
+                    displayLocal = pillGizmoPos;
+                }
+
+                // Multi-select gizmo anchors at the centroid of all selected
+                // targets' resolved positions (offset/anchor/pill chain).
+                // Drag deltas continue to apply to each target individually
+                // (existing batch loop below), so the centroid is purely an
+                // anchor point — moves the gizmo to a place that "represents"
+                // the whole selection instead of the arbitrary primary.
+                if (_multiSelected.Count > 1)
+                {
+                    Vector3 sum = Vector3.zero;
+                    int     count = 0;
+                    foreach (int idx in _multiSelected)
+                    {
+                        if (idx < 0 || idx >= _targets.Length) continue;
+                        ref TargetEditState mt = ref _targets[idx];
+                        Vector3 mLocal = mt.position;
+                        bool resolvedM = false;
+                        if (mt.def != null && mt.def.useLocalOffsetFromPart
+                            && !string.IsNullOrEmpty(mt.def.associatedPartId))
+                        {
+                            var mPartGO = FindLivePartGO(mt.def.associatedPartId);
+                            if (mPartGO != null)
+                            {
+                                Vector3 mOffset = new Vector3(
+                                    mt.def.localOffsetFromPart.x,
+                                    mt.def.localOffsetFromPart.y,
+                                    mt.def.localOffsetFromPart.z);
+                                mLocal = root.InverseTransformPoint(
+                                    mPartGO.transform.TransformPoint(mOffset));
+                                resolvedM = true;
+                            }
+                        }
+                        else if (mt.def != null && !string.IsNullOrEmpty(mt.def.anchorRef))
+                        {
+                            var mAnchor = FindLivePartGO(mt.def.anchorRef);
+                            if (mAnchor != null)
+                            {
+                                mLocal = root.InverseTransformPoint(mAnchor.transform.position);
+                                resolvedM = true;
+                            }
+                        }
+                        if (!resolvedM
+                            && TryGetActivePosePillPositionForTarget(mt.def?.id, out Vector3 mPill))
+                        {
+                            mLocal = mPill;
+                        }
+                        sum += mLocal;
+                        count++;
+                    }
+                    if (count > 0) displayLocal = sum / count;
                 }
                 Vector3    worldPos = root.TransformPoint(displayLocal);
                 Quaternion worldRot = Quaternion.Normalize(root.rotation * sel.rotation);
@@ -280,9 +374,12 @@ namespace OSE.Editor
                 }
                 EditorGUI.BeginChangeCheck();
                 Quaternion handleRot = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
-                Vector3 newWorldPos = startPillReadOnly
-                    ? worldPos
-                    : Handles.PositionHandle(worldPos, handleRot);
+                // Always draw the PositionHandle for the selected target so
+                // the author has spatial context for where the tool×part
+                // interaction lands — even on read-only Start. Drag is still
+                // gated by startPillReadOnly below; the handle in that mode
+                // is purely visual ("here's where the inherited start sits").
+                Vector3 newWorldPos = Handles.PositionHandle(worldPos, handleRot);
                 if (!startPillReadOnly && EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - worldPos).sqrMagnitude > 1e-10f)
                 {
                     Vector3 newLocal = root.InverseTransformPoint(newWorldPos);
@@ -306,34 +403,74 @@ namespace OSE.Editor
                     else
                     {
                         BeginEdit();
-                        sel.position += delta;
-                        sel.isDirty  = true;
-
-                        if (_multiSelected.Count > 1)
+                        // Drag routing depends on whether the target is
+                        // offset-resolved (useLocalOffsetFromPart=true) and
+                        // whether the action's followPart toggle is ON:
+                        //   • Offset-resolved + followPart ON:
+                        //       drag updates entry.endTransform (part + offset
+                        //       moves with the bolt's end pose). sel.position
+                        //       stays put.
+                        //   • Offset-resolved + followPart OFF:
+                        //       drag updates the target's localOffsetFromPart
+                        //       so the marker moves relative to the part —
+                        //       sel.position is invisible to the offset path,
+                        //       so writing it produces no visible feedback.
+                        //   • Static (non-offset): drag updates sel.position
+                        //       (legacy behavior).
+                        bool offsetResolved = sel.def != null
+                            && sel.def.useLocalOffsetFromPart
+                            && !string.IsNullOrEmpty(sel.def.associatedPartId);
+                        bool followPart = IsActiveTaskFollowedInteraction();
+                        if (offsetResolved && !followPart)
                         {
-                            foreach (int idx in _multiSelected)
+                            // Convert PR-local delta into part-local delta and
+                            // accumulate into localOffsetFromPart. Multi-select
+                            // applies the same per-target delta.
+                            ApplyDragToLocalOffset(ref sel, delta);
+                            if (_multiSelected.Count > 1)
                             {
-                                if (idx == _selectedIdx) continue;
-                                if (idx < 0 || idx >= _targets.Length) continue;
-                                ref var t = ref _targets[idx];
-                                t.position += delta;
-                                t.isDirty = true;
+                                foreach (int idx in _multiSelected)
+                                {
+                                    if (idx == _selectedIdx) continue;
+                                    if (idx < 0 || idx >= _targets.Length) continue;
+                                    ref var t = ref _targets[idx];
+                                    if (t.def != null && t.def.useLocalOffsetFromPart
+                                        && !string.IsNullOrEmpty(t.def.associatedPartId))
+                                        ApplyDragToLocalOffset(ref t, delta);
+                                }
                             }
                         }
-                        // followPart authoring sync — when on, also move the
-                        // part's end pose by the same delta so the bolt stays
-                        // glued to wherever the author drags the target.
-                        TryApplyTargetPositionDeltaToFollowedPart(delta);
+                        else
+                        {
+                            sel.position += delta;
+                            sel.isDirty  = true;
+                            if (_multiSelected.Count > 1)
+                            {
+                                foreach (int idx in _multiSelected)
+                                {
+                                    if (idx == _selectedIdx) continue;
+                                    if (idx < 0 || idx >= _targets.Length) continue;
+                                    ref var t = ref _targets[idx];
+                                    t.position += delta;
+                                    t.isDirty = true;
+                                }
+                            }
+                            // followPart authoring sync — when ON, drag the
+                            // part's end pose by the same delta so the bolt
+                            // stays glued to wherever the author drags the
+                            // target. No-ops when followPart is false.
+                            TryApplyTargetPositionDeltaToFollowedPart(delta);
+                        }
                     }
                     Repaint();
                 }
 
-                if (sceneProfile.SceneRotationHandle && !startPillReadOnly)
+                if (sceneProfile.SceneRotationHandle)
                 {
                     EditorGUI.BeginChangeCheck();
                     Quaternion rotHandleOrientation = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
                     Quaternion newWorldRot = Handles.RotationHandle(rotHandleOrientation, worldPos);
-                    if (EditorGUI.EndChangeCheck() && !poseCooldownActive && Quaternion.Angle(newWorldRot, rotHandleOrientation) > 0.01f)
+                    if (!startPillReadOnly && EditorGUI.EndChangeCheck() && !poseCooldownActive && Quaternion.Angle(newWorldRot, rotHandleOrientation) > 0.01f)
                     {
                         // Snapshot baselines on first frame of drag (for batch rotation)
                         if (!_rotDragActive)
@@ -497,6 +634,43 @@ namespace OSE.Editor
             }
 
             HandleClickToSnap();
+        }
+
+        /// <summary>
+        /// Applies a PreviewRoot-local drag delta to the target's
+        /// <c>localOffsetFromPart</c>. Used when the gizmo is being dragged
+        /// for an offset-resolved target whose action has <c>followPart</c>
+        /// off — the part stays put and the marker offset moves instead.
+        /// Converts the delta into the part's local frame so subsequent
+        /// part rotations rotate the marker with the part. Also updates
+        /// <c>t.position</c> by the same delta so the save-path auto-bake
+        /// (TTAW.WriteJson recomputes localOffsetFromPart from t.position
+        /// on every save) lands on the authored offset instead of reverting
+        /// to the stale static placement — the "writes don't persist" bug
+        /// that previously erased every followPart=OFF drag on save.
+        /// </summary>
+        private void ApplyDragToLocalOffset(ref TargetEditState t, Vector3 deltaPRLocal)
+        {
+            if (t.def == null || string.IsNullOrEmpty(t.def.associatedPartId)) return;
+            var partGO = FindLivePartGO(t.def.associatedPartId);
+            var pr = GetPreviewRoot();
+            if (partGO == null || pr == null) return;
+
+            // Delta is PR-local. The marker offset is part-local. Convert:
+            // partLocalDelta = Inverse(part.world.rotation) * pr.world.rotation * deltaPRLocal.
+            Quaternion partInv = Quaternion.Inverse(partGO.transform.rotation);
+            Vector3    deltaWorld    = pr.rotation * deltaPRLocal;
+            Vector3    deltaPartLocal = partInv * deltaWorld;
+            t.def.localOffsetFromPart = new SceneFloat3
+            {
+                x = t.def.localOffsetFromPart.x + deltaPartLocal.x,
+                y = t.def.localOffsetFromPart.y + deltaPartLocal.y,
+                z = t.def.localOffsetFromPart.z + deltaPartLocal.z,
+            };
+            // Keep the static placement in sync so auto-bake on save
+            // recomputes the same offset value.
+            t.position += deltaPRLocal;
+            t.isDirty = true;
         }
 
         private void DrawWeldAxisArrow(ref TargetEditState t, Vector3 worldPos, float alpha = 1f)
