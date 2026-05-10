@@ -15,9 +15,16 @@ namespace OSE.Interaction
         public Vector3 SurfaceWorldPos;
         public Quaternion TargetWorldRotation;
 
-        // ── Weld / linear action ──
+        // ── Linear action (axis + length describe the tool's working
+        // path, derived from the entry's startTransform/endTransform pose
+        // pair at the bridge layer; legacy weldAxis/weldLength fed the
+        // same pair pre-migration). Field names retained as Weld* for
+        // API stability — internal label only, no longer surfaced to
+        // authoring. WorkDuration is the authored drift time in seconds
+        // (entry.speed > 0 ? length / speed : 0 == "use system default").
         public Vector3 WeldAxis;
         public float WeldLength;
+        public float WorkDuration;
 
         // ── Authored tool orientation ──
         public bool HasToolActionRotation;

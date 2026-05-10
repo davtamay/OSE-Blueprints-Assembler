@@ -490,6 +490,23 @@ namespace OSE.UI.Root
             }
             _partsHiddenOnSpawn = true;
 
+            // User opt-in: when "show all parts at staging" is on, every spawned
+            // part stays visible. Untouched parts sit at their authored
+            // stagingPose (their spawn pose); placed/Completed parts continue to
+            // be driven to assembled poses by RestoreCompletedStepParts /
+            // RevealStepParts. The active step's interactivity is unchanged.
+            if (SessionPreferences.ShowAllPartsAtStaging)
+            {
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    if (parts[i] == null) continue;
+                    parts[i].SetActive(true);
+                    _revealedPartIds.Add(parts[i].name);
+                }
+                OseLog.Info($"[PartInteraction] Show-all-parts-at-staging on — kept {parts.Count} parts active.");
+                return;
+            }
+
             for (int i = 0; i < parts.Count; i++)
             {
                 if (parts[i] == null) continue;
@@ -1178,6 +1195,8 @@ namespace OSE.UI.Root
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || allSteps == null) return;
 
+            bool stagingMode = SessionPreferences.ShowAllPartsAtStaging;
+
             for (int s = fromStepIndex; s < allSteps.Length; s++)
             {
                 string[] partIds = allSteps[s].GetEffectiveRequiredPartIds();
@@ -1190,6 +1209,30 @@ namespace OSE.UI.Root
 
                     GameObject partGo = _ctx.FindSpawnedPart(partId);
                     if (partGo == null) continue;
+
+                    if (stagingMode)
+                    {
+                        // User opt-in: future parts go to their authored staging
+                        // pose and stay visible instead of hiding. startPosition
+                        // on the placement is the baked stagingPose (per
+                        // MachinePackageNormalizer.BakeStagingPoses).
+                        PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
+                        if (pp != null)
+                        {
+                            var pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                            var rot = !pp.startRotation.IsIdentity
+                                ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
+                                : Quaternion.identity;
+                            var scale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                            if (scale.sqrMagnitude < 0.00001f) scale = Vector3.one;
+                            partGo.transform.localScale = scale;
+                            partGo.transform.SetLocalPositionAndRotation(pos, rot);
+                        }
+                        partGo.SetActive(true);
+                        _revealedPartIds.Add(partId);
+                        _ctx.PartStates[partId] = PartPlacementState.Available;
+                        continue;
+                    }
 
                     // Hide future parts instead of repositioning — they'll be revealed
                     // when their step activates via RevealStepParts.
@@ -1211,6 +1254,27 @@ namespace OSE.UI.Root
             _revealedPartIds.Clear();
             _activeStepPartIds.Clear();
             _partsHiddenOnSpawn = false;
+        }
+
+        /// <summary>
+        /// Re-applies the visibility policy against the current step. Call when
+        /// the user flips <see cref="SessionPreferences.ShowAllPartsAtStaging"/>
+        /// mid-session — the next HideNonIntroducedParts/RevealStepParts pair
+        /// will branch on the new flag value and produce the right activeSelf
+        /// state for every spawned part.
+        /// </summary>
+        public void RebuildForRevealPolicy()
+        {
+            if (!OSE.App.ServiceRegistry.TryGet<OSE.Runtime.IMachineSessionController>(out var session)
+                || session == null) return;
+            var stepCtrl = session.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep) return;
+            string activeStepId = stepCtrl.CurrentStepState.StepId;
+            if (string.IsNullOrEmpty(activeStepId)) return;
+
+            _partsHiddenOnSpawn = false;
+            HideNonIntroducedParts();
+            RevealStepParts(activeStepId);
         }
 
         // ════════════════════════════════════════════════════════════════════

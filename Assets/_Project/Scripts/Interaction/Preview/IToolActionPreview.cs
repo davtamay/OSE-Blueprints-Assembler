@@ -23,10 +23,18 @@ namespace OSE.Interaction
         public PreviewMode Mode;
         public InteractionMode Platform;
         public ToolPoseConfig ToolPose;
-        /// <summary>Direction of the weld/cut line in world space (normalized). Zero = point target.</summary>
+        /// <summary>Direction of the work line in world space (normalized).
+        /// Derived from the entry's (endTransform - startTransform) pose
+        /// pair when available, falls back to legacy target.weldAxis.
+        /// Zero = point target.</summary>
         public Vector3 WeldAxis;
-        /// <summary>Length of the weld/cut line in scene units. Zero = use default.</summary>
+        /// <summary>Length of the work line in scene units (magnitude of the
+        /// pose pair delta). Zero = point target / use default.</summary>
         public float WeldLength;
+        /// <summary>Authored tool drift duration in seconds (= WeldLength /
+        /// entry.speed when speed > 0). Zero = use system default
+        /// (BaseApproachDuration ≈ 0.5s — pre-migration behaviour).</summary>
+        public float WorkDuration;
 
         /// <summary>
         /// World-space direction the part will travel during the lerp /

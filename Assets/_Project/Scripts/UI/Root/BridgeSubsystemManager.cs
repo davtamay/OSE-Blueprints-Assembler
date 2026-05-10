@@ -1,6 +1,7 @@
 using System;
 using OSE.App;
 using OSE.Content;
+using OSE.Core;
 using OSE.Runtime;
 using UnityEngine;
 
@@ -31,6 +32,9 @@ namespace OSE.UI.Root
         public DockArcCoordinator               DockArc               { get; private set; }
         public AnimationCueCoordinator           AnimationCues         { get; private set; }
         public IConfirmInspectionService        ConfirmInspection     { get; private set; }
+
+        private bool _prefsSubscribed;
+        private Action _prefsChangedHandler;
 
         public BridgeSubsystemManager(IBridgeContext ctx, Func<PreviewSceneSetup> getSetup)
         {
@@ -69,6 +73,13 @@ namespace OSE.UI.Root
                 ConfirmInspection = new ConfirmInspectionService();
                 ServiceRegistry.Register<IConfirmInspectionService>(ConfirmInspection);
             }
+
+            if (!_prefsSubscribed)
+            {
+                _prefsChangedHandler = () => VisualFeedback?.RebuildForRevealPolicy();
+                SessionPreferences.Changed += _prefsChangedHandler;
+                _prefsSubscribed = true;
+            }
         }
 
         /// <summary>
@@ -90,6 +101,13 @@ namespace OSE.UI.Root
             ConfirmInspection?.ClearMarkers();
             ConfirmInspection = null;
             ServiceRegistry.Unregister<IConfirmInspectionService>();
+
+            if (_prefsSubscribed && _prefsChangedHandler != null)
+            {
+                SessionPreferences.Changed -= _prefsChangedHandler;
+                _prefsChangedHandler = null;
+                _prefsSubscribed = false;
+            }
         }
     }
 }

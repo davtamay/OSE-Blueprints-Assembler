@@ -97,18 +97,45 @@ namespace OSE.Editor
                 GUI.changed = true;
             }
 
-            Rect rowRect = EditorGUILayout.GetControlRect(true,
-                EditorGUIUtility.wideMode ? EditorGUIUtility.singleLineHeight
-                                          : EditorGUIUtility.singleLineHeight * 2f);
+            // Always draw the label on its own line above the X/Y/Z row, then
+            // split remaining width equally between three FloatFields with
+            // tiny sublabels. This keeps every component visible no matter
+            // how narrow the inspector pane gets — Unity's stock Vector3Field
+            // clips Z below ~285px because its component widths are fixed.
+            float lineH = EditorGUIUtility.singleLineHeight;
+            bool hasLabel = !string.IsNullOrEmpty(label);
+            float totalH  = hasLabel ? lineH * 2f : lineH;
+            Rect rowRect  = EditorGUILayout.GetControlRect(true, totalH);
 
-            // Intercept right-click BEFORE drawing the field, so the per-cell
-            // text-input context menu doesn't swallow the event. We still draw
-            // the field below so its rect and value stay consistent.
             Event e = Event.current;
             bool showMenu = e.type == EventType.ContextClick && rowRect.Contains(e.mousePosition);
             if (showMenu) e.Use();
 
-            Vector3 result = EditorGUI.Vector3Field(rowRect, label, value);
+            Rect fieldsRect;
+            if (hasLabel)
+            {
+                var labelRect = new Rect(rowRect.x, rowRect.y, rowRect.width, lineH);
+                GUI.Label(labelRect, label, EditorStyles.label);
+                fieldsRect = new Rect(rowRect.x, rowRect.y + lineH, rowRect.width, lineH);
+            }
+            else
+            {
+                fieldsRect = new Rect(rowRect.x, rowRect.y, rowRect.width, lineH);
+            }
+
+            float gap  = 4f;
+            float colW = Mathf.Floor((fieldsRect.width - gap * 2f) / 3f);
+            float prevLabelW = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 14f;
+            var rx = new Rect(fieldsRect.x,                          fieldsRect.y, colW, lineH);
+            var ry = new Rect(fieldsRect.x + colW + gap,             fieldsRect.y, colW, lineH);
+            var rz = new Rect(fieldsRect.x + (colW + gap) * 2f,      fieldsRect.y,
+                              fieldsRect.xMax - (fieldsRect.x + (colW + gap) * 2f), lineH);
+            float nx = EditorGUI.FloatField(rx, "X", value.x);
+            float ny = EditorGUI.FloatField(ry, "Y", value.y);
+            float nz = EditorGUI.FloatField(rz, "Z", value.z);
+            EditorGUIUtility.labelWidth = prevLabelW;
+            Vector3 result = new Vector3(nx, ny, nz);
 
             if (showMenu)
             {

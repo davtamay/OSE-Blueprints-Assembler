@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using OSE.App;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Core;
+using OSE.Interaction;
 using OSE.Runtime;
 using OSE.Runtime.Preview;
 using UnityEngine;
@@ -75,6 +77,10 @@ namespace OSE.UI.Root
             if (resetToDefaultView)
                 TryInvokeCameraMethod("ResetToDefault", Array.Empty<object>());
 
+            // Non-orchestrator path: this method early-returned above when
+            // the orchestrator was active, so we are guaranteed to be in the
+            // legacy reflection-based bootstrap. Orchestrator-mode framing
+            // is owned by StepGuidanceService → FramingArbiter.
             if (TryInvokeCameraMethod("FrameBounds", new object[] { focusBounds }, typeof(Bounds)))
             {
                 OseLog.Info($"[FocusCamera] Step '{stepId}' — FrameBounds applied.");
@@ -227,6 +233,26 @@ namespace OSE.UI.Root
                 var atb = new Bounds(activeTargetPos, Vector3.one * 0.08f);
                 EncapsulatePrimary(atb);
                 EncapsulateContext(atb);
+            }
+
+            // Active wire ports — for Connect-family steps, the cursor's
+            // currently-open wire entry resolves to a portA/portB pair.
+            // Frame the pair tightly so the camera centers on the connection
+            // being made, not the entire wireConnect partGroup.
+            if (TryGetActiveWirePortWorldPositions(step, out Vector3 wirePortA, out Vector3 wirePortB))
+            {
+                if (wirePortA != Vector3.zero)
+                {
+                    var b = new Bounds(wirePortA, Vector3.one * 0.05f);
+                    EncapsulatePrimary(b);
+                    EncapsulateContext(b);
+                }
+                if (wirePortB != Vector3.zero)
+                {
+                    var b = new Bounds(wirePortB, Vector3.one * 0.05f);
+                    EncapsulatePrimary(b);
+                    EncapsulateContext(b);
+                }
             }
 
             if (!hasContext)
@@ -402,28 +428,38 @@ namespace OSE.UI.Root
             // from an earlier assembly stage) instead of the carriages the
             // trainee is inspecting.
             if (results.Count == 0 && !string.IsNullOrWhiteSpace(step.partGroupId))
-                AddPartGroupMembers(package, step.partGroupId, results);
+                AddPartGroupMembers(package, step.partGroupId, step.sequenceIndex, results);
         }
 
         /// <summary>
         /// Recursively walks a partGroup id and adds every member partId to
-        /// <paramref name="results"/>. Aggregates (batch-all-carriages) are
-        /// expanded through <see cref="PartGroupDefinition.memberPartGroupIds"/>
-        /// so the fallback catches every relevant carriage half, not just
-        /// the top-level entry.
+        /// <paramref name="results"/> that is visible at
+        /// <paramref name="stepSeq"/> (firstVisibleSeq ≤ stepSeq ≤
+        /// lastVisibleSeq per <c>package.poseTable</c>). Aggregates
+        /// (batch-all-carriages) are expanded through
+        /// <see cref="PartGroupDefinition.memberPartGroupIds"/> so the
+        /// fallback catches every relevant member, not just the top-level
+        /// entry. Visibility scoping prevents the camera from framing parts
+        /// that already moved into a different sub-module by the time the
+        /// step runs (the symptom: step 83 starting "far" because the
+        /// part-group spans every carriage across earlier modules).
         /// </summary>
         private static void AddPartGroupMembers(
-            MachinePackageDefinition package, string partGroupId, HashSet<string> results)
+            MachinePackageDefinition package, string partGroupId, int stepSeq, HashSet<string> results)
         {
             if (string.IsNullOrEmpty(partGroupId)) return;
             if (!package.TryGetPartGroup(partGroupId, out var sub) || sub == null) return;
+
+            var poseTable = package.poseTable;
 
             if (sub.partIds != null)
             {
                 for (int i = 0; i < sub.partIds.Length; i++)
                 {
                     string pid = sub.partIds[i];
-                    if (!string.IsNullOrWhiteSpace(pid)) results.Add(pid);
+                    if (string.IsNullOrWhiteSpace(pid)) continue;
+                    if (!IsVisibleAt(poseTable, pid, stepSeq)) continue;
+                    results.Add(pid);
                 }
             }
 
@@ -433,9 +469,21 @@ namespace OSE.UI.Root
                 {
                     string childId = sub.memberPartGroupIds[i];
                     if (!string.IsNullOrWhiteSpace(childId))
-                        AddPartGroupMembers(package, childId, results);
+                        AddPartGroupMembers(package, childId, stepSeq, results);
                 }
             }
+        }
+
+        private static bool IsVisibleAt(PoseTable poseTable, string partId, int stepSeq)
+        {
+            // No pose table → cannot scope; fall back to including the part
+            // (matches pre-scoping behaviour rather than dropping silently).
+            if (poseTable == null) return true;
+            int firstSeq = poseTable.FirstVisibleSeq(partId);
+            int lastSeq = poseTable.LastVisibleSeq(partId);
+            // Part never appears in any step → drop from the framing fallback.
+            if (firstSeq == int.MaxValue || lastSeq == int.MinValue) return false;
+            return stepSeq >= firstSeq && stepSeq <= lastSeq;
         }
 
         private static void AddTargetAssociatedParts(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)
@@ -514,6 +562,76 @@ namespace OSE.UI.Root
             Transform previewRoot = GetPreviewRoot();
             worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
             return true;
+        }
+
+        /// <summary>
+        /// Resolves the WORLD positions of the wire ports on the cursor's
+        /// currently-open wire entry (kind="wire"). Returns false if no
+        /// cursor, no wire entry, or no port pair could be resolved. When
+        /// the cursor has no wire entry but the step IS a wire-connect step,
+        /// falls back to the FIRST wire's ports — that becomes the active
+        /// pair for framing on Connect steps without explicit per-wire task
+        /// entries (the camera still locks to a connection, not the whole
+        /// part-group).
+        /// </summary>
+        private bool TryGetActiveWirePortWorldPositions(StepDefinition step, out Vector3 portAWorld, out Vector3 portBWorld)
+        {
+            portAWorld = default;
+            portBWorld = default;
+            if (step?.wireConnect == null || !step.wireConnect.IsConfigured)
+                return false;
+
+            string activeTargetId = null;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+            {
+                var cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+                if (cursor != null && !cursor.IsComplete)
+                {
+                    foreach (var entry in cursor.OpenTasks)
+                    {
+                        if (entry == null || string.IsNullOrEmpty(entry.id)) continue;
+                        if (!string.Equals(entry.kind, "wire", StringComparison.Ordinal)) continue;
+                        activeTargetId = entry.id;
+                        break;
+                    }
+                }
+            }
+
+            // Fallback: no explicit per-wire cursor entry — use the first
+            // wire's targetId. Better than skipping framing on wire steps
+            // that author the connection as a single Confirm task.
+            if (string.IsNullOrEmpty(activeTargetId))
+            {
+                var wires = step.wireConnect.wires;
+                for (int i = 0; i < wires.Length; i++)
+                {
+                    if (wires[i] != null && !string.IsNullOrEmpty(wires[i].targetId))
+                    {
+                        activeTargetId = wires[i].targetId;
+                        break;
+                    }
+                }
+                if (string.IsNullOrEmpty(activeTargetId) && step.targetIds != null && step.targetIds.Length > 0)
+                    activeTargetId = step.targetIds[0];
+                if (string.IsNullOrEmpty(activeTargetId))
+                    return false;
+            }
+
+            if (!WirePortResolver.TryGetPortLocalPositions(
+                    step, activeTargetId, _ctx.Spawner != null ? (System.Func<string, TargetPreviewPlacement>)_ctx.Spawner.FindTargetPlacement : null,
+                    out Vector3 portA, out Vector3 portB))
+            {
+                return false;
+            }
+
+            Transform previewRoot = GetPreviewRoot();
+            portAWorld = portA != Vector3.zero
+                ? (previewRoot != null ? previewRoot.TransformPoint(portA) : portA)
+                : Vector3.zero;
+            portBWorld = portB != Vector3.zero
+                ? (previewRoot != null ? previewRoot.TransformPoint(portB) : portB)
+                : Vector3.zero;
+            return portAWorld != Vector3.zero || portBWorld != Vector3.zero;
         }
 
         private static bool TryCollectFromCursor(HashSet<string> results)

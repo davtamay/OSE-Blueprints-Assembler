@@ -37,6 +37,9 @@ namespace OSE.Interaction
         private ToolPoseConfig _toolPose;
         private Vector3 _weldAxis;
         private float _weldLength;
+        // Authored drift duration (seconds). Resolved at the bridge layer
+        // from entry.speed (length/speed). Zero = use BaseApproachDuration.
+        private float _workDuration;
         private OSE.Content.ToolActionPreviewConfig _previewConfig;
         private Renderer _targetSphereRenderer;
         private bool _completed;
@@ -103,6 +106,7 @@ namespace OSE.Interaction
             _speed = Mathf.Max(speed, 0.1f);
             _weldAxis = ctx.WeldAxis;
             _weldLength = ctx.WeldLength;
+            _workDuration = ctx.WorkDuration;
             _previewConfig = ctx.PreviewConfig;
             _onComplete = onComplete;
             _onActionDone = onActionDone;
@@ -278,8 +282,16 @@ namespace OSE.Interaction
 
         private void TickApproach()
         {
-            float approachDur = _previewConfig != null && _previewConfig.approachDuration > 0f
-                ? _previewConfig.approachDuration : BaseApproachDuration;
+            // Approach duration priority: authored entry.speed (→ _workDuration)
+            // beats per-action previewConfig.approachDuration beats the
+            // BaseApproachDuration constant. Lets authors pin "long welds
+            // take proportionally longer" via the Speed (m/s) field
+            // without touching the per-action override.
+            float approachDur = _workDuration > 0f
+                ? _workDuration
+                : (_previewConfig != null && _previewConfig.approachDuration > 0f
+                    ? _previewConfig.approachDuration
+                    : BaseApproachDuration);
             float t = Mathf.Clamp01(_elapsed / (approachDur / _speed));
             float eased = EaseOutQuad(t);
 
@@ -328,6 +340,7 @@ namespace OSE.Interaction
                     ToolPose = _toolPose,
                     WeldAxis = _weldAxis,
                     WeldLength = _weldLength,
+                    WorkDuration = _workDuration,
                     PreviewConfig = _previewConfig,
                     PartMotionDirectionWorld = _partMotionDirWorld,
                 };

@@ -123,6 +123,20 @@ namespace OSE.Editor
         // Dirty tracking for tool/step fields written outside the target placement flow
         private readonly HashSet<string> _dirtyToolIds         = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyStepIds         = new HashSet<string>(StringComparer.Ordinal);
+        // Per-task-entry dirty set for tool-task pose edits (entry.id, i.e. action id).
+        // The step-level _dirtyStepIds also lights up for these edits (so the toolbar's
+        // global counter and the writer pipeline keep working), but per-row "● Unsaved"
+        // affordances must scope to the specific entry the user dragged — otherwise
+        // every sibling tool task on the same step shows phantom unsaved state.
+        private readonly HashSet<string> _dirtyTaskEntryIds    = new HashSet<string>(StringComparer.Ordinal);
+        // Per-entry last-viewed pose pill (Start / End) within the active step.
+        // Without this, _activePosePill is window-global and resets to Start on
+        // every selection change — author re-clicks task A and sees "Start" in
+        // the pill even though the live part is still snapped to End, leading
+        // to silent edits of the wrong pose. Cleared in lockstep with _locks
+        // and _inheritedStartCache (step boundary, package load).
+        private readonly Dictionary<string, InteractionPosePill> _pillByEntry =
+            new Dictionary<string, InteractionPosePill>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartGroupIds  = new HashSet<string>(StringComparer.Ordinal); // Phase 7e — PartGroup writes
         private readonly HashSet<string> _dirtyPartIds         = new HashSet<string>(StringComparer.Ordinal); // Generic part-level edits (animationCues, partGroupIds, etc.)
@@ -290,6 +304,13 @@ namespace OSE.Editor
         // which are tracked via per-row isDirty flags and revert separately.
         private readonly Dictionary<string, string> _stepDiskSnapshots
             = new Dictionary<string, string>(StringComparer.Ordinal);
+        // Per-task snapshot keyed stepId → (kind::id) → TaskOrderEntry JSON.
+        // Captured alongside _stepDiskSnapshots so "Revert this task" can
+        // restore a single row in step.taskOrder without touching the rest
+        // of the step. Missing inner entry = task added since last save;
+        // missing current row with present snapshot = task removed since save.
+        private readonly Dictionary<string, Dictionary<string, string>> _stepTaskSnapshots
+            = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
         // Cached derived task order for the currently selected step
         private List<TaskOrderEntry> _cachedTaskOrder;
         private string               _cachedTaskOrderForStepId;

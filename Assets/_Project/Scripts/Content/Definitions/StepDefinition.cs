@@ -527,6 +527,24 @@ namespace OSE.Content
         public TaskEndTransform startTransform;
 
         /// <summary>
+        /// Tool drift speed in metres per second along the
+        /// (<c>endTransform</c> − <c>startTransform</c>) vector. When zero
+        /// (default) the runtime falls back to its system default duration
+        /// (~0.5 s for the approach span — see
+        /// <c>ToolActionPreviewController.BaseApproachDuration</c>), which
+        /// matches pre-migration behaviour. Non-zero values let authors
+        /// pin a specific velocity so longer welds take proportionally
+        /// longer to complete.
+        ///
+        /// <para>Replaces the legacy <c>target.weldAxis</c> /
+        /// <c>target.weldLength</c> pair. Direction and length are now
+        /// derived from <c>(endTransform - startTransform)</c>, so authors
+        /// can set both endpoints via the existing pose pill instead of
+        /// editing two parallel fields.</para>
+        /// </summary>
+        public float speed;
+
+        /// <summary>
         /// Optional authoring label marking this entry as a member of an
         /// unordered set — a contiguous span of tasks that open together and
         /// may be completed in any order. When null or empty, the entry is a

@@ -716,6 +716,92 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// PartGroup-child variant of <see cref="SwapInRealGhostAsync"/>:
+        /// replaces a cube placeholder parented under a partGroup root with
+        /// the real GLB. Mirrors the single-part swap pattern but parents
+        /// under <paramref name="groupRoot"/> (the per-partGroup sub-root)
+        /// instead of the global PreviewRoot, and skips SpawnedPreviews
+        /// tracking because partGroup children are not individually tracked
+        /// — only the parent group root is. On load failure, the placeholder
+        /// cube renderer is re-enabled at <paramref name="fallbackLocalScale"/>
+        /// (the authored member scale) so the user sees a visible block at
+        /// roughly the right size rather than a giant 1m cube.
+        /// </summary>
+        private async System.Threading.Tasks.Task SwapInRealGhostForPartGroupChildAsync(
+            GameObject placeholder,
+            string memberId,
+            Transform groupRoot,
+            Vector3 localPos,
+            Quaternion localRot,
+            Vector3 fallbackLocalScale)
+        {
+            if (placeholder == null || groupRoot == null) return;
+            var spawner = _ctx?.Spawner;
+            if (spawner == null) return;
+
+            // Synthetic targetId mirrors SpawnPreviewForAssembledPart's
+            // __auto_{partId} convention so subscribers can disambiguate
+            // partGroup-child loads from target-bound single-part loads.
+            string syntheticTarget = $"__partGroup_{memberId}";
+            Vector3 anchorWorld = placeholder.transform.position;
+            RuntimeEventBus.Publish(new GhostLoadStarted(
+                memberId, syntheticTarget, anchorWorld.x, anchorWorld.y, anchorWorld.z));
+
+            GameObject loaded = null;
+            try { loaded = await spawner.LoadGhostAssetAsync(memberId); }
+            catch (System.Exception ex)
+            {
+                OseLog.Warn($"[PartInteraction] PartGroup ghost swap-in: LoadGhostAssetAsync threw for '{memberId}': {ex.Message}");
+                ShowPlaceholderAsCubeFallback(placeholder);
+                RuntimeEventBus.Publish(new GhostLoadCompleted(memberId, syntheticTarget, success: false));
+                return;
+            }
+            if (loaded == null)
+            {
+                OseLog.VerboseInfo($"[PartInteraction] PartGroup ghost swap-in: no asset loaded for '{memberId}'. Re-showing cube placeholder as fallback.");
+                ShowPlaceholderAsCubeFallback(placeholder);
+                RuntimeEventBus.Publish(new GhostLoadCompleted(memberId, syntheticTarget, success: false));
+                return;
+            }
+
+            if (placeholder == null || groupRoot == null)
+            {
+                UnityEngine.Object.Destroy(loaded);
+                return;
+            }
+
+            loaded.SetActive(false);
+            loaded.name = $"Preview_{memberId}";
+            loaded.transform.SetParent(groupRoot, worldPositionStays: false);
+            loaded.transform.SetLocalPositionAndRotation(localPos, localRot);
+
+            // GLB carries its own mesh dimensions, so scale must equal the
+            // live source part's localScale divided by the groupRoot's
+            // localScale (= frame.scale). That places the GLB at the same
+            // world dimensions as the live part — same rule the single-part
+            // path uses, adjusted for the partGroup parent's scale.
+            GameObject sourcePart = _ctx.FindSpawnedPart(memberId);
+            Vector3 partLocalScale = sourcePart != null && sourcePart.transform.localScale.sqrMagnitude > 0.000001f
+                ? sourcePart.transform.localScale
+                : Vector3.one;
+            loaded.transform.localScale = DivideScale(
+                partLocalScale,
+                SanitizeScale(groupRoot.localScale, Vector3.one));
+
+            foreach (var col in loaded.GetComponentsInChildren<Collider>(true))
+                _ctx.DestroyObject(col);
+
+            MaterialHelper.ApplyPreviewMaterial(loaded);
+
+            // Atomic swap: activate GLB then destroy cube so no frame shows two.
+            loaded.SetActive(true);
+            UnityEngine.Object.Destroy(placeholder);
+
+            RuntimeEventBus.Publish(new GhostLoadCompleted(memberId, syntheticTarget, success: true));
+            OseLog.Info($"[PartInteraction] PartGroup ghost swapped to real GLB for '{memberId}'.");
+        }
+
+        /// <summary>
         /// Re-enables the placeholder cube's renderer when the async swap-in
         /// can't produce a real GLB (asset not resolvable, load threw, etc.).
         /// Frames + parts that are intentionally rendered as primitives end up
@@ -978,21 +1064,32 @@ namespace OSE.UI.Root
                     continue;
 
                 // Editor EDIT mode: sync AssetDatabase real GLB.
-                // Editor PLAY mode + build: primitive placeholder (matches
-                // build behavior so editor iteration catches build-only
-                // bugs). PartGroup-child swap-in is a follow-up — the
-                // SpawnerPartsReady flow drives material updates either way.
+                // Editor PLAY mode + build: primitive cube placeholder, then
+                // SwapInRealGhostForPartGroupChildAsync replaces it with the
+                // real GLB once LoadGhostAssetAsync resolves. Mirrors the
+                // single-part path's cube + async-swap pattern so partGroup
+                // children render as their actual mesh, not 1m blocks.
                 GameObject childPreview = null;
 #if UNITY_EDITOR
                 if (!Application.isPlaying)
                     childPreview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
 #endif
+                bool isCubePlaceholder = false;
                 if (childPreview == null)
                 {
                     childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     childPreview.name = $"PreviewFallback_{memberId}";
-                    if (previewRoot != null)
-                        childPreview.transform.SetParent(previewRoot, false);
+                    isCubePlaceholder = true;
+
+                    // Hide the placeholder's renderer immediately so the 1m
+                    // cube doesn't flash before the GLB swap-in completes.
+                    // Re-enabled by SwapInRealGhostForPartGroupChildAsync if
+                    // the load fails (visible cube fallback at member scale).
+                    if (Application.isPlaying)
+                    {
+                        foreach (var r in childPreview.GetComponentsInChildren<Renderer>(true))
+                            r.enabled = false;
+                    }
                 }
 
                 childPreview.transform.SetParent(subPreviewRoot.transform, false);
@@ -1037,6 +1134,16 @@ namespace OSE.UI.Root
 
                 foreach (Collider collider in childPreview.GetComponentsInChildren<Collider>(true))
                     _ctx.DestroyObject(collider);
+
+                // Kick off async GLB swap for cube placeholders in Play/build.
+                // memberLocalPos already includes the fit-axis offset above,
+                // so passing it through preserves axis-fit positioning across
+                // the swap. Editor EDIT mode skipped this branch (real GLB
+                // loaded sync via AssetDatabase) — nothing to swap.
+                if (isCubePlaceholder && Application.isPlaying)
+                    _ = SwapInRealGhostForPartGroupChildAsync(
+                        childPreview, memberId, subPreviewRoot.transform,
+                        memberLocalPos, memberLocalRot, memberLocalScale);
             }
 
             if (isAxisFitPreview && fitPreviewChildren != null && fitPreviewChildren.Count > 0)

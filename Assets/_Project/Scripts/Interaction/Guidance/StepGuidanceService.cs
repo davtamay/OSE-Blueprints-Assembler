@@ -25,6 +25,7 @@ namespace OSE.Interaction
         private readonly AssemblyCameraRig _cameraRig;
 
         private IPartActionBridge _partBridge;
+        private FramingArbiter _arbiter;
 
         private MachinePackageDefinition _package;
         private Func<string, TargetPreviewPlacement> _findTarget;
@@ -65,6 +66,17 @@ namespace OSE.Interaction
         public void SetPartBridge(IPartActionBridge partBridge)
         {
             _partBridge = partBridge;
+        }
+
+        /// <summary>
+        /// Wire the framing arbiter that owns step-entry framing writes.
+        /// When set, <see cref="FrameStep"/> routes through the arbiter so
+        /// every step-entry frame goes through one telemetry-tagged path.
+        /// Falls back to direct rig writes when null (test/bootstrap paths).
+        /// </summary>
+        public void SetFramingArbiter(FramingArbiter arbiter)
+        {
+            _arbiter = arbiter;
         }
 
         /// <summary>
@@ -201,6 +213,27 @@ namespace OSE.Interaction
                 return;
             }
 
+            // Minimum-move gate: when a follow cue ends with the camera
+            // pivot already inside the active step's task-weighted bounds,
+            // re-running FrameStep would cause a visible re-snap to the
+            // bounds.center even though the subject is already in view.
+            // Skip the reframe in that case — just refresh home so recovery
+            // affordances (ReturnFromToolAction / GoStepHome) snap back to
+            // wherever the cue left the camera.
+            Bounds activeBounds = default;
+            bool boundsResolved = false;
+            if (_arbiter != null)
+                boundsResolved = _arbiter.TryResolveStepBounds(_activeStepId, out activeBounds);
+            else if (_partBridge != null)
+                boundsResolved = _partBridge.TryGetStepFocusBounds(_activeStepId, out activeBounds);
+            if (boundsResolved && activeBounds.Contains(_cameraRig.TargetState.PivotPosition))
+            {
+                _currentHome = _cameraRig.TargetState;
+                _hasHome = true;
+                OseLog.Info($"[StepGuidance] Cue-follow stopped — pivot already inside step '{_activeStepId}' bounds, skipping reframe.");
+                return;
+            }
+
             FrameStep(_activeStepId);
 
             // Refresh home so GoStepHome / ReturnFromToolAction snap to the
@@ -315,30 +348,35 @@ namespace OSE.Interaction
         }
 
         /// <summary>
-        /// Frame the camera for the given step. Can be called externally
-        /// for session restore, startup sync, or deferred reframing after
-        /// transition visuals settle. Tries the tool-target tight focus
-        /// first so multi-target Use steps stay framed on the active
-        /// corner even when called from non-OnStepActivated paths (e.g.
-        /// StepGuidanceCoordinator's deferred coroutine, which used to
-        /// override OnStepActivated's tight target framing with the
-        /// wider all-bounds frame).
+        /// Frame the camera for the given step. Default path uses the
+        /// task-weighted bounds from <see cref="StepFocusComputer"/> via
+        /// <see cref="PartInteractionBridge.TryGetStepFocusBounds"/>: that
+        /// resolver already pivots on cursor.OpenTasks (part / tool-action
+        /// associated part / partGroup proxy / wire ports) and blends with
+        /// step context, so every step entry frames the same way regardless
+        /// of family. Only <see cref="OnToolActionCompleted"/> uses the
+        /// per-target tight focus (<see cref="TryFrameActiveToolTarget"/>)
+        /// to advance to the next bolt/weld corner mid-step. Mixing the two
+        /// paths on entry was the source of "Use step close, next step far"
+        /// alternation.
         /// </summary>
         public void FrameStep(string stepId)
         {
-            if (_cameraRig == null || _partBridge == null)
-                return;
+            if (_cameraRig == null) return;
 
-            if (TryFrameActiveToolTarget(stepId))
+            if (_arbiter != null)
+            {
+                _arbiter.RequestFrameForStep(stepId, reason: "StepGuidance.FrameStep");
                 return;
+            }
 
+            // Fallback: arbiter not wired yet (early bootstrap, tests).
+            if (_partBridge == null) return;
             if (!_partBridge.TryGetStepFocusBounds(stepId, out Bounds bounds))
             {
                 OseLog.Info($"[StepGuidance] Step '{stepId}' — no bounds resolved, skipping frame.");
                 return;
             }
-
-            OseLog.Info($"[StepGuidance] Step '{stepId}' — FrameBounds center={bounds.center}, size={bounds.size}");
             _cameraRig.FrameBounds(bounds);
         }
 

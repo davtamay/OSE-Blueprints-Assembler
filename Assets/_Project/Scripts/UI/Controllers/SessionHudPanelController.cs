@@ -1,3 +1,4 @@
+using OSE.Core;
 using OSE.UI.Presenters;
 using OSE.UI.Utilities;
 using UnityEngine;
@@ -31,6 +32,7 @@ namespace OSE.UI.Controllers
             _view.SetMetricsVisible(viewModel.ShowMetrics, viewModel.ShowHint);
             _view.SetStepToastVisible(viewModel.ShowStepToast);
             _view.SetMilestoneVisible(viewModel.ShowMilestone);
+            _view.SyncShowAllPartsToggle();
         }
 
         protected override void OnUnbind()
@@ -52,6 +54,8 @@ namespace OSE.UI.Controllers
             private readonly VisualElement _metricsDivider;
             private readonly VisualElement _stepToastBlock;
             private readonly VisualElement _milestoneBlock;
+            private readonly Toggle _showAllPartsToggle;
+            private bool _suppressToggleCallback;
 
             public SessionHudPanelView()
             {
@@ -173,6 +177,29 @@ namespace OSE.UI.Controllers
                 MetricsLabel.style.fontSize = 12f;
                 MetricsLabel.style.marginTop = 0f;
                 _metricsBlock.Add(MetricsLabel);
+
+                // "Show all parts" toggle — flips the progressive-reveal policy so
+                // every spawned part stays visible at its authored stagingPose.
+                _showAllPartsToggle = new Toggle("Show all parts");
+                _showAllPartsToggle.style.marginTop = 8f;
+                _showAllPartsToggle.style.fontSize = 12f;
+                _showAllPartsToggle.value = SessionPreferences.ShowAllPartsAtStaging;
+                _showAllPartsToggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (_suppressToggleCallback) return;
+                    SessionPreferences.SetShowAllPartsAtStaging(evt.newValue);
+                });
+                Add(_showAllPartsToggle);
+            }
+
+            public void SyncShowAllPartsToggle()
+            {
+                if (_showAllPartsToggle == null) return;
+                bool current = SessionPreferences.ShowAllPartsAtStaging;
+                if (_showAllPartsToggle.value == current) return;
+                _suppressToggleCallback = true;
+                _showAllPartsToggle.value = current;
+                _suppressToggleCallback = false;
             }
 
             public void SetHintVisible(bool visible)

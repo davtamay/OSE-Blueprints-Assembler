@@ -192,6 +192,17 @@ namespace OSE.Interaction
             if (_partBridge != null)
                 _guidanceService.SetPartBridge(_partBridge);
 
+            // -- 10b. Framing Arbiter (sole writer for step-entry framing) --
+            // Centralises step-entry FrameBounds writes so a future Phase 3
+            // mode-state-machine (Active/Free/Pinned) hooks in at one place
+            // instead of scattered across StepGuidanceService + cue/restore
+            // paths. Non-orchestrator framing (StepFocusComputer reflection
+            // path) early-returns when ExternalControlEnabled is set, so
+            // there is no parallel writer when this arbiter is live.
+            var framingArbiter = new FramingArbiter(_cameraRig, _partBridge);
+            ServiceRegistry.Register<FramingArbiter>(framingArbiter);
+            _guidanceService.SetFramingArbiter(framingArbiter);
+
             // -- 11. Tool Focus (gesture engagement � legacy) --
 
             // -- 12. Tool Action Preview ("I Do / We Do / You Do") --

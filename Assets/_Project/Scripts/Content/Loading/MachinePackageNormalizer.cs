@@ -86,6 +86,13 @@ namespace OSE.Content.Loading
             ValidateUseFamilyPartsArePrePlaced(package);
             ValidateUnorderedSets(package);
             NormalizeToolActions(package);
+            // Migrate legacy target.weldAxis / target.weldLength → entry pose
+            // pair. Runs AFTER NormalizeToolActions (so action.targetId is
+            // resolved) and BEFORE BakeHoldAtEndEndPoses / BakePoseTable
+            // (which read entry.endTransform). Idempotent: re-running on
+            // already-migrated content is a no-op because entries with a
+            // non-trivial pose pair short-circuit the legacy seeding.
+            MigrateWeldFieldsToEntryPose(package);
             ResolveToolActionPartIds(package);
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
@@ -2705,6 +2712,129 @@ namespace OSE.Content.Loading
                 if (derived.Count > 0)
                     step.derivedTargetPartIds = derived.ToArray();
             }
+        }
+
+        // ── Weld → Entry Pose Migration ──
+
+        /// <summary>
+        /// One-shot legacy migration: when a tool task's backing target has
+        /// non-zero <c>weldAxis</c> + <c>weldLength</c> but the entry's
+        /// <c>endTransform</c>/<c>startTransform</c> pair is missing or
+        /// trivial (start == end), seed the entry pose pair so the new
+        /// canonical encoding (direction + length derived from the pair)
+        /// matches the old direction + length values exactly.
+        ///
+        /// <para>For tighten/thread_in tasks where the entry already has an
+        /// authored non-trivial pose pair, leave it alone — that's the
+        /// authored ground truth and the legacy fields were redundant.
+        /// Idempotent on re-run.</para>
+        ///
+        /// <para>Coordinate frame: <c>weldAxis</c> is target-local
+        /// direction; the entry pose is PreviewRoot-local. Migration math
+        /// rotates the local axis through the target's PreviewRoot-local
+        /// orientation to land in PR-local space.</para>
+        /// </summary>
+        public static void MigrateWeldFieldsToEntryPose(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            // Build target id → TargetDefinition lookup (for weldAxis / weldLength).
+            var targetById = new Dictionary<string, TargetDefinition>(StringComparer.Ordinal);
+            if (package.targets != null)
+            {
+                foreach (var t in package.targets)
+                    if (t != null && !string.IsNullOrEmpty(t.id)) targetById[t.id] = t;
+            }
+
+            // Build target id → placement lookup (for PreviewRoot pose).
+            var placementById = new Dictionary<string, TargetPreviewPlacement>(StringComparer.Ordinal);
+            if (package.previewConfig?.targetPlacements != null)
+            {
+                foreach (var p in package.previewConfig.targetPlacements)
+                    if (p != null && !string.IsNullOrEmpty(p.targetId)) placementById[p.targetId] = p;
+            }
+
+            int migrated = 0;
+            foreach (var step in package.steps)
+            {
+                if (step?.taskOrder == null || step.requiredToolActions == null) continue;
+                foreach (var entry in step.taskOrder)
+                {
+                    if (entry == null
+                        || !string.Equals(entry.kind, "toolAction", StringComparison.Ordinal)
+                        || string.IsNullOrEmpty(entry.id)) continue;
+
+                    // Resolve action.id → action.targetId.
+                    string targetId = null;
+                    foreach (var a in step.requiredToolActions)
+                        if (a != null && a.id == entry.id) { targetId = a.targetId; break; }
+                    if (string.IsNullOrEmpty(targetId)) continue;
+
+                    if (!targetById.TryGetValue(targetId, out var target)) continue;
+                    if (target.weldLength <= 0.0001f) continue;
+                    Vector3 axisLocal = target.GetWeldAxisVector();
+                    if (axisLocal.sqrMagnitude < 1e-8f) continue;
+
+                    // If the entry already has an authored endTransform,
+                    // leave it alone — that's the user's ground truth and
+                    // overwriting it on every reload was destroying their
+                    // pose authoring (the "writes don't persist" bug).
+                    // Authored startTransform alone is also enough signal
+                    // to skip; a startTransform-only authoring (override
+                    // without an end change) is unusual but still author
+                    // intent. JsonUtility-default-inflated empties were
+                    // already nulled by DropEmptyTaskOrderTransformPayloads
+                    // earlier in Normalize, so any non-null payload here
+                    // is real authored data.
+                    if (entry.endTransform != null) continue;
+                    if (entry.startTransform != null) continue;
+
+                    // Resolve the target's PR-local pose.
+                    Vector3    placePos = Vector3.zero;
+                    Quaternion placeRot = Quaternion.identity;
+                    if (placementById.TryGetValue(targetId, out var placement) && placement != null)
+                    {
+                        placePos = new Vector3(placement.position.x, placement.position.y, placement.position.z);
+                        placeRot = QuatFrom(placement.rotation);
+                    }
+
+                    // Seed startTransform with the placement pose.
+                    if (entry.startTransform == null)
+                    {
+                        entry.startTransform = new TaskEndTransform
+                        {
+                            position = new SceneFloat3 { x = placePos.x, y = placePos.y, z = placePos.z },
+                            rotation = new SceneQuaternion { x = placeRot.x, y = placeRot.y, z = placeRot.z, w = placeRot.w },
+                            scale    = new SceneFloat3 { x = 1f, y = 1f, z = 1f },
+                        };
+                    }
+
+                    // weldAxis is authored as PreviewRoot-local direction
+                    // (NOT target-local) — confirmed by ToolTargetSpawner.cs
+                    // line 679 doing `previewRoot.TransformDirection(axis)`,
+                    // which is local→world conversion that assumes PR-local
+                    // input. Multiplying by placeRot here would inject the
+                    // target's static rotation into the delta, lifting the
+                    // migrated endTransform off the bolt (the bug observed
+                    // on step 72/73). Use axisLocal directly as PR-local.
+                    Vector3 deltaPR = axisLocal.normalized * target.weldLength;
+                    Vector3 startPos = new Vector3(
+                        entry.startTransform.position.x,
+                        entry.startTransform.position.y,
+                        entry.startTransform.position.z);
+                    Vector3 endPos = startPos + deltaPR;
+                    entry.endTransform = new TaskEndTransform
+                    {
+                        position = new SceneFloat3 { x = endPos.x, y = endPos.y, z = endPos.z },
+                        rotation = entry.startTransform.rotation,
+                        scale    = entry.startTransform.scale,
+                    };
+                    migrated++;
+                }
+            }
+
+            if (migrated > 0)
+                OseLog.VerboseInfo($"[MachinePackageNormalizer.MigrateWeldFieldsToEntryPose] Migrated {migrated} legacy weldAxis/weldLength entries to entry pose pairs.");
         }
 
         // ── Tool Action Defaults ──

@@ -346,26 +346,52 @@ namespace OSE.Editor
             if (!_showToolPreview || _toolPreviewGO == null || GetPreviewRoot() == null) return;
 
             // Display position resolution mirrors the SceneView icon/gizmo
-            // logic so all four (icon, gizmo, tool tip, snapped part) stay
-            // aligned. Priority: pill override → live anchor part → static
-            // sel.position. Authoring data isn't dirtied; sel.position is
-            // restored after ComputeToolLocalTransform reads it.
+            // priority so all four (icon, gizmo, tool tip, snapped part)
+            // land at the SAME PreviewRoot-local position. Order:
+            //   1. useLocalOffsetFromPart → live part position + offset
+            //      (matches runtime ToolTargetSpawner; tool tip lands on
+            //      the bolt head, not the part centre).
+            //   2. anchorRef → live anchor part position.
+            //   3. Pill position → part-centre fallback when no offset
+            //      or anchor data exists for the target.
+            //   4. Static sel.position fallback.
+            // Pill was first in an earlier iteration; that produced a
+            // visible mismatch where the gizmo/icon sat on the bolt head
+            // (offset path) while the drill tip sat at part centre
+            // (pill path). Authoring data isn't dirtied; sel.position
+            // is restored after ComputeToolLocalTransform reads it.
             Vector3 savedPos = sel.position;
             bool overrode = false;
-            if (TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillPos))
+            var prRoot = GetPreviewRoot();
+            if (sel.def != null && sel.def.useLocalOffsetFromPart
+                && !string.IsNullOrEmpty(sel.def.associatedPartId)
+                && prRoot != null)
             {
-                sel.position = pillPos;
-                overrode = true;
+                var partGO = FindLivePartGO(sel.def.associatedPartId);
+                if (partGO != null)
+                {
+                    Vector3 localOffset = new Vector3(
+                        sel.def.localOffsetFromPart.x,
+                        sel.def.localOffsetFromPart.y,
+                        sel.def.localOffsetFromPart.z);
+                    sel.position = prRoot.InverseTransformPoint(
+                        partGO.transform.TransformPoint(localOffset));
+                    overrode = true;
+                }
             }
             else if (sel.def != null && !string.IsNullOrEmpty(sel.def.anchorRef))
             {
                 var anchorGO = FindLivePartGO(sel.def.anchorRef);
-                var pr = GetPreviewRoot();
-                if (anchorGO != null && pr != null)
+                if (anchorGO != null && prRoot != null)
                 {
-                    sel.position = pr.InverseTransformPoint(anchorGO.transform.position);
+                    sel.position = prRoot.InverseTransformPoint(anchorGO.transform.position);
                     overrode = true;
                 }
+            }
+            else if (TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillPos))
+            {
+                sel.position = pillPos;
+                overrode = true;
             }
 
             try

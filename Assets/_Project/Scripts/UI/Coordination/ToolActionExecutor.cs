@@ -147,16 +147,33 @@ namespace OSE.UI.Root
             // via ToolActionPreviewBase.Override() when the config is null
             // or any field is sentinel-zero.
             Content.ToolActionPreviewConfig previewCfg = null;
+            // Resolve the active task's authored speed (m/s) into a duration
+            // (seconds) so the preview controller can pin the approach span
+            // to "long welds take proportionally longer". Zero (default) =
+            // use system default (BaseApproachDuration ≈ 0.5s). Looked up
+            // alongside previewCfg from the active step.
+            float workDuration = 0f;
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var sessionForCfg))
             {
                 var activeStep = sessionForCfg.AssemblyController?.StepController?.CurrentStepDefinition;
                 if (activeStep?.requiredToolActions != null)
                 {
+                    string actionId = null;
                     foreach (var a in activeStep.requiredToolActions)
                     {
                         if (a == null) continue;
                         if (string.Equals(a.targetId, resolvedTarget.TargetId, System.StringComparison.Ordinal))
-                        { previewCfg = a.previewConfig; break; }
+                        { previewCfg = a.previewConfig; actionId = a.id; break; }
+                    }
+                    if (!string.IsNullOrEmpty(actionId) && activeStep.taskOrder != null)
+                    {
+                        foreach (var e in activeStep.taskOrder)
+                        {
+                            if (e == null || e.kind != "toolAction" || e.id != actionId) continue;
+                            if (e.speed > 0f && resolvedTarget.WeldLength > 0f)
+                                workDuration = resolvedTarget.WeldLength / e.speed;
+                            break;
+                        }
                     }
                 }
             }
@@ -169,6 +186,7 @@ namespace OSE.UI.Root
                 TargetWorldRotation = resolvedTarget.TargetWorldRotation,
                 WeldAxis = resolvedTarget.WeldAxis,
                 WeldLength = resolvedTarget.WeldLength,
+                WorkDuration = workDuration,
                 HasToolActionRotation = resolvedTarget.HasToolActionRotation,
                 ToolActionRotation = resolvedTarget.ToolActionRotation,
                 ToolPose = toolPose,

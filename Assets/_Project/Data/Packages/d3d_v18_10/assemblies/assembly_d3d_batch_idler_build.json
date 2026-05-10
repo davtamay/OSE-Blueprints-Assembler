@@ -169,34 +169,11 @@
       "material": "Belt idler pulley with bearing",
       "function": "Redirects the Y-left axis drive belt at the front end of travel.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.14,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.14,"y":0.55,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "idler002_half_b",
       "displayName": "Idler002 Half B",
@@ -206,34 +183,11 @@
       "material": "Printed idler half",
       "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.14,
-          "y": 0.58,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.14,"y":0.58,"z":0.0},"rotation":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "y_left_625zz_a",
       "displayName": "Y-Left 625ZZ A",
@@ -539,34 +493,11 @@
       "material": "Belt idler pulley with bearing",
       "function": "Redirects the Y-right axis drive belt at the front end of travel.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.32,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_y_right"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.32,"y":0.55,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "y_right_625zz_b",
       "displayName": "Y-Right 625ZZ B",
@@ -650,34 +581,11 @@
       "material": "Printed idler half",
       "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.32,
-          "y": 0.58,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_y_right"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.32,"y":0.58,"z":0.0},"rotation":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "y_right_625zz_a",
       "displayName": "Y-Right 625ZZ A",
@@ -909,34 +817,11 @@
       "material": "Belt idler pulley with bearing",
       "function": "Redirects the Z-back axis drive belt at the bottom-back of the frame.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.5,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_z_back"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.9826,"y":0.55,"z":-0.1887},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "idler001_half_b",
       "displayName": "Z-Back Idler Clamping Half",
@@ -946,34 +831,11 @@
       "material": "Printed idler half",
       "function": "Mates with idler001 to capture the flanged bearings on the M6x18 bolt.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.5,
-          "y": 0.58,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_z_back"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.1566,"y":0.55,"z":-0.1887},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "z_back_625zz_a",
       "displayName": "Z-Back Idler Bearing A",
@@ -1279,34 +1141,11 @@
       "material": "Bearing idler for leadscrew",
       "function": "Supports the front Z-axis leadscrew at the bottom of the frame.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.68,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_z_front"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.68,"y":0.55,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "z_front_idler_m6x18_loose",
       "displayName": "Z-Front Idler M6x18 Bolt (Last Hole, Loose)",
@@ -1353,34 +1192,11 @@
       "material": "Printed idler half",
       "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 1.68,
-          "y": 0.58,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      },
       "partGroupIds": [
         "partGroup_idler_z_front"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":1.68,"y":0.58,"z":0.0},"rotation":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "z_front_idler_m6_nut_inner",
       "displayName": "Z-Front Idler M6 Nut (Inner Bolt)",
@@ -1653,9 +1469,11 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
+      "visualPartIds": [ "idler001" ],
       "requiredToolActions": [],
-      "taskOrder": []
-    },
+      "taskOrder": [{"kind":"confirm_action","id":"confirm"},
+        {"kind":"part","id":"idler001"}]
+  },
     {
       "id": "step_batch_idler_clean_holes",
       "name": "Clean excess plastic from idler holes",

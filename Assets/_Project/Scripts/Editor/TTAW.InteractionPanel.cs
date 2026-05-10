@@ -1044,6 +1044,74 @@ namespace OSE.Editor
             }
         }
 
+        /// <summary>
+        /// Multi-select followPart toggle. Reads the shared state across
+        /// every multi-selected tool task (true / false / mixed) and on
+        /// click writes the chosen value to all of them. Mixed state shows
+        /// an indeterminate-style dash; clicking either Mixed → ON or
+        /// Mixed → OFF unifies the selection.
+        /// </summary>
+        private void DrawBatchFollowPartToggle(StepDefinition step)
+        {
+            if (step?.requiredToolActions == null || _targets == null) return;
+
+            // Survey: collect every selected target's backing toolAction
+            // and tally followPart values. Targets without a matching
+            // tool action (e.g. wires, confirm) are skipped silently.
+            int trueCount = 0, falseCount = 0;
+            var actions = new System.Collections.Generic.List<ToolActionDefinition>();
+            foreach (int idx in _multiSelected)
+            {
+                if (idx < 0 || idx >= _targets.Length) continue;
+                string tid = _targets[idx].def?.id;
+                if (string.IsNullOrEmpty(tid)) continue;
+                ToolActionDefinition match = null;
+                foreach (var a in step.requiredToolActions)
+                {
+                    if (a == null) continue;
+                    if (string.Equals(a.targetId, tid, System.StringComparison.Ordinal))
+                    { match = a; break; }
+                }
+                if (match == null) continue;
+                actions.Add(match);
+                bool fp = match.interaction?.followPart ?? true;
+                if (fp) trueCount++; else falseCount++;
+            }
+            if (actions.Count == 0) return;
+            bool mixed   = trueCount > 0 && falseCount > 0;
+            bool current = !mixed && trueCount > 0;
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.showMixedValue = mixed;
+            EditorGUI.BeginChangeCheck();
+            bool newVal = EditorGUILayout.ToggleLeft(
+                new GUIContent($"🔗 Move tool & part together  ({actions.Count} selected)",
+                    "Applies to every selected tool task. When mixed, click ON or OFF " +
+                    "to unify the whole selection. See per-task tooltip in the single-task inspector " +
+                    "for the full semantics."),
+                current);
+            if (EditorGUI.EndChangeCheck() && (mixed || newVal != current))
+            {
+                foreach (var a in actions)
+                {
+                    var payload = EnsureInteraction(a);
+                    payload.followPart = newVal;
+                }
+                _dirtyStepIds.Add(step.id);
+            }
+            EditorGUI.showMixedValue = false;
+            if (mixed)
+            {
+                var hint = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(0.95f, 0.65f, 0.25f, 1f) },
+                    fontStyle = FontStyle.Bold,
+                };
+                EditorGUILayout.LabelField($"({trueCount} ON / {falseCount} OFF)", hint, GUILayout.Width(110));
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
         // ══════════════════════════════════════════════════════════════════════
         // Helpers
         // ══════════════════════════════════════════════════════════════════════

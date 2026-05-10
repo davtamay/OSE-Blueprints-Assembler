@@ -82,6 +82,10 @@ namespace OSE.Editor
             // empty TaskEndTransform that the author never opted in to.
             if (e.startTransform != null && !IsDefaultInflatedTaskEndTransform(e.startTransform))
             { Sep(); sb.Append($"\"startTransform\":{JsonUtility.ToJson(e.startTransform)}"); }
+            // Tool drift speed (m/s). Zero = use system default — omit so
+            // the common case stays compact and round-trips clean.
+            if (e.speed > 0f)
+            { Sep(); sb.Append($"\"speed\":{e.speed.ToString("R", System.Globalization.CultureInfo.InvariantCulture)}"); }
             sb.Append("}");
             return sb.ToString();
         }

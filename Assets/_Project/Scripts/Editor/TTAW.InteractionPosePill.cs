@@ -111,6 +111,21 @@ namespace OSE.Editor
             // clear the lock list before doing anything else this frame.
             EnsureLocksFreshForStep(step.id);
 
+            // Single-select pill state is keyed by entry.id every render —
+            // _pillByEntry is the source of truth. This is unconditional
+            // (not gated on entryChanged) so any code path that bypasses
+            // ApplyTaskEntrySelection (scene-icon click, programmatic
+            // selection, IMGUI re-entry) still self-corrects. Multi-select
+            // ignores _activePosePill and computes its own shared/mixed
+            // state below, so this assignment is harmless there.
+            bool inMultiSelect = _multiSelected.Count > 1 && _activeTaskKind == "toolAction";
+            if (!inMultiSelect)
+            {
+                _activePosePill = _pillByEntry.TryGetValue(entry.id, out var remembered)
+                    ? remembered
+                    : InteractionPosePill.Start;
+            }
+
             // Track the active task so the OnSceneGUI gizmo + ghost can resolve it.
             _activePosePillStepId   = step.id;
             _activePosePillEntryRef = entry.id;
@@ -136,10 +151,21 @@ namespace OSE.Editor
             // locked part would silently drift back to the inherited pose.
             ApplyAllLockedPoses();
 
-            // Re-apply End pill every render. SyncAllPartMeshesToActivePose
+            // Re-apply pose pill every render. SyncAllPartMeshesToActivePose
             // can override the snap on its own triggers — re-applying keeps
-            // the End pill view stable. Start pill needs no re-apply.
-            if (_activePosePill == InteractionPosePill.End)
+            // the pill view stable. Both Start and End re-apply when the
+            // pill targets an authored pose (entry.startTransform on Start
+            // pill, entry.endTransform always for End). Without the Start
+            // re-apply, step navigation parks parts via poseTable (which
+            // doesn't track entry.startTransform), and re-entering the
+            // step shows the authored start being silently overridden by
+            // the assembled-pose poseTable result — fixed only by manually
+            // flipping End→Start to trigger an explicit SnapPartToPill.
+            bool startHasOverrideForRedraw = entry != null && entry.startTransform != null;
+            bool shouldReapply =
+                (_activePosePill == InteractionPosePill.End)
+                || (_activePosePill == InteractionPosePill.Start && startHasOverrideForRedraw);
+            if (shouldReapply)
             {
                 if (!IsTaskLocked(entry.id))
                     SnapPartToPill(action, entry);
@@ -150,7 +176,16 @@ namespace OSE.Editor
                         if (idx < 0 || idx >= _targets.Length) continue;
                         if (TryResolveFollowedInteractionForTargetIdx(step, idx, out var sa, out var se)
                             && !IsTaskLocked(se.id))
+                        {
+                            // Skip per-task snap on Start pill when this
+                            // sibling has no authored override — would snap
+                            // to inherited (assembled) which the poseTable
+                            // already produced. Avoids unnecessary churn.
+                            if (_activePosePill == InteractionPosePill.Start
+                                && (se == null || se.startTransform == null))
+                                continue;
                             SnapPartToPill(sa, se);
+                        }
                     }
                 }
             }
@@ -170,8 +205,26 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Pose:", GUILayout.Width(40));
 
-            bool isStart = _activePosePill == InteractionPosePill.Start;
-            bool isEnd   = _activePosePill == InteractionPosePill.End;
+            // Multi-select: derive shared/mixed state from per-entry memory so
+            // the pill reflects all selected tasks, not just the active one.
+            // _activePosePill drives single-select rendering and is also the
+            // "anchor" for highlighting when multi-select is unanimous; mixed
+            // state highlights neither pill and any click promotes the whole
+            // selection to that pose.
+            bool multiMixed       = false;
+            int multiStartCount   = 0;
+            int multiEndCount     = 0;
+            if (isMulti)
+            {
+                ComputeMultiSelectPillState(step, out multiMixed, out multiStartCount, out multiEndCount);
+            }
+
+            bool isStart = isMulti
+                ? (!multiMixed && multiStartCount > 0)
+                : _activePosePill == InteractionPosePill.Start;
+            bool isEnd   = isMulti
+                ? (!multiMixed && multiEndCount > 0)
+                : _activePosePill == InteractionPosePill.End;
 
             // Pill toggles are only disabled in single-select while locked
             // (the lock pinned the pose; user must unlock to change). In
@@ -188,11 +241,12 @@ namespace OSE.Editor
                         PoseToggleStyle(isStart, PoseAccentStart, EditorStyles.miniButtonLeft),
                         GUILayout.Height(18)))
                 {
-                    if (!isStart)
+                    bool clickActivates = isMulti ? (multiMixed || !isStart) : !isStart;
+                    if (clickActivates)
                     {
                         _activePosePill = InteractionPosePill.Start;
-                        if (isMulti) { SnapAllSelectedPartsToPill(step); RetargetSelectedLocksToActivePill(step); }
-                        else         SnapPartToPill(action, entry);
+                        if (isMulti) { RecordPillForSelection(step, InteractionPosePill.Start); SnapAllSelectedPartsToPill(step); RetargetSelectedLocksToActivePill(step); }
+                        else         { RecordPillForEntry(entry.id, InteractionPosePill.Start); SnapPartToPill(action, entry); }
                         SceneView.RepaintAll();
                     }
                 }
@@ -200,13 +254,27 @@ namespace OSE.Editor
                         PoseToggleStyle(isEnd, PoseAccentAssembled, EditorStyles.miniButtonRight),
                         GUILayout.Height(18)))
                 {
-                    if (!isEnd)
+                    bool clickActivates = isMulti ? (multiMixed || !isEnd) : !isEnd;
+                    if (clickActivates)
                     {
                         _activePosePill = InteractionPosePill.End;
-                        if (isMulti) { SnapAllSelectedPartsToPill(step); RetargetSelectedLocksToActivePill(step); }
-                        else         SnapPartToPill(action, entry);
+                        if (isMulti) { RecordPillForSelection(step, InteractionPosePill.End); SnapAllSelectedPartsToPill(step); RetargetSelectedLocksToActivePill(step); }
+                        else         { RecordPillForEntry(entry.id, InteractionPosePill.End); SnapPartToPill(action, entry); }
                         SceneView.RepaintAll();
                     }
+                }
+                if (isMulti && multiMixed)
+                {
+                    var mixedStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal = { textColor = PoseAccentAssembled },
+                        fontStyle = FontStyle.Bold,
+                    };
+                    EditorGUILayout.LabelField(
+                        new GUIContent("Mixed",
+                            $"{multiStartCount} on Start, {multiEndCount} on End. " +
+                            "Click either pill to set every selected task to that pose."),
+                        mixedStyle, GUILayout.Width(48));
                 }
             }
 
@@ -260,10 +328,12 @@ namespace OSE.Editor
 
             GUILayout.FlexibleSpace();
             string hint;
-            if (isMulti)
+            if (isMulti && multiMixed)
+                hint = $"{multiCount} selected — mixed ({multiStartCount} Start, {multiEndCount} End)";
+            else if (isMulti)
                 hint = taskIsLocked
-                    ? $"🔒 {multiCount} selected — pose applied to all"
-                    : $"🔗 {multiCount} selected — Lock to apply pose to all";
+                    ? $"🔒 {multiCount} selected — all on {(isEnd ? "End" : "Start")}"
+                    : $"🔗 {multiCount} selected — all on {(isEnd ? "End" : "Start")}";
             else if (taskIsLocked)
                 hint = "🔒 locked — pose persists across task switches";
             else if (isEnd)
@@ -374,6 +444,23 @@ namespace OSE.Editor
                 return true;
             }
             string fallbackPartId = ResolvePartIdForTarget(action?.targetId);
+            // Live-part fallback. When the part was placed by a prior Place
+            // step (no upstream tool task to inherit from), the bolt is
+            // already sitting at its post-Place pose in the scene — that IS
+            // the inherited start. Reading the live GO matches what the user
+            // actually sees and what the runtime tool-target spawner anchors
+            // to. Falling straight through to startPosition (staging) was
+            // pulling the dot back to the bench, producing the offset.
+            if (!string.IsNullOrEmpty(fallbackPartId))
+            {
+                var partGo = FindLivePartGO(fallbackPartId);
+                Transform pr = GetPreviewRoot();
+                if (partGo != null && pr != null)
+                {
+                    pillPos = pr.InverseTransformPoint(partGo.transform.position);
+                    return true;
+                }
+            }
             var pp = !string.IsNullOrEmpty(fallbackPartId) ? FindPartPlacement(fallbackPartId) : null;
             if (pp != null)
             {
@@ -419,6 +506,7 @@ namespace OSE.Editor
                         { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
                     st.scale = new SceneFloat3 { x = newScale.x, y = newScale.y, z = newScale.z };
                     _dirtyStepIds.Add(step.id);
+                    if (entry != null) _dirtyTaskEntryIds.Add(entry.id);
                     SyncLivePartToStartOverride(action, st);
                     SceneView.RepaintAll();
                 }
@@ -443,6 +531,22 @@ namespace OSE.Editor
                 return;
             }
 
+            // First-instance check — when no upstream tool task on the same
+            // part exists, this task IS the canonical authoring point for
+            // the part's start pose. Surface editable fields that auto-
+            // promote `entry.startTransform` on first change, mirroring the
+            // gizmo-drag auto-promote in IsActiveStartPillFollowedOverride.
+            // Without this branch the inspector shows disabled fields and
+            // a misleading "inherited from upstream" hint even though there
+            // IS no upstream — leaving the author with no obvious way to
+            // set the pose other than dragging the gizmo.
+            bool hasUpstream = TryFindInheritedStartSource(step, action, out _, out _, out _);
+            if (!hasUpstream)
+            {
+                DrawFirstInstanceStartFields(step, action, entry);
+                return;
+            }
+
             // Inherited (read-only) path: show upstream end / staging pose.
             TaskEndTransform src = TryGetInheritedStartTransform(step, action);
             using (new EditorGUI.DisabledScope(true))
@@ -460,27 +564,44 @@ namespace OSE.Editor
                 }
                 else
                 {
-                    // No upstream tool task wrote this part — fall back to
-                    // the part's intrinsic startPosition (the staging /
-                    // bench pose).
+                    // No upstream tool task wrote this part. Prefer the live
+                    // part GO's pose — it's already at the post-Place pose
+                    // (the bolt is on the carriage, not at staging) for the
+                    // currently-viewed step. Falling straight to startPosition
+                    // would show the bench pose, which is wrong for any tool
+                    // task whose part was placed by an earlier Place step.
                     string partId = ResolvePartIdForTarget(action?.targetId);
-                    var pp = !string.IsNullOrEmpty(partId) ? FindPartPlacement(partId) : null;
-                    if (pp != null)
+                    GameObject livePartGo = !string.IsNullOrEmpty(partId)
+                        ? FindLivePartGO(partId) : null;
+                    Transform pr = GetPreviewRoot();
+                    if (livePartGo != null && pr != null)
                     {
-                        EditorGUILayout.Vector3Field("Position",
-                            new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z));
-                        Quaternion sr = pp.startRotation.IsIdentity
-                            ? Quaternion.identity
-                            : new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w);
-                        EditorGUILayout.Vector3Field("Rotation (Euler)", sr.eulerAngles);
-                        EditorGUILayout.Vector3Field("Scale",
-                            new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z));
+                        Vector3 livePos = pr.InverseTransformPoint(livePartGo.transform.position);
+                        Quaternion liveRot = Quaternion.Inverse(pr.rotation) * livePartGo.transform.rotation;
+                        EditorGUILayout.Vector3Field("Position", livePos);
+                        EditorGUILayout.Vector3Field("Rotation (Euler)", liveRot.eulerAngles);
+                        EditorGUILayout.Vector3Field("Scale", livePartGo.transform.localScale);
                     }
                     else
                     {
-                        EditorGUILayout.HelpBox(
-                            "No upstream tool-task endTransform and no part placement — start pose unresolved.",
-                            MessageType.Warning);
+                        var pp = !string.IsNullOrEmpty(partId) ? FindPartPlacement(partId) : null;
+                        if (pp != null)
+                        {
+                            EditorGUILayout.Vector3Field("Position",
+                                new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z));
+                            Quaternion sr = pp.startRotation.IsIdentity
+                                ? Quaternion.identity
+                                : new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w);
+                            EditorGUILayout.Vector3Field("Rotation (Euler)", sr.eulerAngles);
+                            EditorGUILayout.Vector3Field("Scale",
+                                new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z));
+                        }
+                        else
+                        {
+                            EditorGUILayout.HelpBox(
+                                "No upstream tool-task endTransform and no part placement — start pose unresolved.",
+                                MessageType.Warning);
+                        }
                     }
                 }
             }
@@ -506,7 +627,97 @@ namespace OSE.Editor
                 {
                     EnsureStartOverride(step, action, entry);
                     _dirtyStepIds.Add(step.id);
+                    if (entry != null) _dirtyTaskEntryIds.Add(entry.id);
                     SyncLivePartToStartOverride(action, entry.startTransform);
+                    SceneView.RepaintAll();
+                    Repaint();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>Editable Position/Rotation/Scale fields for a tool task
+        /// with no upstream source (first instance). On first edit the
+        /// fields auto-promote <c>entry.startTransform</c> from the live
+        /// part pose, then apply the change. Mirror behavior of the gizmo
+        /// drag in IsActiveStartPillFollowedOverride for first-instance.</summary>
+        private void DrawFirstInstanceStartFields(
+            StepDefinition step, ToolActionDefinition action, TaskOrderEntry entry)
+        {
+            // Seed the displayed values from either an existing override (if
+            // somehow non-null already) or the live part's PR-local pose.
+            Vector3    showPos   = Vector3.zero;
+            Quaternion showRot   = Quaternion.identity;
+            Vector3    showScale = Vector3.one;
+            if (entry?.startTransform != null)
+            {
+                showPos = new Vector3(
+                    entry.startTransform.position.x,
+                    entry.startTransform.position.y,
+                    entry.startTransform.position.z);
+                showRot = entry.startTransform.rotation.IsIdentity
+                    ? Quaternion.identity
+                    : new Quaternion(
+                        entry.startTransform.rotation.x,
+                        entry.startTransform.rotation.y,
+                        entry.startTransform.rotation.z,
+                        entry.startTransform.rotation.w);
+                if (!(entry.startTransform.scale.x == 0f && entry.startTransform.scale.y == 0f && entry.startTransform.scale.z == 0f))
+                    showScale = new Vector3(
+                        entry.startTransform.scale.x,
+                        entry.startTransform.scale.y,
+                        entry.startTransform.scale.z);
+            }
+            else
+            {
+                string partId = ResolvePartIdForTarget(action?.targetId);
+                var partGO = !string.IsNullOrEmpty(partId) ? FindLivePartGO(partId) : null;
+                Transform pr = GetPreviewRoot();
+                if (partGO != null && pr != null)
+                {
+                    showPos = pr.InverseTransformPoint(partGO.transform.position);
+                    showRot = Quaternion.Inverse(pr.rotation) * partGO.transform.rotation;
+                    showScale = partGO.transform.localScale;
+                }
+            }
+
+            EditorGUI.BeginChangeCheck();
+            Vector3 newPos   = EditorGUILayout.Vector3Field("Position", showPos);
+            Vector3 newEuler = EditorGUILayout.Vector3Field("Rotation (Euler)", showRot.eulerAngles);
+            Vector3 newScale = EditorGUILayout.Vector3Field("Scale", showScale);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EnsureStartOverride(step, action, entry);
+                Quaternion newRot = Quaternion.Euler(newEuler);
+                entry.startTransform.position = new SceneFloat3 { x = newPos.x, y = newPos.y, z = newPos.z };
+                entry.startTransform.rotation = new SceneQuaternion
+                    { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
+                entry.startTransform.scale = new SceneFloat3 { x = newScale.x, y = newScale.y, z = newScale.z };
+                _dirtyStepIds.Add(step.id);
+                if (entry != null) _dirtyTaskEntryIds.Add(entry.id);
+                SyncLivePartToStartOverride(action, entry.startTransform);
+                SceneView.RepaintAll();
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            var hint = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = new Color(0.55f, 1.00f, 0.20f, 0.95f) },
+            };
+            EditorGUILayout.LabelField(
+                entry?.startTransform != null
+                    ? "● First-instance task — start pose authored here."
+                    : "First-instance task — drag the gizmo or edit fields to author start pose.",
+                hint);
+            GUILayout.FlexibleSpace();
+            if (entry?.startTransform != null
+                && GUILayout.Button(
+                    new GUIContent("⟲ Reset",
+                        "Clear the authored start pose. Defaults back to the live part pose at task entry."),
+                    EditorStyles.miniButton, GUILayout.Width(60), GUILayout.Height(18)))
+            {
+                if (RevertActiveStartOverride())
+                {
                     SceneView.RepaintAll();
                     Repaint();
                 }
@@ -758,6 +969,7 @@ namespace OSE.Editor
             entry.endTransform.rotation = new SceneQuaternion { x = prRot.x, y = prRot.y, z = prRot.z, w = prRot.w };
             entry.endTransform.scale    = new SceneFloat3 { x = s.Scale.x, y = s.Scale.y, z = s.Scale.z };
             _dirtyStepIds.Add(step.id);
+            _dirtyTaskEntryIds.Add(entry.id);
         }
 
         private void ResetAllSelectedEndsToStart(StepDefinition step)
@@ -853,6 +1065,7 @@ namespace OSE.Editor
                 z = et.position.z + deltaLocal.z,
             };
             _dirtyStepIds.Add(step.id);
+            _dirtyTaskEntryIds.Add(entry.id);
 
             string partId = ResolvePartIdForTarget(action?.targetId);
             if (!string.IsNullOrEmpty(partId))
@@ -911,6 +1124,7 @@ namespace OSE.Editor
             et.rotation = new SceneQuaternion
                 { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
             _dirtyStepIds.Add(step.id);
+            _dirtyTaskEntryIds.Add(entry.id);
 
             string partId = ResolvePartIdForTarget(action?.targetId);
             if (!string.IsNullOrEmpty(partId))
@@ -940,35 +1154,68 @@ namespace OSE.Editor
         {
             if (_activePosePill != InteractionPosePill.Start) return false;
             if (!IsActiveTaskFollowedInteraction()) return false;
-            // Override must exist before drag can edit it. Without this gate,
-            // EnsureStartOverride would auto-promote on every accidental drag,
-            // silently creating overrides the author didn't ask for.
             var step = FindStep(_activePosePillStepId);
             if (step?.taskOrder == null) return false;
+
+            TaskOrderEntry entry = null;
             foreach (var e in step.taskOrder)
             {
                 if (e != null && e.kind == "toolAction" && e.id == _activePosePillEntryRef)
-                    return e.startTransform != null;
+                { entry = e; break; }
             }
-            return false;
+            if (entry == null) return false;
+            if (entry.startTransform != null) return true; // override authored → drag edits it
+
+            // Auto-promote on drag for first-instance tool tasks (no upstream
+            // chain to protect). The pose-chain invariant only applies when
+            // there IS an inherited source — otherwise the author has no
+            // affordance to set "where the action begins" for the first
+            // touch of the part. EnsureStartOverride inside the delta apply
+            // creates the override on first drag, mirroring what the
+            // "Author override" button does explicitly.
+            ToolActionDefinition action = null;
+            foreach (var a in step.requiredToolActions)
+                if (a != null && a.id == entry.id) { action = a; break; }
+            if (action != null
+                && !TryFindInheritedStartSource(step, action, out _, out _, out _))
+                return true; // first-instance → drag auto-promotes
+            return false;     // upstream exists → require explicit "Author override"
         }
 
         /// <summary>True when pill=Start on a followed tool×part interaction
-        /// with NO override authored yet. SceneView uses this to suppress
-        /// the drag gizmo so Start-pill stays read-only — the only opt-in
-        /// path is the inspector's "Author override" button.</summary>
+        /// with NO override authored yet AND an upstream chain source exists.
+        /// SceneView uses this to suppress the drag gizmo so Start-pill stays
+        /// read-only — the only opt-in path is the inspector's "Author override"
+        /// button. First-instance tool tasks (no upstream tool task on the
+        /// same part) have nothing to inherit from, so their Start pose is
+        /// always editable — otherwise the user would have no way to author
+        /// where the action begins for the first time the part is touched.
+        /// </summary>
         internal bool IsActiveStartPillReadOnly()
         {
             if (_activePosePill != InteractionPosePill.Start) return false;
             if (!IsActiveTaskFollowedInteraction()) return false;
             var step = FindStep(_activePosePillStepId);
             if (step?.taskOrder == null) return true;
+
+            TaskOrderEntry entry = null;
             foreach (var e in step.taskOrder)
             {
                 if (e != null && e.kind == "toolAction" && e.id == _activePosePillEntryRef)
-                    return e.startTransform == null;
+                { entry = e; break; }
             }
-            return true;
+            if (entry == null) return true;
+            if (entry.startTransform != null) return false; // override already authored → editable
+
+            // First-instance check: no upstream tool task means no inherited
+            // chain to protect. Author should be free to set the start pose.
+            ToolActionDefinition action = null;
+            foreach (var a in step.requiredToolActions)
+                if (a != null && a.id == entry.id) { action = a; break; }
+            if (action == null) return true;
+            if (!TryFindInheritedStartSource(step, action, out _, out _, out _))
+                return false; // first-instance → editable
+            return true;     // upstream exists → read-only until override authored
         }
 
         /// <summary>
@@ -1103,6 +1350,7 @@ namespace OSE.Editor
                 z = st.position.z + deltaLocal.z,
             };
             _dirtyStepIds.Add(step.id);
+            _dirtyTaskEntryIds.Add(entry.id);
 
             string partId = ResolvePartIdForTarget(action?.targetId);
             if (!string.IsNullOrEmpty(partId))
@@ -1124,6 +1372,7 @@ namespace OSE.Editor
             st.rotation = new SceneQuaternion
                 { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
             _dirtyStepIds.Add(step.id);
+            _dirtyTaskEntryIds.Add(entry.id);
 
             string partId = ResolvePartIdForTarget(action?.targetId);
             if (!string.IsNullOrEmpty(partId))
@@ -1164,6 +1413,7 @@ namespace OSE.Editor
 
             entry.startTransform = null;
             _dirtyStepIds.Add(step.id);
+            _dirtyTaskEntryIds.Add(entry.id);
 
             // Snap the live part back to inherited so the revert is visible.
             if (action != null)
@@ -1524,7 +1774,10 @@ namespace OSE.Editor
             if (_locks.Count == 0)
             {
                 if (!string.Equals(_locksStepId, currentStepId, System.StringComparison.Ordinal))
+                {
                     _inheritedStartCache.Clear();
+                    _pillByEntry.Clear();
+                }
                 _locksStepId = currentStepId;
                 return;
             }
@@ -1541,6 +1794,7 @@ namespace OSE.Editor
             }
             _locks.Clear();
             _inheritedStartCache.Clear();
+            _pillByEntry.Clear();
             _locksStepId = currentStepId;
         }
 
@@ -1602,7 +1856,144 @@ namespace OSE.Editor
         {
             _activePosePillStepId   = null;
             _activePosePillEntryRef = null;
-            _activePosePill         = InteractionPosePill.Start;
+            // _activePosePill is intentionally NOT reset here. The next
+            // DrawInteractionPosePillRow restores it from _pillByEntry for
+            // whichever task the user just selected — preserves per-task
+            // pose memory across selection changes.
+        }
+
+        // ── Per-entry pose pill memory ──────────────────────────────────────
+        //
+        // The pill (Start | End) is window-global (_activePosePill) but the
+        // author thinks of it per task. Without per-entry memory, clicking
+        // task A in End mode → task B → back to A would silently reset to
+        // Start while the live part still shows End — a save trap. These
+        // helpers persist the last-viewed pill per entry within the active
+        // step. Lifecycle parity with _locks / _inheritedStartCache: cleared
+        // on step boundary by EnsureLocksFreshForStep and on package load by
+        // Cleanup.
+
+        /// <summary>Stamps the entry's last-viewed pill state.</summary>
+        private void RecordPillForEntry(string entryId, InteractionPosePill p)
+        {
+            if (string.IsNullOrEmpty(entryId)) return;
+            _pillByEntry[entryId] = p;
+        }
+
+        /// <summary>Returns the remembered pill for the given entry id, or
+        /// Start when none has been recorded. Read by row badge + scene ring
+        /// so they stay coherent with the inspector pill. Private because
+        /// InteractionPosePill is a private nested enum — exposing this any
+        /// wider triggers CS0050 (inconsistent accessibility).</summary>
+        private InteractionPosePill GetPillForEntry(string entryId)
+        {
+            if (string.IsNullOrEmpty(entryId)) return InteractionPosePill.Start;
+            return _pillByEntry.TryGetValue(entryId, out var p) ? p : InteractionPosePill.Start;
+        }
+
+        /// <summary>Debug-only inspection: logs the current state of the
+        /// per-entry pill map. Call from suspicious code paths to confirm
+        /// the entry is or isn't in the map.</summary>
+        private void DebugDumpPillMap(string callerTag, string entryId)
+        {
+            string hitInfo = _pillByEntry.TryGetValue(entryId, out var p)
+                ? $"{p}"
+                : "MISS";
+            UnityEngine.Debug.Log(
+                $"[ttaw-pill:{callerTag}] entry={entryId} → {hitInfo}, map size={_pillByEntry.Count}, " +
+                $"keys=[{string.Join(",", _pillByEntry.Keys)}]");
+        }
+
+        /// <summary>Stamps every multi-selected toolAction entry with the
+        /// chosen pill. Used when a Start/End click in multi-select mode
+        /// promotes the whole selection to a single pose. Stamps EVERY
+        /// toolAction row in the row-list selection — not just followed
+        /// interactions — so per-task pose memory survives re-selection
+        /// for tasks whose tool is conceptual (hand-tighten, observe) or
+        /// whose archetype isn't lerp/thread_in.</summary>
+        private void RecordPillForSelection(StepDefinition step, InteractionPosePill p)
+        {
+            if (step?.taskOrder == null || step.requiredToolActions == null) return;
+            // Resolve target ids for every multi-selected target index, then
+            // walk taskOrder and stamp the pill on every toolAction whose
+            // backing action targets one of those ids. Cheaper than nested
+            // resolution and tolerates conceptual-tool tasks.
+            var stampTargetIds = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            if (_targets != null)
+            {
+                foreach (int idx in _multiSelected)
+                {
+                    if (idx < 0 || idx >= _targets.Length) continue;
+                    string tid = _targets[idx].def?.id;
+                    if (!string.IsNullOrEmpty(tid)) stampTargetIds.Add(tid);
+                }
+            }
+            if (stampTargetIds.Count == 0) return;
+            foreach (var e in step.taskOrder)
+            {
+                if (e == null || e.kind != "toolAction" || string.IsNullOrEmpty(e.id)) continue;
+                foreach (var a in step.requiredToolActions)
+                {
+                    if (a == null || a.id != e.id || string.IsNullOrEmpty(a.targetId)) continue;
+                    if (stampTargetIds.Contains(a.targetId))
+                        _pillByEntry[e.id] = p;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Returns true when any tool-action targeting
+        /// <paramref name="targetId"/> on the locked step is currently in
+        /// End pill mode. Used by the SceneView accent ring so its semantics
+        /// stay aligned with the inspector row's E badge. Cheap when no
+        /// per-entry pose state exists (early-out on empty map). Private —
+        /// the partial class members reading this are all in-class.</summary>
+        private bool TargetIsInEndPill(string targetId)
+        {
+            if (string.IsNullOrEmpty(targetId) || _pillByEntry.Count == 0) return false;
+            var step = FindStep(_locksStepId);
+            if (step?.requiredToolActions == null) return false;
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a == null || !string.Equals(a.targetId, targetId, System.StringComparison.Ordinal)) continue;
+                if (GetPillForEntry(a.id) == InteractionPosePill.End) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Surveys multi-selected tool tasks and reports whether
+        /// they share a pose pill (mixed=false) or disagree (mixed=true).
+        /// Counts per-pose feed the "1 Start, 3 End" hint. Walks every
+        /// toolAction row backing a multi-selected target — broader than
+        /// the followed-interaction filter, so conceptual-tool tasks
+        /// (hand-tighten, observe) participate in shared/mixed accounting.</summary>
+        private void ComputeMultiSelectPillState(
+            StepDefinition step, out bool mixed, out int startCount, out int endCount)
+        {
+            mixed = false; startCount = 0; endCount = 0;
+            if (step?.taskOrder == null || step.requiredToolActions == null || _targets == null) return;
+            var stampTargetIds = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            foreach (int idx in _multiSelected)
+            {
+                if (idx < 0 || idx >= _targets.Length) continue;
+                string tid = _targets[idx].def?.id;
+                if (!string.IsNullOrEmpty(tid)) stampTargetIds.Add(tid);
+            }
+            if (stampTargetIds.Count == 0) return;
+            foreach (var e in step.taskOrder)
+            {
+                if (e == null || e.kind != "toolAction" || string.IsNullOrEmpty(e.id)) continue;
+                foreach (var a in step.requiredToolActions)
+                {
+                    if (a == null || a.id != e.id || string.IsNullOrEmpty(a.targetId)) continue;
+                    if (!stampTargetIds.Contains(a.targetId)) break;
+                    var p = GetPillForEntry(e.id);
+                    if (p == InteractionPosePill.End) endCount++;
+                    else                              startCount++;
+                    break;
+                }
+            }
+            mixed = startCount > 0 && endCount > 0;
         }
 
         // ── SceneView ghost + gizmo (called from OnSceneGUI inside !isPlaying) ─

@@ -91,6 +91,10 @@ namespace OSE.Editor
         // precisely while dragging position handles. Position/rotation handles
         // remain — they're the editing affordance.
         private bool _showMarkers = true;
+        // Multiplier on the marker sphere radii (HAND/TIP/Cursor). 1.0 = original size;
+        // smaller values let the author read the underlying mesh under a marker that
+        // would otherwise occlude the precise drop point.
+        private float _markerScale = 1f;
 
         // Undo/redo for pose edits (in-editor, before writing to disk)
         private struct PoseSnapshot
@@ -452,7 +456,7 @@ namespace OSE.Editor
             // ── Hand marker (blue sphere — fixed, never moves) ──
             Handles.color = ColGrip;
             if (_showMarkers)
-                Handles.SphereHandleCap(0, handW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
+                Handles.SphereHandleCap(0, handW, Quaternion.identity, baseSize * 2.5f * _markerScale, EventType.Repaint);
             if (_showLabels)
             {
                 var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColGrip } };
@@ -500,7 +504,7 @@ namespace OSE.Editor
                 Vector3 tipW = root.TransformPoint(_tip);
                 Handles.color = ColTip;
                 if (_showMarkers)
-                    Handles.SphereHandleCap(0, tipW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
+                    Handles.SphereHandleCap(0, tipW, Quaternion.identity, baseSize * 2.5f * _markerScale, EventType.Repaint);
                 EditorGUI.BeginChangeCheck();
                 Vector3 newTip = Handles.PositionHandle(tipW, root.rotation);
                 if (EditorGUI.EndChangeCheck())
@@ -539,7 +543,7 @@ namespace OSE.Editor
                 Vector3 cursorW = root.TransformPoint(_cursorLocal);
                 Handles.color = ColCursor;
                 if (_showMarkers)
-                    Handles.SphereHandleCap(0, cursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                    Handles.SphereHandleCap(0, cursorW, Quaternion.identity, baseSize * 2f * _markerScale, EventType.Repaint);
                 EditorGUI.BeginChangeCheck();
                 Vector3 newCursor = Handles.PositionHandle(cursorW, root.rotation);
                 if (EditorGUI.EndChangeCheck())
@@ -569,7 +573,7 @@ namespace OSE.Editor
                 Color colPreview = new Color(1f, 0.5f, 0f, 0.9f);
                 Handles.color = colPreview;
                 if (_showMarkers)
-                    Handles.SphereHandleCap(0, runtimeCursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                    Handles.SphereHandleCap(0, runtimeCursorW, Quaternion.identity, baseSize * 2f * _markerScale, EventType.Repaint);
                 Handles.DrawDottedLine(cursorW, runtimeCursorW, 2f);
                 // Orientation axes at Cursor Preview — visualizes Cursor Rotation
                 float axLen = baseSize * 4f;
@@ -657,7 +661,7 @@ namespace OSE.Editor
                 float baseSize = HandleUtility.GetHandleSize(tipWorld) * 0.06f;
                 Handles.color = ColTip;
                 if (_showMarkers)
-                    Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                    Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, baseSize * 2f * _markerScale, EventType.Repaint);
                 if (_showLabels)
                 {
                     var st = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColTip } };
@@ -672,7 +676,7 @@ namespace OSE.Editor
             float dotSize = HandleUtility.GetHandleSize(cursorAnchorW) * 0.04f;
             Handles.color = ColCursor;
             if (_showMarkers)
-                Handles.SphereHandleCap(0, cursorAnchorW, Quaternion.identity, dotSize, EventType.Repaint);
+                Handles.SphereHandleCap(0, cursorAnchorW, Quaternion.identity, dotSize * _markerScale, EventType.Repaint);
             if (_showLabels)
             {
                 var ls = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColCursor } };
@@ -693,7 +697,7 @@ namespace OSE.Editor
         {
             if (_model == null) return;
             Transform root = _model.transform;
-            float sz = Mathf.Max(0.006f, _dist * 0.018f);
+            float sz = Mathf.Max(0.006f, _dist * 0.018f) * _markerScale;
 
             Vector3 grip = DeriveGripPoint();
             Vector3 gripRot = DeriveGripRotation();
@@ -879,6 +883,26 @@ namespace OSE.Editor
                 EditorStyles.miniButton, GUILayout.Width(64));
             _showLabels  = GUILayout.Toggle(_showLabels, "Labels", EditorStyles.miniButton, GUILayout.Width(50));
             EditorGUILayout.EndHorizontal();
+
+            // Marker size — multiplier on the sphere radii. Drop to ~0.25 when a
+            // big marker is hiding the precise location you want to read.
+            using (new EditorGUI.DisabledScope(!_showMarkers))
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(new GUIContent("Marker Size",
+                    "Scales the HAND/TIP/Cursor marker spheres. 1.0 = default; lower to see the mesh under the marker."),
+                    GUILayout.Width(80));
+                EditorGUI.BeginChangeCheck();
+                float ms = GUILayout.HorizontalSlider(_markerScale, 0.1f, 2f);
+                ms = Mathf.Clamp(EditorGUILayout.FloatField(ms, GUILayout.Width(44)), 0.1f, 2f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _markerScale = ms;
+                    if (!IsEmbedded) SceneView.RepaintAll();
+                    Repaint();
+                }
+                EditorGUILayout.EndHorizontal();
+            }
 
             EditorGUI.BeginChangeCheck();
 
@@ -1166,7 +1190,10 @@ namespace OSE.Editor
             EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(_lastBackupPath) || !File.Exists(_lastBackupPath));
             if (GUILayout.Button("Revert Last Write (restore backup)"))
             {
-                string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
+                string itemIdR = IsTool ? _tool?.id : _part?.id;
+                string jsonPath = PackageJsonUtils.IsSplitLayout(_pkgId)
+                    ? PackageJsonUtils.FindEntityFilePath(_pkgId, itemIdR)
+                    : PackageJsonUtils.GetJsonPath(_pkgId);
                 if (jsonPath != null && !string.IsNullOrEmpty(_lastBackupPath) && File.Exists(_lastBackupPath))
                 {
                     File.Copy(_lastBackupPath, jsonPath, true);
@@ -1478,8 +1505,14 @@ namespace OSE.Editor
         {
             string itemId = IsTool ? _tool?.id : _part?.id;
             if (string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(_pkgId)) return;
-            string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
-            if (jsonPath == null) { OseLog.Error($"[GrabPoseEditor] machine.json not found for '{_pkgId}'"); return; }
+
+            // Split-layout packages (d3d_v18_10 et al.) keep tools in shared.json
+            // and parts in assemblies/*.json — not machine.json. Resolve the file
+            // that actually owns this entity.
+            string jsonPath = PackageJsonUtils.IsSplitLayout(_pkgId)
+                ? PackageJsonUtils.FindEntityFilePath(_pkgId, itemId)
+                : PackageJsonUtils.GetJsonPath(_pkgId);
+            if (jsonPath == null) { OseLog.Error($"[GrabPoseEditor] Could not locate authoring file for '{itemId}' in package '{_pkgId}'"); return; }
 
             string blockName = IsTool ? "toolPose" : "grabConfig";
             string poseJson = BuildPoseJson();

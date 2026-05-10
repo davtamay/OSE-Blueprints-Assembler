@@ -179,9 +179,6 @@ namespace OSE.Editor
                 normal    = { textColor = CueContextAccent },
                 alignment = TextAnchor.MiddleLeft,
             };
-            GUI.Label(new Rect(headerRect.x + 8f, headerRect.y, headerRect.width - 160f, headerRect.height),
-                      title, titleStyle);
-
             // Seed-from-preview button, only shown for Tool scope when the
             // step has a resolvable profile AND no cues currently apply to
             // this step. Explicit click only — no OnGUI-driven auto-seed,
@@ -192,24 +189,37 @@ namespace OSE.Editor
                 seedProfile = ResolveToolProfileForStep(step, scopeKey);
             bool showSeedBtn = !string.IsNullOrEmpty(seedProfile) && !StepHasApplicableCues(step, scope, scopeKey);
 
-            float addBtnWidth = 146f;
+            // Adapt button labels + widths to header width so nothing clips
+            // on a narrow inspector. Threshold roughly matches the point at
+            // which the full "+ Add timing panel ▾" + "Seed from X ▾" combo
+            // exceeds the row's reserved space.
+            bool   compact      = headerRect.width < 320f;
+            string addLabel     = compact ? "+ Add ▾" : "+ Add timing panel ▾";
+            float  addBtnWidth  = compact ? 70f      : 146f;
+            string seedLabel    = compact ? $"Seed {seedProfile} ▾" : $"Seed from {seedProfile} ▾";
+            float  seedBtnWidth = compact ? 90f      : 118f;
+            float  reserved     = 8f + addBtnWidth + 4f + (showSeedBtn ? seedBtnWidth + 4f : 0f);
+            float  titleWidth   = Mathf.Max(20f, headerRect.width - reserved);
+            GUI.Label(new Rect(headerRect.x + 8f, headerRect.y, titleWidth, headerRect.height),
+                      title, titleStyle);
+
             float addBtnXMax  = headerRect.xMax - 4f;
             if (showSeedBtn)
             {
-                var seedRect = new Rect(addBtnXMax - 118f, headerRect.y + 2f, 118f, headerRect.height - 4f);
+                var seedRect = new Rect(addBtnXMax - seedBtnWidth, headerRect.y + 2f, seedBtnWidth, headerRect.height - 4f);
                 var seedStyle = new GUIStyle(EditorStyles.miniButton)
                 {
                     fontStyle = FontStyle.Normal,
                     normal    = { textColor = CueContextAccent },
                 };
                 if (GUI.Button(seedRect,
-                    new GUIContent($"Seed from {seedProfile} ▾",
+                    new GUIContent(seedLabel,
                         $"Append the cue stack that reproduces the live {seedProfile} preview. Review, then Save to persist."),
                     seedStyle))
                 {
                     PopulateFromToolPreview(step, scope, scopeKey, seedProfile);
                 }
-                addBtnXMax -= 122f;
+                addBtnXMax -= seedBtnWidth + 4f;
             }
 
             var addBtnRect = new Rect(addBtnXMax - addBtnWidth, headerRect.y + 2f, addBtnWidth, headerRect.height - 4f);
@@ -218,7 +228,7 @@ namespace OSE.Editor
                 fontStyle = FontStyle.Bold,
                 normal    = { textColor = CueContextAccent },
             };
-            if (GUI.Button(addBtnRect, new GUIContent("+ Add timing panel ▾",
+            if (GUI.Button(addBtnRect, new GUIContent(addLabel,
                 "Create a panel that groups cues by when they fire."), addStyle))
             {
                 ShowAddTimingPanelMenu(step, scope, scopeKey);
