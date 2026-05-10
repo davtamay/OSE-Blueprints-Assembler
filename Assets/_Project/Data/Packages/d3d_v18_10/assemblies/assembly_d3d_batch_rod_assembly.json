@@ -77,7 +77,8 @@
       ],
       "assemblyId": "assembly_d3d_batch_rod_assembly",
       "description": "Production-line rod threading: insert 8 rods into 4 idlers, drill-tighten short idler bolts (LEAVE long bolt loose), slide carriages and motor holders onto rods. Manual \u00a76.1-6.5.",
-      "milestoneMessage": "All four axis rod-bundles complete; long idler bolts left loose."
+      "milestoneMessage": "All four axis rod-bundles complete; long idler bolts left loose.",
+      "isAggregate": true
     },
     {
       "id": "partGroup_rod_y_left",

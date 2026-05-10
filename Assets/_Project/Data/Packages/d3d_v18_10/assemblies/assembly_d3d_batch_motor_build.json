@@ -116,7 +116,8 @@
       ],
       "assemblyId": "assembly_d3d_batch_motor_build",
       "description": "Production-line motor assembly: build all four belt-drive motors (Y-Left, Y-Right, Z-Back, Z-Front) in parallel from manual \u00a74-\u00a75. Mirrors batch_carriage_build and batch_idler_build.",
-      "milestoneMessage": "All four motor units assembled with belts in channels."
+      "milestoneMessage": "All four motor units assembled with belts in channels.",
+      "isAggregate": true
     },
     {
       "id": "partGroup_motor_y_left",

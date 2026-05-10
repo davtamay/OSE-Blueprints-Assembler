@@ -102,7 +102,8 @@
       ],
       "assemblyId": "assembly_d3d_batch_belt_threading",
       "description": "Production-line belt routing: thread 4 belts through carriage\u2192idler\u2192carriage, lock first peg, leave second peg loose for frame-side tensioning. Manual \u00a77.1-7.5.",
-      "milestoneMessage": "All four axis belts threaded; first pegs locked, second pegs loose for frame tensioning."
+      "milestoneMessage": "All four axis belts threaded; first pegs locked, second pegs loose for frame tensioning.",
+      "isAggregate": true
     },
     {
       "id": "partGroup_belt_y_left",

@@ -83,7 +83,8 @@
       ],
       "assemblyId": "assembly_d3d_batch_idler_build",
       "description": "Production-line idler assembly: build all four belt idlers (Y-Left, Y-Right, Z-Back, Z-Front) in parallel, sharing the 3-step layout/clean/QC at the start. Mirrors batch_carriage_build.",
-      "milestoneMessage": "All four belt idlers assembled with frame-mount bolts left loose."
+      "milestoneMessage": "All four belt idlers assembled with frame-mount bolts left loose.",
+      "isAggregate": true
     },
     {
       "id": "partGroup_idler_y_left",
